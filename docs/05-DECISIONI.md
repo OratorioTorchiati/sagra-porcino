@@ -59,6 +59,7 @@ Questo file **ha la precedenza** sugli altri documenti. Aggiornarlo a ogni nuova
 | D52 | **Punteggi di prova separati per giocatore**: il "migliore" delle partite di prova, salvato sul telefono, è distinto per account (e per ospite). Chi entra con il suo account non vede i punteggi fatti da altri o da ospite sullo stesso telefono. | Corregge il bug segnalato. Dalla Tappa 5 il migliore vero arriva dal server, legato all'account. |
 | D53 | Le **conferme** (es. "Vuoi davvero uscire?") si mostrano in una **finestra davanti a tutto**, non in fondo alla pagina: visibili su ogni telefono senza scorrere. | |
 | D54 | **Nickname senza bestemmie né insulti**, senza censurare parole innocue: regole "contiene" (porco/a, madonn, gesu, bestemm, dioca, dioporc...), "parola intera" (dio, iddio: vieta "SonoDio", ammette "Armadio", "Claudio") e "parola che inizia con" (prete, cristo: ammette "Interprete", "Cristoforo"). Le parole si separano con _, cifre e maiuscole; le cifre si leggono come lettere. Elenchi ed eccezioni nel database (migrazione 002). | Aggirabile da chi si impegna (es. "sonodio" tutto attaccato e minuscolo): lo staff potrà disattivare l'account (Tappa 8). |
+| D55 | Lo **staff può cancellare** gli account con nickname offensivi (oltre a disattivare i furbetti). | Pannello staff, Tappa 8. |
 | D35 | Il repository e il sito appartengono all'**organizzazione GitHub `OratorioTorchiati`** (gratuita), così l'indirizzo non mostra l'account personale: **https://oratoriotorchiati.github.io/sagra-porcino/**. | La radice `oratoriotorchiati.github.io` resta libera per futuri progetti dell'oratorio. |
 
 ## Questioni aperte
@@ -79,6 +80,7 @@ Valori di default già scelti, in modo che il lavoro non si blocchi. Da conferma
 | Q10 | Dominio personalizzato? | No, URL di GitHub Pages. |
 | Q11 | ~~Come impedire l'invio di punteggi falsi e riconoscere i bot?~~ | **Risolta** → D33, D34. |
 | Q12 | QR degli oggetti segreti condivisibili (link o foto girati su WhatsApp). | L'utente sta pensando a una soluzione; se ne riparla alla Tappa 7. |
+| Q15 | **PIN dimenticato**: il reset da parte dello staff non permette di verificare chi è il vero proprietario (rischio: qualcuno si "riprende" un account nei primi 10). | Proposta: niente reset dallo staff; "PIN dimenticato?" solo **dal telefono che ha creato l'account** (prova di possesso = ID dispositivo); "Cambia PIN" nel profilo. Da confermare. |
 | Q14 | Indirizzo sul dominio dell'oratorio (es. `sagra.oratoriotorchiati.it`) senza toccare il sito esistente: basta un record CNAME nel pannello DNS del dominio. | Rimandato. Da decidere: nome del sottodominio e chi ha accesso al pannello DNS. Se si fa, va rigenerato il QR (prima di stamparlo). |
 | Q13 | ~~Punteggio del Memory~~ | **Risolta** → D42. |
 
