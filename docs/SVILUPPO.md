@@ -75,7 +75,13 @@ Automatico: **ogni push sul branch `main`** avvia il workflow `.github/workflows
 - Elenco in `app/src/games/registry.js`; ogni gioco ha la sua cartella con `config.js` (tutti i numeri da tarare), la logica, i disegni e i test.
 - Motore comune in `app/src/games/engine/session.js`: HUD, conto alla rovescia, ciclo di gioco, pausa quando la pagina va in background, registro delle azioni. Durante la partita gli aggiornamenti dell'app sono bloccati.
 - Il tempo di gioco avanza solo mentre si gioca e al massimo di 50 ms per frame: su un telefono lentissimo il gioco rallenta invece di "saltare".
-- **Registro delle azioni** (D33), inviato al server dalla Tappa 5: lista di righe `[ms, tipo, ...dati]`, con `ms` = tempo di gioco. Per Acchiappa: `[ms, 'tap', x, y, esito, tipo_elemento, età_elemento_ms, dimensione, distanza_dal_centro]` con esito `good`/`bad`/`none`, più `start`, `pause`, `resume`.
+- **Registro delle azioni** (D33), inviato al server dalla Tappa 5: lista di righe `[ms, tipo, ...dati]`, con `ms` = tempo di gioco. Per tutti: `start`, `pause`, `resume` (quiz: `hidden`/`visible` quando si esce e si torna nell'app).
+  - Acchiappa: `[ms, 'tap', x, y, esito, tipo_elemento, età_elemento_ms, dimensione, distanza_dal_centro]`, esito `good`/`bad`/`none`.
+  - Porcini che cadono: `[ms, 'pos', x_cestino]` (ogni 250 ms se cambia), `[ms, 'catch', tipo, x_elemento, x_cestino]`, `[ms, 'miss', tipo, x]`.
+  - Memory: `[ms, 'flip', indice_carta, id_carta, esito]`, esito `first`/`match`/`mismatch`.
+  - Quiz: `[ms, 'answer', id_domanda, indice_originale_scelto | null, ms_impiegati]` (null = tempo scaduto).
+- Giochi HTML (quiz, memory): `canvas: false` nel modulo; il motore passa un elemento `dom`. Il quiz ha `pauseOnHide: false` (D43).
+- Disegni in comune tra giochi (porcini) in `app/src/games/shared/`; sfondo morbido in `engine/background.js`.
 - In sviluppo (`npm run dev`) la sessione in corso è in `window.__gameSession`, per far avanzare i frame dai test nel browser; nella build non esiste.
 
 ## Struttura del frontend
