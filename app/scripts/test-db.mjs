@@ -105,6 +105,79 @@ await rpc('logout', { p_token: token });
 check('dopo "Esci" la chiave non vale più', (await rpc('get_my_profile', { p_token: token })).body?.error === 'NOT_LOGGED_IN');
 check('le altre sessioni (altro telefono) restano valide', (await rpc('get_my_profile', { p_token: login2.body?.token })).body?.ok === true);
 
+// =====================================================================================
+// Tappa 5: tentativi e punteggi (serve la migrazione 003)
+// =====================================================================================
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const t5Nick = `zzg${suffix}`;
+const t5 = await rpc('register', { p_nickname: t5Nick, p_avatar: 'scoiattolo', p_pin: '5555', p_device_id: crypto.randomUUID() });
+const t5Token = t5.body?.token;
+
+const publicState = await rpc('get_games_state', { p_token: null });
+check('stato dei giochi visibile senza account (4 giochi, niente dati personali)',
+  publicState.body?.ok === true && publicState.body.games?.length === 4 && publicState.body.games.every((g) => g.attempts_used_today === null));
+check('avviare un gioco senza account → rifiutato', (await rpc('start_attempt', { p_token: null, p_game_id: 'acchiappa' })).body?.error === 'NOT_LOGGED_IN');
+
+const perDay = publicState.body?.attempts_per_day ?? 3;
+const starts = [];
+for (let i = 0; i < perDay; i++) starts.push((await rpc('start_attempt', { p_token: t5Token, p_game_id: 'acchiappa' })).body);
+check(`${perDay} tentativi al giorno concessi, con i rimasti che scendono`,
+  starts.every((s) => s?.ok) && starts.map((s) => s.attempts_left).join(',') === [...Array(perDay).keys()].map((i) => perDay - 1 - i).join(','),
+  starts.map((s) => s?.attempts_left).join(','));
+const over = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'acchiappa' })).body;
+check(`${perDay + 1}° tentativo nello stesso giorno → rifiutato`, over?.error === 'NO_ATTEMPTS_LEFT', JSON.stringify(over));
+const stateAfter = (await rpc('get_games_state', { p_token: t5Token })).body;
+check('lo stato mostra i tentativi usati oggi', stateAfter?.games?.find((g) => g.id === 'acchiappa')?.attempts_used_today === perDay);
+
+// Punteggio inventato ("ho fatto 5000") → escluso
+const fake = (await rpc('submit_score', { p_attempt_id: starts[0].attempt_id, p_raw_score: 5000, p_stats: { durationMs: 60000 }, p_actions: [] })).body;
+check('punteggio inventato (5000 senza azioni) → escluso', fake?.status === 'rejected' && fake.raw_score === 0, JSON.stringify(fake));
+const again = (await rpc('submit_score', { p_attempt_id: starts[0].attempt_id, p_raw_score: 10, p_stats: { durationMs: 60000 }, p_actions: [] })).body;
+check('reinvio dello stesso tentativo → nessun doppione (resta il primo esito)', again?.status === 'rejected' && again.raw_score === 0);
+check('tentativo inesistente → rifiutato', (await rpc('submit_score', { p_attempt_id: crypto.randomUUID(), p_raw_score: 0, p_stats: {}, p_actions: [] })).body?.error === 'ATTEMPT_UNKNOWN');
+
+// Memory: partita coerente (valida) e partita "perfetta" in 8 mosse (segnalata)
+function memoryActions(moves, lastMs) {
+  const actions = [[0, 'start']];
+  const pairs = 8;
+  const mismatches = moves - pairs;
+  let ms = 500;
+  const step = (lastMs - 500) / (moves * 2);
+  for (let i = 0; i < mismatches; i++) {
+    actions.push([Math.round(ms), 'flip', 0, 'a', 'first']); ms += step;
+    actions.push([Math.round(ms), 'flip', 1, 'b', 'mismatch']); ms += step;
+  }
+  for (let i = 0; i < pairs; i++) {
+    actions.push([Math.round(ms), 'flip', i * 2, `c${i}`, 'first']); ms += step;
+    actions.push([i === pairs - 1 ? lastMs : Math.round(ms), 'flip', i * 2 + 1, `c${i}`, 'match']); ms += step;
+  }
+  return actions;
+}
+const mem1 = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'memory' })).body;
+const mem2 = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'memory' })).body;
+const tooSoon = (await rpc('submit_score', { p_attempt_id: mem2.attempt_id, p_raw_score: 942, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) })).body;
+check('partita inviata prima del tempo reale necessario → esclusa', tooSoon?.status === 'rejected', JSON.stringify(tooSoon));
+await sleep(6500);
+const good = (await rpc('submit_score', { p_attempt_id: mem1.attempt_id, p_raw_score: 942, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) })).body;
+check('Memory coerente (10 mosse, 6 s) → valida con punteggio ricalcolato 942', good?.status === 'valid' && good.raw_score === 942, JSON.stringify(good));
+const mem3 = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'memory' })).body;
+await sleep(6500);
+const perfect = (await rpc('submit_score', { p_attempt_id: mem3.attempt_id, p_raw_score: 982, p_stats: { durationMs: 6000 }, p_actions: memoryActions(8, 6000) })).body;
+check('Memory perfetto in 8 mosse → contato ma segnalato allo staff', perfect?.status === 'flagged' && perfect.raw_score === 982, JSON.stringify(perfect));
+const wrongScore = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'cadono' })).body;
+const lie = (await rpc('submit_score', { p_attempt_id: wrongScore.attempt_id, p_raw_score: 999, p_stats: { durationMs: 1000 }, p_actions: [[500, 'catch', 'bomb', 100, 100], [700, 'catch', 'bomb', 100, 100], [900, 'catch', 'bomb', 100, 100]] })).body;
+check('Porcini che cadono: punteggio dichiarato diverso da quello delle azioni → escluso', lie?.status === 'rejected' && lie.raw_score === 0, JSON.stringify(lie));
+check('vale il migliore tra i tentativi validi', perfect?.best === 982);
+
+// Quiz: domande dal server SENZA risposta giusta; il punteggio lo calcola il server
+const quiz = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'quiz' })).body;
+check('quiz: 5 domande dal server, senza la risposta giusta', quiz?.ok && quiz.questions?.length === 5 && quiz.questions.every((q) => q.options.length === 4 && !('correct_index' in q) && !('correct' in q)), JSON.stringify(quiz?.questions?.[0]));
+await sleep(3000);
+const answers = quiz.questions.map((q) => ({ questionId: q.id, choice: 0, ms: 500 }));
+const quizResult = (await rpc('submit_score', { p_attempt_id: quiz.attempt_id, p_raw_score: 1000, p_stats: { durationMs: 2500, answers }, p_actions: [] })).body;
+check('quiz: il punteggio dichiarato dal telefono viene ignorato e ricalcolato', quizResult?.ok && quizResult.raw_score === quizResult.correct * 199 && quizResult.total === 5, // giusta in 0,5 s = 150 + 49
+  `giuste ${quizResult?.correct}, punti ${quizResult?.raw_score}`);
+
 const failed = results.filter((ok) => !ok).length;
-console.log(`\n${results.length - failed}/${results.length} controlli superati. Giocatori di prova: ${nick}, ${lockNick} (da cancellare prima della sagra).`);
+console.log(`\n${results.length - failed}/${results.length} controlli superati. Giocatori di prova: ${nick}, ${lockNick}, ${t5Nick} (da cancellare prima della sagra).`);
 process.exit(failed ? 1 : 0);

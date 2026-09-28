@@ -5,6 +5,7 @@
 // L'emoji 🍄 non si usa mai: sui telefoni è un fungo rosso a puntini (velenoso).
 
 import porcinoSvg from '../assets/porcino.svg?raw';
+import { serverConfigured } from '../lib/api.js';
 
 export const GAMES = {
   acchiappa: {
@@ -59,5 +60,8 @@ export const GAMES = {
   },
 };
 
-/** Modalità prova (D25): fino alla Tappa 5 i giochi sono sempre in prova, senza tentativi né account. */
-export const PRACTICE_MODE = true;
+/**
+ * Modalità prova (niente account né tentativi, punteggio solo sul telefono): dalla Tappa 5 solo se il sito
+ * è costruito senza server (sviluppo in locale senza app/.env.local). Lo staff gioca "sul serio" ma senza limiti.
+ */
+export const PRACTICE_MODE = !serverConfigured;

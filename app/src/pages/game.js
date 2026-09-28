@@ -1,18 +1,25 @@
-// Pagina di un gioco (#/giochi/<id>): regole → conto alla rovescia → partita → risultato.
-// Per ora solo in modalità prova (D25): nessun tentativo consumato, punteggio non salvato sul server.
+// Pagina di un gioco (#/giochi/<id>): regole → GIOCA (il server conta il tentativo) → 3-2-1 → partita →
+// risultato. Il punteggio va in una coda: se manca la rete parte da solo quando torna (lib/queue.js).
+// Senza server configurato (sviluppo in locale) si gioca in modalità prova.
 
-import { html } from '../lib/dom.js';
+import { html, escapeHtml } from '../lib/dom.js';
 import { readJson, writeJson } from '../lib/storage.js';
-import { currentPlayer } from '../lib/account.js';
+import { rpc, NetworkError } from '../lib/api.js';
+import { currentPlayer, sessionToken, refreshProfile } from '../lib/account.js';
+import { enqueueScore, onSubmitResult, resultFor, isPending } from '../lib/queue.js';
+import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason } from '../lib/games-state.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { GAMES, PRACTICE_MODE } from '../games/registry.js';
 import { GameSession } from '../games/engine/session.js';
 import { randomSeed } from '../games/engine/rng.js';
+import { setAfterLogin } from './auth-messages.js';
 import { renderNotFound } from './not-found.js';
 
-// Miglior punteggio di prova salvato sul telefono, ma SEPARATO per giocatore: chi entra con il suo
-// account non vede i punteggi fatti da altri (o da ospite) sullo stesso telefono.
-const bestKey = (gameId) => {
+const OFFLINE_START = 'Serve un attimo di connessione per iniziare. Riprova tra poco.';
+
+// ---------- Modalità prova (solo sviluppo senza server): migliore sul telefono, separato per giocatore ----------
+
+const practiceBestKey = (gameId) => {
   const player = currentPlayer();
   return `prova-migliore-${gameId}-${player ? `giocatore-${player.nickname.toLowerCase()}` : 'ospite'}`;
 };
@@ -21,8 +28,10 @@ const bestKey = (gameId) => {
 try {
   Object.keys(GAMES).forEach((id) => localStorage.removeItem(`prova-migliore-${id}`));
 } catch {
-  // storage non disponibile: niente da cancellare
+  // storage non disponibile
 }
+
+// ---------- Markup ----------
 
 function rulesMarkup(game) {
   return `
@@ -43,39 +52,21 @@ function rulesMarkup(game) {
           )
           .join('')}
       </ul>
-      ${
-        PRACTICE_MODE
-          ? '<p class="attempt-notice attempt-notice--practice">🧪 <strong>Partita di prova</strong>: non usi tentativi e i punti non contano.</p>'
-          : ''
-      }
-      <button type="button" class="button button--play" disabled>Caricamento…</button>
+      <div class="play-area"></div>
     </main>
   `;
 }
 
-function resultMarkup(game, gameDef, result, best, isNewBest) {
-  return `
-    <main class="page game-page">
-      <h1 class="page-title">Fine partita!</h1>
-      <div class="result-card">
-        <p class="result-card__label">Punti</p>
-        <p class="result-card__score">${result.rawScore}</p>
-        <p class="result-card__best">${isNewBest ? '🎉 Nuovo record personale!' : `Il tuo migliore: <strong>${best}</strong>`}</p>
-      </div>
-      <dl class="result-stats">
-        ${gameDef
-          .summary(result.stats)
-          .map(([label, value]) => `<div class="result-stats__row"><dt>${label}</dt><dd>${value}</dd></div>`)
-          .join('')}
-      </dl>
-      ${PRACTICE_MODE ? '<p class="attempt-notice attempt-notice--practice">🧪 Partita di prova: il punteggio non viene salvato.</p>' : ''}
-      <div class="result-actions">
-        <button type="button" class="button button--play" data-action="again">Rigioca</button>
-        <a class="button button--secondary" href="#/giochi">Torna ai giochi</a>
-      </div>
-    </main>
-  `;
+const notice = (kind, content) => `<p class="attempt-notice attempt-notice--${kind}">${content}</p>`;
+
+function statsMarkup(gameDef, stats) {
+  return gameDef
+    .summary(stats)
+    .map(([label, value]) => `<div class="result-stats__row"><dt>${label}</dt><dd>${value}</dd></div>`)
+    .join('');
 }
+
+// ---------- Pagina ----------
 
 export function renderGame({ gameId }) {
   const game = GAMES[gameId];
@@ -86,66 +77,257 @@ export function renderGame({ gameId }) {
   let gameDef = null;
   let assets = null;
   let destroyed = false;
+  let gamesState = cachedGamesState()?.state ?? null;
+  let unsubscribe = null;
+
+  function loadGame() {
+    if (gameDef && assets) return Promise.resolve();
+    return game.load().then(async (def) => {
+      gameDef = def;
+      assets = await def.loadAssets();
+    });
+  }
+
+  // ---------- Regole e bottone GIOCA ----------
 
   function showRules() {
+    unsubscribe?.();
     const view = html(rulesMarkup(game));
     bindTopBar(view);
     container.replaceChildren(view);
-    const playButton = view.querySelector('.button--play');
+    window.scrollTo(0, 0);
+    const playArea = view.querySelector('.play-area');
+    let loaded = Boolean(gameDef && assets);
+    let startError = null;
 
-    const ready = () => {
-      // Immagini di cosa prendere / evitare dentro il box della regola corrispondente
-      for (const slot of view.querySelectorAll('[data-gallery]')) {
-        const images = gameDef.rulesGallery?.[slot.dataset.gallery] ?? [];
-        slot.innerHTML = images.map((svg) => `<span class="rules__thumb">${svg}</span>`).join('');
+    function renderPlayArea() {
+      if (destroyed) return;
+      const player = currentPlayer();
+      let markup;
+      let canPlay = false;
+
+      if (PRACTICE_MODE) {
+        markup = notice('practice', '🧪 <strong>Partita di prova</strong>: non usi tentativi e i punti non contano.');
+        canPlay = true;
+      } else if (!player) {
+        markup = `
+          ${notice('info', '🔑 Per giocare serve un account: è gratis e ci vuole un minuto.')}
+          <div class="auth-choices">
+            <a class="button button--play" href="#/registrati" data-after-login>Registrati</a>
+            <a class="button button--secondary" href="#/accedi" data-after-login>Ho già un account</a>
+          </div>`;
+      } else {
+        const reason = blockedReason(gamesState, game.id);
+        if (reason) {
+          markup = notice('blocked', `⏳ ${reason.text}`);
+        } else if (gamesState?.unlimited) {
+          markup = notice('info', '🛠️ <strong>Staff</strong>: tentativi illimitati. I tuoi punti non vanno in classifica.');
+          canPlay = true;
+        } else {
+          const left = attemptsLeft(gamesState, game.id);
+          const perDay = gamesState?.attempts_per_day ?? 3;
+          markup = notice(
+            'warning',
+            left === null
+              ? '⚠️ Premendo <strong>GIOCA</strong> usi un tentativo.'
+              : `⚠️ Premendo <strong>GIOCA</strong> usi un tentativo (te ne ${left === 1 ? 'resta' : 'restano'} <strong>${left}</strong> su ${perDay} per oggi).`,
+          );
+          canPlay = true;
+        }
       }
-      playButton.disabled = false;
-      playButton.textContent = 'GIOCA';
-    };
 
-    if (gameDef && assets) {
-      ready();
-    } else {
-      game
-        .load()
-        .then(async (def) => {
-          gameDef = def;
-          assets = await def.loadAssets();
-          if (!destroyed) ready();
-        })
-        .catch(() => {
-          playButton.textContent = 'Errore di caricamento: riprova';
-        });
+      if (startError) markup += `<div class="form-error" role="alert">${escapeHtml(startError)}</div>`;
+      if (canPlay) {
+        markup += `<button type="button" class="button button--play" data-action="play" ${loaded ? '' : 'disabled'}>${loaded ? 'GIOCA' : 'Caricamento…'}</button>`;
+      }
+      playArea.innerHTML = markup;
+      playArea.querySelectorAll('[data-after-login]').forEach((a) => a.addEventListener('click', () => setAfterLogin(`/giochi/${game.id}`)));
+      playArea.querySelector('[data-action="play"]')?.addEventListener('click', onPlay);
     }
 
-    playButton.addEventListener('click', startSession);
+    async function onPlay(event) {
+      const button = event.currentTarget;
+      startError = null;
+      if (PRACTICE_MODE) return startSession({ seed: randomSeed() });
+
+      button.disabled = true;
+      button.textContent = 'Un attimo…';
+      let result;
+      try {
+        result = await rpc('start_attempt', { p_token: sessionToken(), p_game_id: game.id });
+      } catch (error) {
+        startError = error instanceof NetworkError ? OFFLINE_START : 'Qualcosa non ha funzionato. Riprova tra poco.';
+        return renderPlayArea();
+      }
+      if (result.ok) {
+        return startSession({
+          seed: Number(result.seed),
+          attemptId: result.attempt_id,
+          questions: result.questions,
+          attemptsLeft: result.attempts_left,
+          unlimited: result.unlimited,
+        });
+      }
+      if (result.error === 'NOT_LOGGED_IN') {
+        await refreshProfile().catch(() => {});
+        startError = 'Devi rientrare nel tuo account.';
+      } else if (result.error === 'QUIZ_EMPTY') {
+        startError = 'Il quiz non è ancora pronto. Riprova più tardi.';
+      }
+      // Stato cambiato (tentativi finiti, giochi chiusi...): lo si rilegge e si mostra il motivo
+      gamesState = await fetchGamesState().catch(() => gamesState);
+      renderPlayArea();
+    }
+
+    renderPlayArea();
+
+    loadGame()
+      .then(() => {
+        if (destroyed) return;
+        for (const slot of view.querySelectorAll('[data-gallery]')) {
+          const images = gameDef.rulesGallery?.[slot.dataset.gallery] ?? [];
+          slot.innerHTML = images.map((svg) => `<span class="rules__thumb">${svg}</span>`).join('');
+        }
+        loaded = true;
+        renderPlayArea();
+      })
+      .catch(() => {
+        startError = 'Errore di caricamento: ricarica la pagina.';
+        renderPlayArea();
+      });
+
+    // Tentativi rimasti aggiornati dal server (se c'è rete)
+    if (!PRACTICE_MODE && currentPlayer()) {
+      fetchGamesState()
+        .then((state) => {
+          gamesState = state;
+          renderPlayArea();
+        })
+        .catch(() => {});
+    }
   }
 
-  function startSession() {
+  // ---------- Partita ----------
+
+  function startSession(start) {
     session?.destroy();
+    const sessionAssets = start.questions ? { ...assets, pool: start.questions } : assets;
     session = new GameSession({
       root: container,
       gameDef: { ...gameDef, name: game.name },
-      assets,
-      seed: randomSeed(),
-      onFinish: showResult,
+      assets: sessionAssets,
+      seed: start.seed,
+      onFinish: (result) => showResult(result, start),
     });
     // Solo in sviluppo (rimosso dalla build): permette ai test automatici di far avanzare i frame
     if (import.meta.env.DEV) window.__gameSession = session;
   }
 
-  function showResult(result) {
+  // ---------- Risultato ----------
+
+  function showResult(result, start) {
     session?.destroy();
     session = null;
-    const previousBest = readJson(bestKey(game.id), 0);
+    window.scrollTo(0, 0);
+
+    if (PRACTICE_MODE || !start.attemptId) return showPracticeResult(result);
+
+    // Il punteggio va in coda: parte subito, o appena torna la rete
+    const isQuiz = game.id === 'quiz';
+    enqueueScore({ attemptId: start.attemptId, gameId: game.id, rawScore: result.rawScore, stats: result.stats, actions: result.actions });
+
+    const canReplay = start.unlimited || (start.attemptsLeft ?? 0) > 0;
+    const view = html(`
+      <main class="page game-page">
+        <h1 class="page-title">Fine partita!</h1>
+        <div class="result-card">
+          <p class="result-card__label">Punti</p>
+          <p class="result-card__score">${isQuiz ? '…' : result.rawScore}</p>
+          <p class="result-card__best"></p>
+        </div>
+        <dl class="result-stats">${isQuiz ? '' : statsMarkup(gameDef, result.stats)}</dl>
+        <p class="result-status" aria-live="polite"></p>
+        <p class="result-attempts">${
+          start.unlimited ? '' : start.attemptsLeft > 0 ? `Tentativi rimasti oggi: <strong>${start.attemptsLeft}</strong>` : 'Per oggi hai finito i tentativi di questo gioco: domani ne avrai di nuovo.'
+        }</p>
+        <div class="result-actions">
+          ${canReplay ? '<button type="button" class="button button--play" data-action="again">Rigioca</button>' : ''}
+          <a class="button button--secondary" href="#/giochi">Torna ai giochi</a>
+        </div>
+      </main>
+    `);
+    container.replaceChildren(view);
+    view.querySelector('[data-action="again"]')?.addEventListener('click', showRules);
+
+    const statusEl = view.querySelector('.result-status');
+    const setWaiting = () => {
+      statusEl.className = 'result-status result-status--waiting';
+      statusEl.textContent = isQuiz
+        ? '⏳ Il punteggio del quiz arriverà appena torna la connessione (verrà inviato da solo).'
+        : '⏳ Punteggio in attesa di connessione (verrà inviato da solo).';
+    };
+
+    const applyServer = (server) => {
+      if (server?.offline) return setWaiting();
+      if (!server?.ok) {
+        statusEl.className = 'result-status result-status--error';
+        statusEl.textContent = 'Non è stato possibile salvare questa partita.';
+        return;
+      }
+      if (server.status === 'rejected') {
+        statusEl.className = 'result-status result-status--error';
+        statusEl.textContent = '⚠️ Questa partita non è stata considerata valida e non conta per la classifica.';
+      } else {
+        statusEl.className = 'result-status result-status--saved';
+        statusEl.textContent = '✅ Punteggio salvato';
+      }
+      if (isQuiz) {
+        view.querySelector('.result-card__score').textContent = server.raw_score ?? 0;
+        view.querySelector('.result-stats').innerHTML = statsMarkup(gameDef, { ...result.stats, correct: server.correct ?? 0, total: server.total ?? result.stats.total });
+      }
+      if (server.best !== null && server.best !== undefined) {
+        const bestEl = view.querySelector('.result-card__best');
+        bestEl.innerHTML = server.status !== 'rejected' && server.raw_score >= server.best && server.raw_score > 0
+          ? '🎉 Nuovo record personale!'
+          : `Il tuo migliore: <strong>${server.best}</strong>`;
+      }
+    };
+
+    const known = resultFor(start.attemptId);
+    if (known) applyServer(known);
+    else {
+      statusEl.className = 'result-status';
+      statusEl.textContent = isPending(start.attemptId) ? 'Salvataggio del punteggio…' : '';
+      unsubscribe = onSubmitResult((attemptId, server) => {
+        if (attemptId === start.attemptId && !destroyed) applyServer(server);
+      });
+    }
+  }
+
+  function showPracticeResult(result) {
+    const previousBest = readJson(practiceBestKey(game.id), 0);
     const isNewBest = result.rawScore > previousBest && result.rawScore > 0;
     const best = Math.max(previousBest, result.rawScore);
-    writeJson(bestKey(game.id), best);
+    writeJson(practiceBestKey(game.id), best);
 
-    const view = html(resultMarkup(game, gameDef, result, best, isNewBest));
+    const view = html(`
+      <main class="page game-page">
+        <h1 class="page-title">Fine partita!</h1>
+        <div class="result-card">
+          <p class="result-card__label">Punti</p>
+          <p class="result-card__score">${result.rawScore}</p>
+          <p class="result-card__best">${isNewBest ? '🎉 Nuovo record personale!' : `Il tuo migliore: <strong>${best}</strong>`}</p>
+        </div>
+        <dl class="result-stats">${statsMarkup(gameDef, result.stats)}</dl>
+        ${notice('practice', '🧪 Partita di prova: il punteggio non viene salvato.')}
+        <div class="result-actions">
+          <button type="button" class="button button--play" data-action="again">Rigioca</button>
+          <a class="button button--secondary" href="#/giochi">Torna ai giochi</a>
+        </div>
+      </main>
+    `);
     container.replaceChildren(view);
-    view.querySelector('[data-action="again"]').addEventListener('click', startSession);
-    window.scrollTo(0, 0);
+    view.querySelector('[data-action="again"]').addEventListener('click', () => startSession({ seed: randomSeed() }));
   }
 
   showRules();
@@ -155,6 +337,7 @@ export function renderGame({ gameId }) {
     element: container,
     destroy() {
       destroyed = true;
+      unsubscribe?.();
       session?.destroy();
     },
   };

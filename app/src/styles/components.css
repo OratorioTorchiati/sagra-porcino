@@ -1264,3 +1264,106 @@ dialog:not([open]) {
 .dialog .button {
   width: 100%;
 }
+
+/* ---------- Minigiochi (Tappa 5) ---------- */
+
+.how-it-works {
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--radius);
+  background: #e7f0de;
+  border: 2px solid #b9d2a5;
+}
+
+.how-it-works__title {
+  font-size: var(--text-lg);
+  color: var(--color-forest);
+  margin-bottom: 0.4rem;
+}
+
+.how-it-works__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  line-height: 1.35;
+}
+
+.game-card--locked {
+  opacity: 0.75;
+  background: #f4efe6;
+}
+
+.games-updated {
+  margin-top: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.games-updated:empty {
+  display: none;
+}
+
+/* Avvisi nella schermata del gioco */
+.attempt-notice--warning {
+  background: #fff4dc;
+  border: 2px solid #f0cf86;
+  color: #5a3d00;
+}
+
+.attempt-notice--info {
+  background: #e8eef9;
+  border: 2px solid #b8c8ea;
+  color: #1f3a6b;
+}
+
+.attempt-notice--blocked {
+  background: #f1ece4;
+  border: 2px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.play-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.play-area .attempt-notice,
+.play-area .form-error {
+  margin: 0;
+}
+
+/* Stato del punteggio a fine partita */
+.result-status {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.result-status:empty {
+  display: none;
+}
+
+.result-status--saved {
+  color: var(--color-forest);
+}
+
+.result-status--waiting {
+  color: #7a5200;
+}
+
+.result-status--error {
+  color: #9b1c15;
+}
+
+.result-attempts {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.result-attempts:empty {
+  display: none;
+}

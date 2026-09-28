@@ -5,6 +5,7 @@ import './styles/components.css';
 
 import { startRouter } from './router.js';
 import { startAppUpdates } from './lib/app-update.js';
+import { startQueue } from './lib/queue.js';
 import { renderHome } from './pages/home.js';
 import { renderMenu } from './pages/menu.js';
 import { renderGames } from './pages/games.js';
@@ -30,3 +31,4 @@ startRouter(document.getElementById('app'), {
 });
 
 startAppUpdates();
+startQueue(); // punteggi rimasti in sospeso (fatti senza rete)
