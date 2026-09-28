@@ -188,7 +188,8 @@ export class GameSession {
   frame(now) {
     this.raf = requestAnimationFrame(this.frame);
     if (this.state === 'running') {
-      const dt = this.lastFrame === null ? 0 : Math.min((now - this.lastFrame) / 1000, MAX_FRAME_S);
+      // Mai negativo (un timestamp fuori ordine non deve far tornare indietro il tempo), mai troppo grande
+      const dt = this.lastFrame === null ? 0 : Math.min(Math.max((now - this.lastFrame) / 1000, 0), MAX_FRAME_S);
       this.lastFrame = now;
       this.gameTime += dt;
       this.game.update(dt, this.gameTime);

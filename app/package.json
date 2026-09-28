@@ -11,7 +11,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "qr": "node scripts/make-qr.js"
+    "qr": "node scripts/make-qr.js",
+    "test:db": "node scripts/test-db.mjs"
   },
   "devDependencies": {
     "qrcode": "^1.5.4",

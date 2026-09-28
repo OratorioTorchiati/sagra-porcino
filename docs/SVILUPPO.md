@@ -32,6 +32,7 @@ Per aggiornarla: scaricare il nuovo zip `node-vXX-win-x64.zip` da https://nodejs
 | `npm run build` | Crea la versione di produzione in `app/dist/` (con percorso base `/sagra-porcino/`). |
 | `npm run preview` | Serve `app/dist/` in locale per controllare la build: http://localhost:4173/sagra-porcino/ (qui il service worker è attivo, in `npm run dev` no). |
 | `npm test` | Test automatici (Vitest). Girano anche nel deploy: se falliscono, il sito non viene aggiornato. |
+| `npm run test:db` | Prova il database Supabase vero (serve `app/.env.local`, vedi `docs/SUPABASE.md`). |
 | `npm run qr` | Rigenera il QR code del sito in `stampa/qr-sito.svg` (per la tipografia) e `stampa/qr-sito.png`. |
 
 ## Menù
