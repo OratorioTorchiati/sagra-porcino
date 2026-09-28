@@ -3,13 +3,26 @@
 
 import { html } from '../lib/dom.js';
 import { readJson, writeJson } from '../lib/storage.js';
+import { currentPlayer } from '../lib/account.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { GAMES, PRACTICE_MODE } from '../games/registry.js';
 import { GameSession } from '../games/engine/session.js';
 import { randomSeed } from '../games/engine/rng.js';
 import { renderNotFound } from './not-found.js';
 
-const bestKey = (gameId) => `prova-migliore-${gameId}`;
+// Miglior punteggio di prova salvato sul telefono, ma SEPARATO per giocatore: chi entra con il suo
+// account non vede i punteggi fatti da altri (o da ospite) sullo stesso telefono.
+const bestKey = (gameId) => {
+  const player = currentPlayer();
+  return `prova-migliore-${gameId}-${player ? `giocatore-${player.nickname.toLowerCase()}` : 'ospite'}`;
+};
+
+// Vecchi punteggi di prova non separati per giocatore (prima del 28/09): da cancellare
+try {
+  Object.keys(GAMES).forEach((id) => localStorage.removeItem(`prova-migliore-${id}`));
+} catch {
+  // storage non disponibile: niente da cancellare
+}
 
 function rulesMarkup(game) {
   return `
