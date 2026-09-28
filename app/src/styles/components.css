@@ -914,9 +914,7 @@ img.memory-card__image {
 }
 
 .form-section__title {
-  float: left; /* così il legend resta dentro il riquadro */
-  width: 100%;
-  padding: 0;
+  margin: 0;
   font-family: var(--font-title);
   font-size: var(--text-lg);
   font-weight: 800;
@@ -962,8 +960,12 @@ img.memory-card__image {
 }
 
 .form-field__status {
-  min-height: 1.5em;
   font-weight: 700;
+}
+
+/* Nessuno spazio vuoto quando non c'è niente da dire */
+.form-field__status:empty {
+  display: none;
 }
 
 .form-field__status[data-kind='good'] {

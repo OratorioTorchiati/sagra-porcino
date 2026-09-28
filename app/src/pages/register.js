@@ -40,8 +40,8 @@ export function renderRegister() {
       ${topBarMarkup()}
       <h1 class="page-title">Crea il tuo account</h1>
       <form class="auth-form" novalidate>
-        <fieldset class="form-section">
-          <legend class="form-section__title">1. Scegli il tuo personaggio</legend>
+        <div class="form-section" role="group" aria-labelledby="sezione-1">
+          <h2 class="form-section__title" id="sezione-1">1. Scegli il tuo personaggio</h2>
           <div class="char-picker">
             <button type="button" class="char-picker__arrow" data-step="-1" aria-label="Personaggio precedente">‹</button>
             <div class="char-picker__current">
@@ -53,20 +53,20 @@ export function renderRegister() {
           <div class="char-grid" role="radiogroup" aria-label="Personaggi">
             ${CHARACTERS.map((c, i) => `<button type="button" class="char-grid__item" role="radio" data-index="${i}" aria-label="${escapeHtml(c.name)}">${c.svg}</button>`).join('')}
           </div>
-        </fieldset>
+        </div>
 
-        <fieldset class="form-section">
-          <legend class="form-section__title">2. Scegli un nickname</legend>
+        <div class="form-section" role="group" aria-labelledby="sezione-2">
+          <h2 class="form-section__title" id="sezione-2">2. Scegli un nickname</h2>
           <label class="form-field">
             <span class="form-field__label">Nickname</span>
             <input class="form-field__input" name="nickname" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16" required>
             <span class="form-field__hint">Da 3 a 16 caratteri: lettere, numeri e _</span>
             <span class="form-field__status" aria-live="polite"></span>
           </label>
-        </fieldset>
+        </div>
 
-        <fieldset class="form-section">
-          <legend class="form-section__title">3. Scegli un PIN di 4 cifre</legend>
+        <div class="form-section" role="group" aria-labelledby="sezione-3">
+          <h2 class="form-section__title" id="sezione-3">3. Scegli un PIN di 4 cifre</h2>
           <label class="form-field">
             <span class="form-field__label">PIN</span>
             <input class="form-field__input form-field__input--pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" required>
@@ -76,7 +76,7 @@ export function renderRegister() {
             <input class="form-field__input form-field__input--pin" name="pin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" required>
           </label>
           <p class="form-note">🔑 <strong>Ricordalo:</strong> ti serve per ritirare il premio.</p>
-        </fieldset>
+        </div>
 
         <label class="form-check">
           <input type="checkbox" name="privacy" required>
