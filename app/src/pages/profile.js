@@ -6,6 +6,7 @@ import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { currentPlayer, logout, refreshProfile } from '../lib/account.js';
 import { characterById } from '../characters/characters.js';
 import avatarAnonimoSvg from '../assets/avatar-anonimo.svg?raw';
+import { fillDeviceCode } from '../components/device-code.js';
 
 function loggedMarkup(player) {
   const character = characterById(player.avatar);
@@ -18,6 +19,11 @@ function loggedMarkup(player) {
     <div class="notice">
       <p class="notice__title">Punti e classifica</p>
       <p>Qui vedrai i tuoi punti, la tua posizione e il codice per ritirare il premio.</p>
+    </div>
+    <div class="profile-info">
+      <p class="profile-info__title">Informazioni</p>
+      <p>Codice di questo telefono: <span class="device-code device-code--inline" data-device-code>…</span></p>
+      <p class="profile-info__hint">Se dimentichi il PIN, mostra questo codice allo stand: lo staff ti darà un nuovo PIN.</p>
     </div>
     <div class="logout">
       <button type="button" class="button button--secondary" data-action="logout">Esci</button>
@@ -59,6 +65,7 @@ export function renderProfile() {
   function render() {
     const player = currentPlayer();
     body.innerHTML = player ? loggedMarkup(player) : guestMarkup;
+    fillDeviceCode(body);
   }
   render();
 

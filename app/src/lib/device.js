@@ -99,6 +99,16 @@ export async function getDeviceId() {
   return id;
 }
 
+/**
+ * Codice breve e leggibile del telefono, da mostrare allo staff per il reset del PIN (D56):
+ * le prime 8 cifre dell'ID, es. "3F2B-8C1E". Lo staff lo confronta con quello del telefono
+ * con cui è stato creato l'account.
+ */
+export function deviceCode(id) {
+  const hex = id.replace(/-/g, '').slice(0, 8).toUpperCase();
+  return `${hex.slice(0, 4)}-${hex.slice(4)}`;
+}
+
 /** Impronta tecnica (SHA-256 esadecimale). Solo informativa. */
 export async function getFingerprint() {
   const parts = [

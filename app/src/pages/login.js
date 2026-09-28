@@ -1,11 +1,13 @@
 // Accesso con nickname + PIN (docs/01-SPECIFICHE.md §5.2): serve se si cambia telefono o browser,
-// se si sono cancellati i dati, o se la sessione è scaduta. PIN dimenticato: lo reimposta lo staff.
+// se si sono cancellati i dati, o se la sessione è scaduta. PIN dimenticato: lo reimposta lo staff,
+// dopo aver controllato il codice del telefono (deve essere quello con cui è stato creato l'account, D56).
 
 import { html, escapeHtml } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { NetworkError, serverConfigured } from '../lib/api.js';
 import { currentPlayer, login } from '../lib/account.js';
 import { authErrorMessage, OFFLINE_MESSAGE, NOT_CONFIGURED_MESSAGE, takeAfterLogin } from './auth-messages.js';
+import { fillDeviceCode } from '../components/device-code.js';
 
 export function renderLogin() {
   const player = currentPlayer();
@@ -28,13 +30,19 @@ export function renderLogin() {
         </label>
         <div class="form-error" role="alert" hidden></div>
         <button type="submit" class="button button--play">ENTRA</button>
-        <p class="form-note">🔑 <strong>PIN dimenticato?</strong> Vai allo stand della sagra: lo staff te lo reimposta.</p>
+        <div class="forgot-pin">
+          <p class="forgot-pin__title">🔑 PIN dimenticato?</p>
+          <p>Vai allo stand della sagra <strong>con il telefono con cui hai creato l'account</strong> e mostra questo codice allo staff:</p>
+          <p class="device-code" data-device-code>…</p>
+          <p>Lo staff controllerà il codice e ti darà un nuovo PIN.</p>
+        </div>
         <p class="form-alt">Non hai un account? <a href="#/registrati">Registrati</a></p>
       </form>`
       }
     </main>
   `);
   bindTopBar(element);
+  fillDeviceCode(element);
 
   const form = element.querySelector('.auth-form');
   if (form) {

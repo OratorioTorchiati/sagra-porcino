@@ -1182,3 +1182,52 @@ img.memory-card__image {
 .privacy-text p {
   line-height: 1.45;
 }
+
+/* ---------- Codice del telefono (reset del PIN dallo staff) ---------- */
+
+.forgot-pin,
+.profile-info {
+  padding: 1rem;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+}
+
+.forgot-pin p,
+.profile-info p {
+  margin: 0 0 0.5rem;
+  line-height: 1.4;
+}
+
+.forgot-pin p:last-child,
+.profile-info p:last-child {
+  margin-bottom: 0;
+}
+
+.forgot-pin__title,
+.profile-info__title {
+  font-weight: 800;
+  font-size: var(--text-lg);
+}
+
+.profile-info__hint {
+  color: var(--color-text-muted);
+}
+
+.device-code {
+  font-family: ui-monospace, 'Cascadia Mono', 'Courier New', monospace;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: center;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+.device-code--inline {
+  font-size: 1.25rem;
+}
+
+.profile-info {
+  margin-top: 1rem;
+}
