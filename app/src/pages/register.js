@@ -2,7 +2,7 @@
 // personaggio (uno a caso già scelto) → nickname (controllo mentre si scrive) → PIN due volte →
 // due caselle obbligatorie → INIZIA A GIOCARE. Il selfie arriverà solo se attivato (Tappa 9).
 
-import { html, escapeHtml } from '../lib/dom.js';
+import { html, escapeHtml, openDialog, closeDialog } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { CHARACTERS } from '../characters/characters.js';
 import { NetworkError, serverConfigured } from '../lib/api.js';
@@ -95,7 +95,7 @@ export function renderRegister() {
       <dialog class="dialog">
         <h2 class="dialog__title">Informativa privacy</h2>
         ${privacyContentMarkup()}
-        <form method="dialog"><button class="button">Ho capito</button></form>
+        <button type="button" class="button" data-action="privacy-close">Ho capito</button>
       </dialog>
     </main>
   `);
@@ -158,7 +158,8 @@ export function renderRegister() {
     }, 400);
   });
 
-  element.querySelector('[data-action="privacy"]').addEventListener('click', () => element.querySelector('dialog').showModal());
+  element.querySelector('[data-action="privacy"]').addEventListener('click', () => openDialog(element.querySelector('dialog')));
+  element.querySelector('[data-action="privacy-close"]').addEventListener('click', () => closeDialog(element.querySelector('dialog')));
 
   function showError(message, withLoginLink = false) {
     errorBox.innerHTML = `${escapeHtml(message)}${withLoginLink ? ' <a class="button button--secondary form-error__action" href="#/accedi">Accedi</a>' : ''}`;

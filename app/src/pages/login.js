@@ -2,7 +2,7 @@
 // se si sono cancellati i dati, o se la sessione è scaduta. PIN dimenticato: lo reimposta lo staff,
 // dopo aver controllato il codice del telefono (deve essere quello con cui è stato creato l'account, D56).
 
-import { html, escapeHtml } from '../lib/dom.js';
+import { html, escapeHtml, openDialog, closeDialog } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { NetworkError, serverConfigured } from '../lib/api.js';
 import { currentPlayer, login } from '../lib/account.js';
@@ -113,7 +113,7 @@ export function renderLogin() {
         forgotError.hidden = true;
         stepNickname.hidden = false;
         stepCard.hidden = true;
-        dialog.showModal();
+        openDialog(dialog);
       } else if (action === 'forgot-show') {
         const nickname = forgotInput.value.trim();
         if (!/^[A-Za-z0-9_]{3,16}$/.test(nickname)) {
@@ -125,7 +125,7 @@ export function renderLogin() {
         stepNickname.hidden = true;
         stepCard.hidden = false;
       } else if (action === 'forgot-close') {
-        dialog.close();
+        closeDialog(dialog);
       }
     });
     forgotInput.addEventListener('keydown', (event) => {

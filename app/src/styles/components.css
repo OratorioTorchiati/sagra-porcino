@@ -1171,6 +1171,20 @@ img.memory-card__image {
   color: var(--color-text);
 }
 
+/* Finestra chiusa: sempre nascosta, anche sui browser vecchi che non conoscono <dialog> */
+dialog:not([open]) {
+  display: none;
+}
+
+.dialog[open] {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  height: fit-content;
+  margin: auto;
+  box-shadow: 0 10px 40px rgba(43, 29, 18, 0.35);
+}
+
 .dialog::backdrop {
   background: rgba(43, 29, 18, 0.5);
 }
@@ -1185,31 +1199,6 @@ img.memory-card__image {
 
 /* ---------- Codice del telefono (reset del PIN dallo staff) ---------- */
 
-.profile-info {
-  padding: 1rem;
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  border: 2px solid var(--color-border);
-}
-
-.profile-info p {
-  margin: 0 0 0.5rem;
-  line-height: 1.4;
-}
-
-.profile-info p:last-child {
-  margin-bottom: 0;
-}
-
-.profile-info__title {
-  font-weight: 800;
-  font-size: var(--text-lg);
-}
-
-.profile-info__hint {
-  color: var(--color-text-muted);
-}
-
 .device-code {
   font-family: ui-monospace, 'Cascadia Mono', 'Courier New', monospace;
   font-size: 1.75rem;
@@ -1220,13 +1209,6 @@ img.memory-card__image {
   white-space: nowrap;
 }
 
-.device-code--inline {
-  font-size: 1.25rem;
-}
-
-.profile-info {
-  margin-top: 1rem;
-}
 
 /* PIN dimenticato: riquadro da mostrare allo staff */
 .dialog__actions {
