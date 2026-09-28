@@ -360,8 +360,11 @@
   gap: 1rem;
 }
 
+/* Titoli dei giochi più piccoli e non in maiuscolo: così stanno su una riga (se possibile) */
 .home-box__title--game {
-  font-size: var(--text-lg);
+  font-size: 1.2rem;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .attempt-notice {

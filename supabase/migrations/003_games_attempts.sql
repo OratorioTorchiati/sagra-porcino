@@ -33,9 +33,9 @@ create table if not exists public.games (
 );
 insert into public.games (id, name, sort, duration_s, max_raw_score) values
   ('acchiappa', 'Acchiappa il porcino', 1, 60, 16200),
-  ('quiz', 'Quiz del paese', 2, 100, 1000),
+  ('quiz', 'Quiz', 2, 100, 1000),
   ('cadono', 'Porcini che cadono', 3, 60, 4770),
-  ('memory', 'Memory del paese', 4, 120, 1000)
+  ('memory', 'Memory Torchiati', 4, 120, 1000)
 on conflict (id) do update set name = excluded.name, sort = excluded.sort,
   duration_s = excluded.duration_s, max_raw_score = excluded.max_raw_score;  -- "enabled" non si tocca
 

@@ -23,7 +23,7 @@ export const GAMES = {
   },
   quiz: {
     id: 'quiz',
-    name: 'Quiz del paese',
+    name: 'Quiz',
     icon: '❓',
     night: 1,
     rules: [
@@ -48,7 +48,7 @@ export const GAMES = {
   },
   memory: {
     id: 'memory',
-    name: 'Memory del paese',
+    name: 'Memory Torchiati',
     icon: '🃏',
     night: 2,
     rules: [
