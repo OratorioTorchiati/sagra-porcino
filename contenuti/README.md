@@ -2,29 +2,18 @@
 
 Questa cartella raccoglie i materiali "veri" della sagra. Finché mancano, l'app usa dati di esempio.
 
-## 1. Menù → `menu.json`
+## 1. Menù → `menu.csv`
 
-```json
-{
-  "aggiornato": "2026-10-01",
-  "categorie": [
-    {
-      "nome": "Primi",
-      "piatti": [
-        {
-          "nome": "Tagliatelle ai porcini",
-          "descrizione": "Pasta fresca fatta a mano",
-          "prezzo": 9.0,
-          "simboli": ["porcini"],
-          "allergeni": ["glutine", "uova"]
-        }
-      ]
-    }
-  ]
-}
+Si apre e si modifica con **Excel** (salvare come "CSV UTF-8"). Una riga per piatto, colonne separate da `;`:
+
+```csv
+categoria;piatto;descrizione;prezzo;simboli;allergeni
+Primi;Tagliatelle ai porcini;Pasta fresca fatta a mano;9,00;porcini;glutine, uova
 ```
 
-`descrizione`, `simboli` (`porcini`, `vegetariano`, `piccante`...) e `allergeni` sono facoltativi.
+`descrizione`, `simboli` (`porcini`, `vegetariano`, `piccante`...) e `allergeni` sono facoltativi. Le righe che iniziano con `#` sono commenti (in cima al file c'è il promemoria delle colonne). Durante la build uno script lo converte nel formato usato dall'app: non serve toccare altro.
+
+Per la prima consegna va bene anche un altro formato (PDF, foto del volantino, Word): verrà trascritto nel CSV.
 
 ## 2. Domande del quiz → `domande-quiz.csv`
 

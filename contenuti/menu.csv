@@ -1,0 +1,14 @@
+﻿# MENÙ DELLA SAGRA — si apre e si modifica con Excel. Salvare come "CSV UTF-8 (delimitato da virgole)".
+# Le righe che iniziano con # sono commenti: l'app le ignora.
+# Una riga per piatto. Colonne, separate da punto e virgola:
+#   categoria   = es. Antipasti, Primi, Secondi, Contorni, Dolci, Bevande (nell'app compaiono nell'ordine in cui appaiono qui)
+#   piatto      = nome del piatto (obbligatorio)
+#   descrizione = breve, facoltativa
+#   prezzo      = in euro, con la virgola: 9,00 (obbligatorio)
+#   simboli     = facoltativi, separati da virgola: porcini, vegetariano, piccante
+#   allergeni   = facoltativi, separati da virgola: glutine, uova, latte, frutta a guscio...
+# Esempio (togliere il # per usarlo):
+# categoria;piatto;descrizione;prezzo;simboli;allergeni
+# Primi;Tagliatelle ai porcini;Pasta fresca fatta a mano;9,00;porcini;glutine, uova
+# Secondi;Porcini fritti;;12,00;porcini, vegetariano;glutine
+categoria;piatto;descrizione;prezzo;simboli;allergeni
