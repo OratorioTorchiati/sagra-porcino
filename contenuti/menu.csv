@@ -11,4 +11,20 @@
 # categoria;piatto;descrizione;prezzo;simboli;allergeni
 # Primi;Tagliatelle ai porcini;Pasta fresca fatta a mano;9,00;porcini;glutine, uova
 # Secondi;Porcini fritti;;12,00;porcini, vegetariano;glutine
+# ⚠️ DATI DI ESEMPIO: sostituire con il menù vero della sagra.
 categoria;piatto;descrizione;prezzo;simboli;allergeni
+Antipasti;Crostini ai porcini;Pane casereccio con porcini trifolati;6,00;porcini;glutine
+Antipasti;Tagliere di salumi e formaggi;;9,00;;latte
+Primi;Tagliatelle ai porcini;Pasta fresca fatta a mano;10,00;porcini;glutine, uova
+Primi;Risotto ai porcini;;10,00;porcini, vegetariano;latte
+Primi;Polenta al ragù;;7,00;;sedano
+Secondi;Porcini fritti;Porcini impanati e fritti;12,00;porcini, vegetariano;glutine, uova
+Secondi;Salsiccia alla brace;;7,00;;
+Secondi;Salsiccia piccante con polenta;;8,00;piccante;
+Contorni;Patatine fritte;;3,50;vegetariano;
+Contorni;Porcini trifolati;;6,00;porcini, vegetariano;
+Dolci;Crostata della casa;;3,50;vegetariano;glutine, uova, latte
+Dolci;Castagnaccio;Dolce tradizionale di farina di castagne;3,50;vegetariano;frutta a guscio
+Bevande;Acqua naturale o frizzante;Bottiglia da 0,5 l;1,00;;
+Bevande;Vino rosso della casa;Bicchiere;3,00;;solfiti
+Bevande;Birra alla spina;Media 0,4 l;5,00;;glutine
