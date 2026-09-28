@@ -45,7 +45,7 @@ Per aggiornarla: scaricare il nuovo zip `node-vXX-win-x64.zip` da https://nodejs
 
 - Alla prima visita il service worker (`vite-plugin-pwa`) salva in cache tutto il sito (~95 KB): dalle visite successive l'app si apre anche senza rete.
 - Quando viene pubblicata una versione nuova, il telefono la scarica in background (all'apertura, quando si torna sull'app, e ogni 30 minuti) e la applica ricaricando la pagina:
-  - subito, se l'app è stata aperta da meno di 5 secondi;
+  - subito, se l'utente non ha ancora toccato né fatto scorrere niente (anche se la versione nuova arriva tardi per la rete lenta);
   - altrimenti al primo cambio di pagina, per non interrompere chi sta leggendo;
   - mai durante una partita (`setUpdateBlocked()` in `src/lib/app-update.js`, dalla Tappa 2).
 - Per provare l'offline in locale: `npm run build`, `npm run preview`, aprire la pagina, fermare il server e ricaricare.
