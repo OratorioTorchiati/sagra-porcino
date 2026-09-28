@@ -1155,11 +1155,8 @@ img.memory-card__image {
   margin-top: 1rem;
 }
 
-.logout__confirm {
-  padding: 1rem;
-  border-radius: var(--radius);
-  background: var(--color-surface);
-  border: 2px solid var(--color-border);
+.dialog--confirm {
+  text-align: center;
 }
 
 /* ---------- Finestra (informativa nella registrazione) ---------- */

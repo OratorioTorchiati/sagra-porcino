@@ -21,14 +21,16 @@ function loggedMarkup(player) {
     </div>
     <div class="logout">
       <button type="button" class="button button--secondary" data-action="logout">Esci</button>
-      <div class="logout__confirm" hidden>
-        <p><strong>Vuoi davvero uscire?</strong> Per rientrare ti serviranno nickname e PIN.</p>
-        <div class="logout__actions">
-          <button type="button" class="button" data-action="logout-confirm">Sì, esci</button>
-          <button type="button" class="button button--secondary" data-action="logout-cancel">Annulla</button>
-        </div>
-      </div>
     </div>
+    <!-- Conferma in una finestra davanti a tutto: visibile su qualsiasi telefono, senza scorrere -->
+    <dialog class="dialog dialog--confirm" aria-labelledby="logout-title">
+      <h2 class="dialog__title" id="logout-title">Vuoi davvero uscire?</h2>
+      <p>Per rientrare ti serviranno <strong>nickname e PIN</strong>.</p>
+      <div class="logout__actions">
+        <button type="button" class="button" data-action="logout-confirm">Sì, esci</button>
+        <button type="button" class="button button--secondary" data-action="logout-cancel">Annulla</button>
+      </div>
+    </dialog>
   `;
 }
 
@@ -62,14 +64,13 @@ export function renderProfile() {
 
   body.addEventListener('click', async (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
-    const confirmBox = body.querySelector('.logout__confirm');
+    const dialog = body.querySelector('.dialog--confirm');
     if (action === 'logout') {
-      confirmBox.hidden = false;
-      event.target.closest('[data-action]').hidden = true;
+      dialog.showModal();
     } else if (action === 'logout-cancel') {
-      confirmBox.hidden = true;
-      body.querySelector('[data-action="logout"]').hidden = false;
+      dialog.close();
     } else if (action === 'logout-confirm') {
+      dialog.close();
       await logout();
       location.replace('#/');
     }
