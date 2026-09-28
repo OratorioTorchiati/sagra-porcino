@@ -70,6 +70,14 @@ Automatico: **ogni push sul branch `main`** avvia il workflow `.github/workflows
 - Fine riga LF per tutti i file (`.gitattributes`).
 - Commit piccoli, messaggi in italiano.
 
+## Giochi
+
+- Elenco in `app/src/games/registry.js`; ogni gioco ha la sua cartella con `config.js` (tutti i numeri da tarare), la logica, i disegni e i test.
+- Motore comune in `app/src/games/engine/session.js`: HUD, conto alla rovescia, ciclo di gioco, pausa quando la pagina va in background, registro delle azioni. Durante la partita gli aggiornamenti dell'app sono bloccati.
+- Il tempo di gioco avanza solo mentre si gioca e al massimo di 50 ms per frame: su un telefono lentissimo il gioco rallenta invece di "saltare".
+- **Registro delle azioni** (D33), inviato al server dalla Tappa 5: lista di righe `[ms, tipo, ...dati]`, con `ms` = tempo di gioco. Per Acchiappa: `[ms, 'tap', x, y, esito, tipo_elemento, età_elemento_ms, dimensione, distanza_dal_centro]` con esito `good`/`bad`/`none`, più `start`, `pause`, `resume`.
+- In sviluppo (`npm run dev`) la sessione in corso è in `window.__gameSession`, per far avanzare i frame dai test nel browser; nella build non esiste.
+
 ## Struttura del frontend
 
 ```
