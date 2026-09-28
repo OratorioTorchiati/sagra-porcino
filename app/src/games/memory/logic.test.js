@@ -33,6 +33,19 @@ describe('createMemoryLogic', () => {
     expect(logic.pairs).toBe(1);
   });
 
+  it('dopo un errore le due carte si scambiano di posto', () => {
+    const logic = createMemoryLogic({ rng: createRng(5), cardIds: IDS });
+    const a = logic.cards[0];
+    const b = logic.cards.find((c) => c.id !== a.id);
+    const [idA, idB] = [a.id, b.id];
+    logic.flip(a.index);
+    logic.flip(b.index);
+    logic.closeMismatch(true);
+    expect(logic.cards[a.index].id).toBe(idB);
+    expect(logic.cards[b.index].id).toBe(idA);
+    for (const id of IDS) expect(logic.cards.filter((c) => c.id === id)).toHaveLength(2);
+  });
+
   it('partita perfetta: 8 mosse e completata', () => {
     const logic = createMemoryLogic({ rng: createRng(4), cardIds: IDS });
     for (const id of IDS) {

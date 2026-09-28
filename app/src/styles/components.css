@@ -771,6 +771,31 @@ img.memory-card__image {
   text-align: center;
 }
 
+/* Scambio dopo un errore: le due carte si alzano sopra le altre mentre si spostano */
+.memory-card.is-swapping {
+  position: relative;
+  z-index: 2;
+}
+
+.memory-card.is-swapping .memory-card__back {
+  box-shadow: 0 10px 24px rgba(43, 29, 18, 0.35);
+  outline: 3px solid #ffd166;
+}
+
+/* Coppia trovata: rimpicciolisce e sfuma, come se si allontanasse verso lo sfondo (resta il posto vuoto) */
+.memory-card.is-removed {
+  pointer-events: none;
+  animation: memory-away 0.6s ease-in forwards;
+}
+
+@keyframes memory-away {
+  to {
+    transform: scale(0.15) rotate(10deg);
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
 /* La didascalia della coppia trovata, in grande (sulle carte è piccola) */
 .memory-found {
   margin: 0.85rem 0 0;

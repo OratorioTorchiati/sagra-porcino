@@ -43,7 +43,12 @@ export function createMemoryLogic({ rng, cardIds }) {
       return 'mismatch';
     },
 
-    closeMismatch() {
+    /** Richiude le due carte sbagliate e, se `swap`, le scambia di posto. Sblocca il gioco. */
+    closeMismatch(swap = false) {
+      if (swap && open.length === 2) {
+        const [a, b] = open;
+        [cards[a].id, cards[b].id] = [cards[b].id, cards[a].id];
+      }
       open = [];
       locked = false;
     },

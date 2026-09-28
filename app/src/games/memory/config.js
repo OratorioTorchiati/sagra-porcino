@@ -2,10 +2,15 @@
 
 export default {
   pairs: 8,
-  /** Tempo massimo, poi la partita finisce con le coppie trovate */
-  durationS: 180,
+  /** Tempo massimo, poi la partita finisce con le coppie trovate (28/09: ridotto da 3 a 2 minuti) */
+  durationS: 120,
   /** Secondi prima che due carte diverse si richiudano */
   mismatchDelayS: 0.8,
+  /** Dopo un errore le due carte, richiuse, si scambiano di posto: durata della rigirata e dello scambio */
+  flipBackS: 0.35,
+  swapS: 0.6,
+  /** Una coppia trovata resta visibile per questo tempo, poi sparisce verso lo sfondo */
+  matchShowS: 0.5,
 
   // Punteggio (proposta per Q13): completare vale SEMPRE più che non completare
   //   completato:     max(completedMin, base − perSecond × secondi − perExtraMove × (mosse − coppie))
