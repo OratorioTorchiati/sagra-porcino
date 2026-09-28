@@ -132,8 +132,8 @@ check('lo stato mostra i tentativi usati oggi', stateAfter?.games?.find((g) => g
 // Punteggio inventato ("ho fatto 5000") → escluso
 const fake = (await rpc('submit_score', { p_attempt_id: starts[0].attempt_id, p_raw_score: 5000, p_stats: { durationMs: 60000 }, p_actions: [] })).body;
 check('punteggio inventato (5000 senza azioni) → escluso', fake?.status === 'rejected' && fake.raw_score === 0, JSON.stringify(fake));
-const again = (await rpc('submit_score', { p_attempt_id: starts[0].attempt_id, p_raw_score: 10, p_stats: { durationMs: 60000 }, p_actions: [] })).body;
-check('reinvio dello stesso tentativo → nessun doppione (resta il primo esito)', again?.status === 'rejected' && again.raw_score === 0);
+const resubmit = (await rpc('submit_score', { p_attempt_id: starts[0].attempt_id, p_raw_score: 10, p_stats: { durationMs: 60000 }, p_actions: [] })).body;
+check('reinvio dello stesso tentativo → nessun doppione (resta il primo esito)', resubmit?.status === 'rejected' && resubmit.raw_score === 0);
 check('tentativo inesistente → rifiutato', (await rpc('submit_score', { p_attempt_id: crypto.randomUUID(), p_raw_score: 0, p_stats: {}, p_actions: [] })).body?.error === 'ATTEMPT_UNKNOWN');
 
 // Memory: partita coerente (valida) e partita "perfetta" in 8 mosse (segnalata)
