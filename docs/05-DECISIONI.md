@@ -65,3 +65,4 @@ Aggiungere una riga a fine di ogni tappa.
 | Tappa | Stato | Data | Note |
 |---|---|---|---|
 | — | Specifiche scritte | 2026-09-28 | Pronto per iniziare la Tappa 0. |
+| 0 | Completata (da provare sul telefono) | 2026-09-28 | Sito online su https://1997giaquinto.github.io/sagra-porcino/ con deploy automatico. Home con 3 box e pagine segnaposto; verificati a 360px navigazione, tasto indietro e assenza di scroll orizzontale. Al posto dell'emoji 🍄 (sui telefoni è un fungo velenoso rosso a puntini) si usa l'illustrazione del porcino. |
