@@ -1,5 +1,6 @@
 // Tutti i numeri di "Acchiappa il porcino", da ritoccare dopo le prove senza cambiare la logica.
 // "Inizio → fine" = il valore passa gradualmente dal primo al secondo durante la partita.
+// 28/09: partenza resa più difficile dopo la prima prova (all'inizio era troppo facile).
 
 export default {
   durationS: 60,
@@ -22,22 +23,22 @@ export default {
   touchTolerance: 8,
 
   /** Elementi a schermo contemporaneamente: inizio → fine */
-  maxOnScreen: [3, 9],
+  maxOnScreen: [5, 10],
   /** Secondi tra una comparsa e l'altra: inizio → fine (con ±30% di variazione) */
-  spawnInterval: [0.9, 0.38],
+  spawnInterval: [0.6, 0.33],
   /** Probabilità che l'elemento sia un porcino: inizio → fine */
-  goodChance: [0.7, 0.58],
+  goodChance: [0.62, 0.55],
   /** Tra i cattivi: probabilità che sia un fungo velenoso (altrimenti un oggetto) */
   poisonousChance: 0.5,
 
   /** Probabilità che un elemento entri da un bordo (altrimenti spunta all'interno) */
   edgeChance: 0.6,
   /** Velocità di chi attraversa, px/s: [min, max] a inizio → [min, max] a fine */
-  speedStart: [60, 140],
-  speedEnd: [120, 260],
+  speedStart: [100, 190],
+  speedEnd: [140, 290],
   /** Chi spunta all'interno resta per questi secondi: [min, max] a inizio → a fine */
-  lifeStart: [2.4, 3.2],
-  lifeEnd: [1.4, 2.0],
+  lifeStart: [1.8, 2.4],
+  lifeEnd: [1.2, 1.7],
   /** Velocità di deriva di chi spunta all'interno, px/s */
   driftSpeed: 30,
   /** Rotazione massima, gradi al secondo */

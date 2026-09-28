@@ -45,6 +45,7 @@ Questo file **ha la precedenza** sugli altri documenti. Aggiornarlo a ogni nuova
 | D38 | **Moltiplicatore di Acchiappa**: la serie indica i porcini già presi di fila; il moltiplicatore vale per il porcino successivo. Quindi i primi 5 porcini valgono 10, dal 6° si prende ×2, dall'11° ×3, dal 21° ×4. | Interpretazione della tabella di `03-GIOCHI.md` (serie 0–4 → ×1...). |
 | D39 | **Equità tra partite**: in Acchiappa buoni e cattivi escono da un "mazzo" di 10 con un numero fisso di porcini, poi mescolato. Così il numero di porcini per partita varia poco da un seme all'altro (in simulazione il punteggio massimo possibile varia ~13% invece di >30%). | Stesso principio da applicare agli altri giochi. |
 | D40 | Nella schermata regole di Acchiappa, oltre al testo, si mostrano i disegni di **cosa prendere** e **cosa evitare**. | Aiuta chi legge poco o vede poco. |
+| D41 | **Acchiappa più difficile fin dall'inizio** (dopo la prima prova dell'utente): da subito 5 elementi a schermo (fino a 10), comparse più frequenti, più veloci e che restano meno. Circa 130 elementi a partita invece di ~97. | Valori in `acchiappa/config.js`. |
 | D35 | Il repository e il sito appartengono all'**organizzazione GitHub `OratorioTorchiati`** (gratuita), così l'indirizzo non mostra l'account personale: **https://oratoriotorchiati.github.io/sagra-porcino/**. | La radice `oratoriotorchiati.github.io` resta libera per futuri progetti dell'oratorio. |
 
 ## Questioni aperte
@@ -65,6 +66,7 @@ Valori di default già scelti, in modo che il lavoro non si blocchi. Da conferma
 | Q10 | Dominio personalizzato? | No, URL di GitHub Pages. |
 | Q11 | ~~Come impedire l'invio di punteggi falsi e riconoscere i bot?~~ | **Risolta** → D33, D34. |
 | Q12 | QR degli oggetti segreti condivisibili (link o foto girati su WhatsApp). | L'utente sta pensando a una soluzione; se ne riparla alla Tappa 7. |
+| Q14 | Indirizzo sul dominio dell'oratorio (es. `sagra.oratoriotorchiati.it`) senza toccare il sito esistente: basta un record CNAME nel pannello DNS del dominio. | Rimandato. Da decidere: nome del sottodominio e chi ha accesso al pannello DNS. Se si fa, va rigenerato il QR (prima di stamparlo). |
 | Q13 | Punteggio del Memory: il "non completato" (50 × coppie) può superare il "completato lento" (min 200). | Da ripensare alla Tappa 3: completare deve valere sempre più che non completare. |
 
 ## Registro progressi
