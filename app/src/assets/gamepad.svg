@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-hidden="true">
+  <!-- corpo del gamepad -->
+  <path d="M34 34 L86 34 C101 34 110 44 113 60 L117 82 C120 97 106 104 96 95 L84 84 C82 82 80 81 77 81 L43 81 C40 81 38 82 36 84 L24 95 C14 104 0 97 3 82 L7 60 C10 44 19 34 34 34 Z" fill="#7a4a1e" stroke="#4a2a0e" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M34 40 L86 40 C96 40 103 46 106 56" fill="none" stroke="#a8733f" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+  <!-- croce direzionale -->
+  <path d="M28 52 L36 52 L36 44 L44 44 L44 52 L52 52 L52 60 L44 60 L44 68 L36 68 L36 60 L28 60 Z" fill="#f1e5cc" stroke="#4a2a0e" stroke-width="2" stroke-linejoin="round"/>
+  <!-- tasti -->
+  <circle cx="84" cy="48" r="6" fill="#c8861a" stroke="#4a2a0e" stroke-width="2"/>
+  <circle cx="96" cy="58" r="6" fill="#2f5d3a" stroke="#4a2a0e" stroke-width="2"/>
+  <circle cx="72" cy="58" r="6" fill="#2f5d3a" stroke="#4a2a0e" stroke-width="2"/>
+  <circle cx="84" cy="68" r="6" fill="#c8861a" stroke="#4a2a0e" stroke-width="2"/>
+  <!-- tasti centrali -->
+  <rect x="53" y="44" width="6" height="4" rx="2" fill="#f1e5cc"/>
+  <rect x="61" y="44" width="6" height="4" rx="2" fill="#f1e5cc"/>
+</svg>

@@ -17,14 +17,19 @@ function rulesMarkup(game) {
       ${topBarMarkup()}
       <h1 class="page-title">${game.name}</h1>
       <ul class="rules">
-        ${game.rules.map((r) => `<li class="rules__item"><span class="rules__icon" aria-hidden="true">${r.icon}</span>${r.text}</li>`).join('')}
+        ${game.rules
+          .map(
+            (r) => `
+          <li class="rules__item">
+            <span class="rules__icon" aria-hidden="true">${r.icon}</span>
+            <span class="rules__body">
+              <span class="rules__text">${r.text}</span>
+              ${r.gallery ? `<span class="rules__gallery" data-gallery="${r.gallery}" aria-hidden="true"></span>` : ''}
+            </span>
+          </li>`,
+          )
+          .join('')}
       </ul>
-      <div class="rules-gallery" hidden>
-        <p class="rules-gallery__label rules-gallery__label--good">✅ Prendi questi</p>
-        <div class="rules-gallery__row" data-gallery="good"></div>
-        <p class="rules-gallery__label rules-gallery__label--bad">❌ Evita questi</p>
-        <div class="rules-gallery__row" data-gallery="bad"></div>
-      </div>
       ${
         PRACTICE_MODE
           ? '<p class="attempt-notice attempt-notice--practice">🧪 <strong>Partita di prova</strong>: non usi tentativi e i punti non contano.</p>'
@@ -76,11 +81,10 @@ export function renderGame({ gameId }) {
     const playButton = view.querySelector('.button--play');
 
     const ready = () => {
-      const gallery = view.querySelector('.rules-gallery');
-      if (gameDef.rulesGallery) {
-        gallery.querySelector('[data-gallery="good"]').innerHTML = gameDef.rulesGallery.good.map((s) => `<span class="rules-gallery__item">${s}</span>`).join('');
-        gallery.querySelector('[data-gallery="bad"]').innerHTML = gameDef.rulesGallery.bad.map((s) => `<span class="rules-gallery__item">${s}</span>`).join('');
-        gallery.hidden = false;
+      // Immagini di cosa prendere / evitare dentro il box della regola corrispondente
+      for (const slot of view.querySelectorAll('[data-gallery]')) {
+        const images = gameDef.rulesGallery?.[slot.dataset.gallery] ?? [];
+        slot.innerHTML = images.map((svg) => `<span class="rules__thumb">${svg}</span>`).join('');
       }
       playButton.disabled = false;
       playButton.textContent = 'GIOCA';

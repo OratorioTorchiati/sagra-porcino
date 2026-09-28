@@ -1,12 +1,12 @@
 import { html } from '../lib/dom.js';
 import { EVENT_NAME } from '../config.js';
 import porcinoSvg from '../assets/porcino.svg?raw';
+import gamepadSvg from '../assets/gamepad.svg?raw';
 import { accountLinkMarkup } from '../components/account-link.js';
 
-// Niente emoji 🍄 per i giochi: sui telefoni è un fungo rosso a puntini (velenoso), usiamo il nostro porcino
 const BOXES = [
   { href: '#/menu', icon: '🍽️', title: 'Menù', text: 'Guarda i piatti e i prezzi' },
-  { href: '#/giochi', icon: porcinoSvg, title: 'Minigiochi', text: 'Gioca, fai punti e vinci un premio!' },
+  { href: '#/giochi', icon: gamepadSvg, title: 'Minigiochi', text: 'Gioca, fai punti e vinci un premio!' },
 ];
 
 export function renderHome() {
