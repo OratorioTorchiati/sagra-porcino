@@ -28,10 +28,8 @@ function howItWorksItems(state) {
     '👆 Il tentativo si conta appena premi <strong>GIOCA</strong>',
     '🚫 <strong>Non barare!</strong> Se chiudi il gioco in corso, ti verrà sottratto un tentativo',
     '🏅 Vale il tuo <strong>punteggio migliore</strong>',
-    '🏆 Ogni gioco vale fino a <strong>1000 punti</strong>: chi fa il record prende 1000, gli altri in proporzione',
     '🎁 I <strong>primi 10</strong> in classifica vincono un premio!',
-    until ? `⏰ Giochi aperti fino a <strong>${until}</strong>` : null,
-    '📶 Poco segnale? Serve la connessione solo per iniziare: il punteggio si invia da solo appena torna la rete',
+    until ? `⏰ Il termine dei giochi sarà <strong>${until}</strong>` : null,
     '👤 Serve un <strong>account</strong> per salvare il punteggio',
   ].filter(Boolean);
 }
