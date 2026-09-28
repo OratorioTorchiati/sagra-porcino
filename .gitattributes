@@ -1,0 +1,6 @@
+# Fine riga LF per tutti i file di testo (workflow, script, sorgenti)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.woff2 binary
