@@ -69,13 +69,16 @@
 
 /* ---------- Barra in alto e profilo ---------- */
 
+/* Indietro a sinistra (se c'è), profilo sempre a destra */
 .top-bar {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
+  gap: 0.75rem;
+  min-height: var(--tap-min);
 }
 
 .account-link {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
