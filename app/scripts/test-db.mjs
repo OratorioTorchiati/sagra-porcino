@@ -12,12 +12,12 @@ const env = Object.fromEntries(
     .filter((l) => l.includes('=') && !l.trim().startsWith('#'))
     .map((l) => [l.slice(0, l.indexOf('=')).trim(), l.slice(l.indexOf('=') + 1).trim()]),
 );
-const URL = env.VITE_SUPABASE_URL;
+const BASE = env.VITE_SUPABASE_URL;
 const KEY = env.VITE_SUPABASE_ANON_KEY;
 const headers = { 'Content-Type': 'application/json', apikey: KEY, ...(KEY.startsWith('sb_') ? {} : { Authorization: `Bearer ${KEY}` }) };
 
 async function rpc(name, params) {
-  const r = await fetch(`${URL}/rest/v1/rpc/${name}`, { method: 'POST', headers, body: JSON.stringify(params) });
+  const r = await fetch(`${BASE}/rest/v1/rpc/${name}`, { method: 'POST', headers, body: JSON.stringify(params) });
   return { status: r.status, body: await r.json().catch(() => null) };
 }
 
@@ -35,10 +35,10 @@ const device3 = crypto.randomUUID();
 
 // ---------- Il client non può toccare le tabelle ----------
 for (const table of ['players', 'devices', 'sessions', 'settings', 'login_failures', 'banned_words']) {
-  const read = await fetch(`${URL}/rest/v1/${table}?select=*`, { headers });
+  const read = await fetch(`${BASE}/rest/v1/${table}?select=*`, { headers });
   check(`lettura diretta di "${table}" negata`, read.status >= 400, `HTTP ${read.status}`);
 }
-const insert = await fetch(`${URL}/rest/v1/players`, {
+const insert = await fetch(`${BASE}/rest/v1/players`, {
   method: 'POST',
   headers,
   body: JSON.stringify({ nickname: 'furbo', avatar: 'porcino', pin_hash: 'x' }),
