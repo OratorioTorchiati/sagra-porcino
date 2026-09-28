@@ -1,9 +1,19 @@
 // Router basato su hash (#/menu, #/giochi/acchiappa...): GitHub Pages non gestisce le route SPA.
 // Ogni cambio di hash crea una voce nella cronologia, quindi il tasto "indietro" del telefono funziona da solo.
+//
+// Il bottone "← Indietro" dell'app invece segue la GERARCHIA delle pagine, non la cronologia:
+// da un gioco si torna a Minigiochi, da Minigiochi / Menù / Profilo alla Home.
 
 import { EVENT_NAME } from './config.js';
 
+const HISTORY_KEY = 'sagra-cronologia';
+
 let hasNavigated = false;
+// Percorsi delle voci di cronologia create dall'app (indice = history.state.sagraIdx), per sapere
+// se la pagina "madre" è proprio quella precedente. Salvati in sessionStorage per sopravvivere alle ricariche.
+let historyPaths = [];
+let historyIdx = 0;
+let replacing = false; // location.replace: stessa voce di cronologia, non una nuova
 
 /** Percorso corrente senza il "#", es. "/menu". */
 export function currentPath() {
@@ -11,15 +21,55 @@ export function currentPath() {
   return path.startsWith('/') ? path : '/';
 }
 
-/**
- * Torna alla pagina precedente dell'app; se si è entrati direttamente su questa pagina
- * (es. da un link), va alla home senza uscire dall'app.
- */
+/** Pagina "madre" nella gerarchia: "/giochi/quiz" → "/giochi", "/menu" → "/", "/" → null. */
+export function parentPath(path) {
+  const parts = path.split('/').filter(Boolean);
+  if (parts.length === 0) return null;
+  return `/${parts.slice(0, -1).join('/')}`;
+}
+
+function saveHistory() {
+  try {
+    sessionStorage.setItem(HISTORY_KEY, JSON.stringify(historyPaths));
+  } catch {
+    // Non indispensabile
+  }
+}
+
+function loadHistory() {
+  try {
+    return JSON.parse(sessionStorage.getItem(HISTORY_KEY)) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/** Registra la voce di cronologia corrente (nuova, oppure raggiunta con indietro/avanti). */
+function trackHistory() {
+  const state = history.state;
+  if (replacing) {
+    replacing = false;
+    history.replaceState({ ...(state ?? {}), sagraIdx: historyIdx }, '');
+  } else if (state && Number.isInteger(state.sagraIdx)) {
+    historyIdx = state.sagraIdx;
+  } else {
+    // Voce nuova: segue quella da cui si arriva (le voci "avanti" vengono scartate)
+    historyIdx = historyPaths.length === 0 ? 0 : historyIdx + 1;
+    historyPaths = historyPaths.slice(0, historyIdx);
+    history.replaceState({ ...(state ?? {}), sagraIdx: historyIdx }, '');
+  }
+  historyPaths[historyIdx] = currentPath();
+  saveHistory();
+}
+
+/** Bottone "← Indietro": va alla pagina madre (con il vero "indietro" se è quella precedente). */
 export function goBack() {
-  if (hasNavigated) {
+  const parent = parentPath(currentPath()) ?? '/';
+  if (historyIdx > 0 && historyPaths[historyIdx - 1] === parent) {
     history.back();
   } else {
-    location.replace('#/');
+    replacing = true;
+    location.replace(`#${parent}`);
   }
 }
 
@@ -51,6 +101,7 @@ function matchRoute(routes, path) {
  */
 export function startRouter(root, { routes, notFound }) {
   let currentPage = null;
+  historyPaths = history.state && Number.isInteger(history.state.sagraIdx) ? loadHistory() : [];
 
   function show() {
     currentPage?.destroy?.();
@@ -72,7 +123,9 @@ export function startRouter(root, { routes, notFound }) {
 
   window.addEventListener('hashchange', () => {
     hasNavigated = true;
+    trackHistory();
     show();
   });
+  trackHistory();
   show();
 }
