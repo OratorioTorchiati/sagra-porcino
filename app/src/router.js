@@ -21,8 +21,15 @@ export function currentPath() {
   return path.startsWith('/') ? path : '/';
 }
 
+// Pagine la cui madre non segue il percorso (registrazione e accesso si aprono dal profilo)
+const PARENT_OVERRIDES = {
+  '/registrati': '/profilo',
+  '/accedi': '/profilo',
+};
+
 /** Pagina "madre" nella gerarchia: "/giochi/quiz" → "/giochi", "/menu" → "/", "/" → null. */
 export function parentPath(path) {
+  if (PARENT_OVERRIDES[path]) return PARENT_OVERRIDES[path];
   const parts = path.split('/').filter(Boolean);
   if (parts.length === 0) return null;
   return `/${parts.slice(0, -1).join('/')}`;

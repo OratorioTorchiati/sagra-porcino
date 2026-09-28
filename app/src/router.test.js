@@ -8,6 +8,9 @@ describe('parentPath (gerarchia del bottone Indietro)', () => {
     ['/giochi', '/'],
     ['/menu', '/'],
     ['/profilo', '/'],
+    ['/registrati', '/profilo'],
+    ['/accedi', '/profilo'],
+    ['/privacy', '/'],
     ['/', null],
   ])('%s → %s', (path, parent) => {
     expect(parentPath(path)).toBe(parent);
