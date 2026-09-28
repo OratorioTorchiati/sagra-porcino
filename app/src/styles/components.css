@@ -326,3 +326,336 @@
   line-height: 1;
   color: var(--color-accent);
 }
+
+.button--play {
+  width: 100%;
+  min-height: 64px;
+  font-size: var(--text-xl);
+  letter-spacing: 0.04em;
+}
+
+.button--play:disabled {
+  background: var(--color-text-muted);
+  font-size: var(--text-lg);
+  letter-spacing: 0;
+  cursor: wait;
+}
+
+.button--secondary {
+  width: 100%;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 2px solid var(--color-border);
+}
+
+.button--secondary:active {
+  background: var(--color-bg);
+}
+
+/* ---------- Minigiochi (provvisoria) ---------- */
+
+.game-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.home-box__title--game {
+  font-size: var(--text-lg);
+}
+
+.attempt-notice {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  margin: 0 0 1rem;
+  line-height: 1.4;
+}
+
+.attempt-notice--practice {
+  background: #e7f0de;
+  border: 2px solid #b9d2a5;
+  color: #24452a;
+}
+
+/* ---------- Regole del gioco ---------- */
+
+.rules {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.rules__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.rules__icon {
+  flex: none;
+  font-size: 1.6rem;
+  width: 2rem;
+  text-align: center;
+}
+
+.rules-gallery {
+  margin-bottom: 1rem;
+}
+
+.rules-gallery__label {
+  margin: 0.5rem 0 0.25rem;
+  font-weight: 700;
+}
+
+.rules-gallery__label--good {
+  color: var(--color-forest);
+}
+
+.rules-gallery__label--bad {
+  color: #9b1c15;
+}
+
+.rules-gallery__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.rules-gallery__item {
+  width: 52px;
+  height: 52px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+}
+
+.rules-gallery__item svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- Schermo di gioco ---------- */
+
+html.is-playing,
+html.is-playing body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.game-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: #dde7c7;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.game-hud {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  padding: calc(0.5rem + env(safe-area-inset-top)) 0.75rem 0.5rem;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.game-hud__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+
+.game-hud__label {
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.game-hud__value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.game-hud__item.is-ending .game-hud__value {
+  color: #ffd166;
+}
+
+.game-hud__item.is-pulsing {
+  animation: hud-pulse 0.5s ease-out;
+}
+
+@keyframes hud-pulse {
+  30% {
+    transform: scale(1.35);
+  }
+}
+
+.game-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.game-canvas {
+  display: block;
+  touch-action: none;
+}
+
+.game-stage.flash-bad::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(200, 35, 27, 0.28);
+  animation: flash 0.35s ease-out forwards;
+}
+
+@keyframes flash {
+  to {
+    opacity: 0;
+  }
+}
+
+.game-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(43, 29, 18, 0.35);
+  pointer-events: none;
+}
+
+.game-overlay--interactive {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.game-overlay[hidden] {
+  display: none;
+}
+
+.game-countdown {
+  font-family: var(--font-title);
+  font-size: 6rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 4px 0 var(--color-primary-dark), 0 8px 24px rgba(0, 0, 0, 0.35);
+  animation: countdown-pop 0.8s ease-out;
+}
+
+.game-countdown--go {
+  color: #ffd166;
+}
+
+.game-countdown--end {
+  font-size: 3rem;
+  text-align: center;
+  padding: 0 1rem;
+}
+
+@keyframes countdown-pop {
+  from {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.game-pause {
+  text-align: center;
+  padding: 2rem 2.5rem;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+}
+
+.game-pause__title {
+  font-family: var(--font-title);
+  font-size: var(--text-xxl);
+  font-weight: 800;
+  color: var(--color-primary);
+  margin-bottom: 0.25rem;
+}
+
+.game-pause__text {
+  font-size: var(--text-lg);
+  margin: 0;
+}
+
+/* ---------- Risultato ---------- */
+
+.result-card {
+  text-align: center;
+  padding: 1.25rem 1rem;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+}
+
+.result-card__label {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+}
+
+.result-card__score {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 4rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--color-primary);
+}
+
+.result-card__best {
+  margin: 0.25rem 0 0;
+}
+
+.result-stats {
+  margin: 0 0 1rem;
+}
+
+.result-stats__row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.result-stats__row dt {
+  color: var(--color-text-muted);
+}
+
+.result-stats__row dd {
+  margin: 0;
+  font-weight: 800;
+}
+
+.result-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
