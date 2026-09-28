@@ -52,6 +52,22 @@ check('nickname con spazi rifiutato', (await rpc('check_nickname', { p_nickname:
 check('nickname con parolaccia rifiutato', (await rpc('check_nickname', { p_nickname: 'xcazzox' })).body?.error === 'NICKNAME_NOT_ALLOWED');
 check('"porcino" non scambiato per parolaccia', (await rpc('check_nickname', { p_nickname: `porcino${suffix}` })).body?.ok === true);
 
+// Filtro bestemmie e insulti (migrazione 002): vietati...
+const BLOCKED = ['PorcoDio', 'porco_dio', 'p0rc0', 'DioCane', 'diocane', 'Dio', 'dio2024', 'SonoDio', 'Il_Dio', 'DioPorco',
+  'Madonna99', 'GesuCristo', 'PreteRosso', 'Il_Prete', 'CristoRe', 'PorcaMiseria', 'nazista'];
+// ...ma non le parole innocue che contengono le stesse lettere
+const ALLOWED = ['Armadio', 'Claudio', 'Radio_Star', 'Studio54', 'Dionisio', 'Porcellino', 'Porcospino', 'Cristoforo',
+  'Gesualdo', 'Interprete', 'Nazionale', 'Nazario', 'Negroni', 'Figaro'];
+const blockedFails = [];
+for (const name of BLOCKED) if ((await rpc('check_nickname', { p_nickname: name })).body?.error !== 'NICKNAME_NOT_ALLOWED') blockedFails.push(name);
+check(`bestemmie e insulti rifiutati (${BLOCKED.length} casi)`, blockedFails.length === 0, blockedFails.length ? `passati: ${blockedFails.join(', ')}` : '');
+const allowedFails = [];
+for (const name of ALLOWED) {
+  const r = (await rpc('check_nickname', { p_nickname: name })).body;
+  if (r?.error === 'NICKNAME_NOT_ALLOWED') allowedFails.push(name);
+}
+check(`parole innocue ammesse (${ALLOWED.length} casi, es. Armadio, Claudio)`, allowedFails.length === 0, allowedFails.length ? `bloccati per errore: ${allowedFails.join(', ')}` : '');
+
 // ---------- Registrazione ----------
 const reg = await rpc('register', { p_nickname: nick, p_avatar: 'riccio', p_pin: '1234', p_device_id: device1, p_fingerprint: 'test', p_user_agent: 'test-db' });
 check('registrazione riuscita', reg.body?.ok === true && reg.body.token?.length === 64, JSON.stringify(reg.body?.error ?? ''));

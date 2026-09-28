@@ -17,6 +17,14 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | File | Tappa | Contenuto |
 |---|---|---|
 | `supabase/migrations/001_accounts.sql` | 4 | giocatori, dispositivi, sessioni, blocco PIN, registrazione/accesso |
+| `supabase/migrations/002_nickname_filter.sql` | 4 | filtro bestemmie e insulti nei nickname (senza censurare Armadio, Claudio...) |
+
+Per aggiungere una parola vietata o un'eccezione (SQL Editor):
+
+```sql
+insert into banned_words (word, kind) values ('parola', 'contains');  -- 'contains' | 'word' | 'word_start'
+insert into allowed_words (word) values ('parolainnocua');
+```
 
 I file si possono rieseguire senza danni (`create ... if not exists`, `create or replace`).
 
