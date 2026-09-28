@@ -81,7 +81,8 @@ describe('Porcini che cadono (simulazione)', () => {
   });
 
   it('ogni mazzo ha il suo porcino d\'oro e la quota di bombe prevista', () => {
-    const { seen } = simulate(4, () => null);
+    const { seen } = simulate(4, good);
+    expect(seen.length).toBeGreaterThanOrEqual(30);
     const first30 = seen.slice(0, 30);
     expect(first30.filter((t) => t === 'golden')).toHaveLength(1);
     expect(first30.filter((t) => t === 'bomb').length).toBe(Math.round(config.bombShare[0] * 30));

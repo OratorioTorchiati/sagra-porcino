@@ -41,7 +41,7 @@ export const GAMES = {
       { icon: '🧺', text: 'Muovi il cestino col dito' },
       { icon: porcinoSvg, text: 'Prendi i porcini che cadono', gallery: 'good' },
       { icon: '💣', text: 'Evita le bombe: hai 3 vite ❤️❤️❤️' },
-      { icon: '⏱️', text: 'Massimo 2 minuti' },
+      { icon: '⏱️', text: 'Massimo 1 minuto' },
     ],
     load: () => import('./cadono/index.js').then((m) => m.default),
   },
