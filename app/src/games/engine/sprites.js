@@ -6,6 +6,16 @@ function loadSvgImage(svg) {
   return img.decode().then(() => img);
 }
 
+/** Converte un SVG in un canvas di width × height pixel reali (per disegni non quadrati). */
+export async function rasterizeSvg(svg, width, height) {
+  const img = await loadSvgImage(svg);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(width);
+  canvas.height = Math.ceil(height);
+  canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
 /**
  * Converte una mappa { nome: svg } in { nome: canvas } quadrati di `sizePx` pixel reali.
  * Conviene usare la dimensione massima a cui verranno disegnati (× devicePixelRatio).

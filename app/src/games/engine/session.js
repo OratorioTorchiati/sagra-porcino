@@ -10,9 +10,15 @@
 //   isOver(t)              true quando la partita è finita
 //   result()               { rawScore, stats }
 //   endText?()             scritta di fine partita (default "Fine partita!")
+//   start?()               chiamata al "VIA!" (es. il quiz mostra la prima domanda)
+//   destroy?()             pulizia (timer del gioco) quando la sessione viene chiusa
+//
+// Giochi senza canvas (quiz, memory): `gameDef.canvas = false`; il gioco riceve `dom`,
+// un elemento in cui disegnare la sua interfaccia HTML, e gestisce da sé i tocchi.
 //
 // Il tempo di gioco avanza solo mentre si gioca: in pausa il timer si ferma
-// (ma, dalla Tappa 5, il tentativo resta consumato).
+// (ma, dalla Tappa 5, il tentativo resta consumato). Con `gameDef.pauseOnHide = false`
+// (quiz) la partita NON va in pausa quando si cambia app, per non dare tempo di cercare le risposte.
 
 import { html } from '../../lib/dom.js';
 import { setUpdateBlocked } from '../../lib/app-update.js';
@@ -41,6 +47,8 @@ export class GameSession {
     this.actions = [];
     this.pauses = 0;
     this.timers = [];
+    this.usesCanvas = gameDef.canvas !== false;
+    this.pauseOnHide = gameDef.pauseOnHide !== false;
 
     this.element = html(`
       <div class="game-screen" role="application" aria-label="${gameDef.name}">
@@ -48,7 +56,7 @@ export class GameSession {
           ${gameDef.hud.map((item) => `<div class="game-hud__item game-hud__item--${item.key}" data-hud="${item.key}"><span class="game-hud__label">${item.label}</span><span class="game-hud__value"></span></div>`).join('')}
         </div>
         <div class="game-stage">
-          <canvas class="game-canvas"></canvas>
+          ${this.usesCanvas ? '<canvas class="game-canvas"></canvas>' : '<div class="game-dom"></div>'}
           <div class="game-overlay" hidden></div>
         </div>
       </div>
@@ -59,7 +67,8 @@ export class GameSession {
 
     this.stage = this.element.querySelector('.game-stage');
     this.canvas = this.element.querySelector('.game-canvas');
-    this.ctx = this.canvas.getContext('2d');
+    this.ctx = this.canvas?.getContext('2d') ?? null;
+    this.dom = this.element.querySelector('.game-dom');
     this.overlay = this.element.querySelector('.game-overlay');
     this.hudValues = Object.fromEntries(
       gameDef.hud.map((item) => [item.key, this.element.querySelector(`[data-hud="${item.key}"]`)]),
@@ -72,19 +81,30 @@ export class GameSession {
       hud: { set: (key, value) => this.setHud(key, value), pulse: (key) => this.pulseHud(key) },
       log: (...data) => this.actions.push([Math.round(this.gameTime * 1000), ...data]),
       flash: (kind) => this.flash(kind),
+      shake: () => this.shake(),
+      dom: this.dom,
+      isRunning: () => this.state === 'running',
     });
 
     this.resize();
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.stage);
 
-    this.onPointer = this.onPointer.bind(this);
-    this.canvas.addEventListener('pointerdown', this.onPointer);
-    this.canvas.addEventListener('pointermove', this.onPointer);
-    this.canvas.addEventListener('pointerup', this.onPointer);
-    this.canvas.addEventListener('pointercancel', this.onPointer);
+    if (this.usesCanvas) {
+      this.onPointer = this.onPointer.bind(this);
+      this.canvas.addEventListener('pointerdown', this.onPointer);
+      this.canvas.addEventListener('pointermove', this.onPointer);
+      this.canvas.addEventListener('pointerup', this.onPointer);
+      this.canvas.addEventListener('pointercancel', this.onPointer);
+    }
     this.onVisibility = () => {
-      if (document.hidden && this.state === 'running') this.pause();
+      if (this.state !== 'running' && this.state !== 'paused') return;
+      if (this.pauseOnHide) {
+        if (document.hidden && this.state === 'running') this.pause();
+      } else {
+        // Niente pausa (quiz): resta traccia per lo staff di quando si è usciti dall'app
+        this.actions.push([Math.round(this.gameTime * 1000), document.hidden ? 'hidden' : 'visible']);
+      }
     };
     document.addEventListener('visibilitychange', this.onVisibility);
     window.addEventListener('pagehide', this.onVisibility);
@@ -108,7 +128,8 @@ export class GameSession {
       setTimeout(() => {
         this.hideOverlay();
         this.actions.push([0, 'start']);
-        if (document.hidden) this.pause();
+        this.game.start?.();
+        if (document.hidden && this.pauseOnHide) this.pause();
         else this.state = 'running';
       }, steps.length * COUNTDOWN_STEP_MS),
     );
@@ -153,6 +174,7 @@ export class GameSession {
   destroy() {
     cancelAnimationFrame(this.raf);
     this.timers.forEach(clearTimeout);
+    this.game.destroy?.();
     this.resizeObserver.disconnect();
     document.removeEventListener('visibilitychange', this.onVisibility);
     window.removeEventListener('pagehide', this.onVisibility);
@@ -173,20 +195,35 @@ export class GameSession {
       this.updateTimeHud();
       if (this.game.isOver(this.gameTime)) this.finish();
     }
-    this.game.draw(this.ctx);
+    if (this.usesCanvas) {
+      const shaking = this.shakeUntil && performance.now() < this.shakeUntil;
+      if (shaking) {
+        this.ctx.save();
+        this.ctx.translate((Math.random() - 0.5) * 12, (Math.random() - 0.5) * 12);
+      }
+      this.game.draw(this.ctx);
+      if (shaking) this.ctx.restore();
+    }
   }
 
   resize() {
     const width = this.stage.clientWidth;
     const height = this.stage.clientHeight;
     if (!width || !height) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    this.canvas.width = Math.round(width * dpr);
-    this.canvas.height = Math.round(height * dpr);
-    this.canvas.style.width = `${width}px`;
-    this.canvas.style.height = `${height}px`;
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.game.resize(width, height);
+    if (this.usesCanvas) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 3);
+      this.canvas.width = Math.round(width * dpr);
+      this.canvas.height = Math.round(height * dpr);
+      this.canvas.style.width = `${width}px`;
+      this.canvas.style.height = `${height}px`;
+      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    this.game.resize?.(width, height);
+  }
+
+  /** Breve scossa dello schermo (es. bomba presa) */
+  shake(durationMs = 350) {
+    this.shakeUntil = performance.now() + durationMs;
   }
 
   onPointer(event) {

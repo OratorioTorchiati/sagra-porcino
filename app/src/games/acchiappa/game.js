@@ -3,7 +3,7 @@
 
 import { GOOD, BAD_POISONOUS, BAD_OBJECTS } from './sprites.js';
 import { applyHit, initialScoreState, multiplierFor } from './scoring.js';
-import { createRng } from '../engine/rng.js';
+import { softBackground } from '../engine/background.js';
 
 const GOOD_KINDS = Object.keys(GOOD);
 const POISONOUS_KINDS = Object.keys(BAD_POISONOUS);
@@ -121,38 +121,6 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
     effects.push({ type: 'burst', x, y, size, good, age: 0 });
   }
 
-  // ---------- Sfondo: sottobosco sfocato, toni tenui ----------
-
-  function drawBackground() {
-    const canvas = document.createElement('canvas');
-    const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    canvas.width = Math.round(width * dpr);
-    canvas.height = Math.round(height * dpr);
-    const g = canvas.getContext('2d');
-    g.scale(dpr, dpr);
-    // Generatore a parte: lo sfondo non deve cambiare la sequenza degli elementi della partita
-    const bgRng = createRng(width * 7919 + height);
-    const sky = g.createLinearGradient(0, 0, 0, height);
-    sky.addColorStop(0, '#eef3e0');
-    sky.addColorStop(1, '#dde7c7');
-    g.fillStyle = sky;
-    g.fillRect(0, 0, width, height);
-    // Macchie morbide (erba, foglie, muschio) disegnate con gradienti radiali: niente filtri, veloce ovunque
-    const blobs = bgRng.int(14, 18);
-    const colors = ['199, 214, 168', '181, 201, 146', '214, 196, 150', '226, 214, 180', '170, 190, 140'];
-    for (let i = 0; i < blobs; i++) {
-      const x = bgRng.range(0, width);
-      const y = bgRng.range(0, height);
-      const r = bgRng.range(50, 140);
-      const grad = g.createRadialGradient(x, y, 0, x, y, r);
-      const c = bgRng.pick(colors);
-      grad.addColorStop(0, `rgba(${c}, 0.55)`);
-      grad.addColorStop(1, `rgba(${c}, 0)`);
-      g.fillStyle = grad;
-      g.fillRect(x - r, y - r, r * 2, r * 2);
-    }
-    background = canvas;
-  }
 
   // ---------- Interfaccia verso il motore ----------
 
@@ -195,7 +163,7 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
     },
 
     draw(ctx) {
-      if (!background) drawBackground();
+      if (!background) background = softBackground(width, height);
       ctx.drawImage(background, 0, 0, width, height);
 
       for (const e of entities) {
