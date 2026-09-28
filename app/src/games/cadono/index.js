@@ -2,7 +2,7 @@
 
 import config from './config.js';
 import { createCadono } from './game.js';
-import { FALLING, BASKET, BASKET_ASPECT, GOLDEN, BOMB } from './sprites.js';
+import { FALLING, BASKET, BASKET_ASPECT, GOLDEN } from './sprites.js';
 import { PORCINI } from '../shared/porcini.js';
 import { rasterizeSprites, rasterizeSvg } from '../engine/sprites.js';
 
@@ -15,8 +15,8 @@ export default {
   ],
 
   rulesGallery: {
+    // La bomba non serve: c'è già l'icona 💣 accanto alla regola
     good: [...Object.values(PORCINI), GOLDEN],
-    bad: [BOMB],
   },
 
   async loadAssets() {

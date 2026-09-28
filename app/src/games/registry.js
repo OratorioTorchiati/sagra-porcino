@@ -40,7 +40,7 @@ export const GAMES = {
     rules: [
       { icon: '🧺', text: 'Muovi il cestino col dito' },
       { icon: porcinoSvg, text: 'Prendi i porcini che cadono', gallery: 'good' },
-      { icon: '💣', text: 'Evita le bombe: hai 3 vite ❤️❤️❤️', gallery: 'bad' },
+      { icon: '💣', text: 'Evita le bombe: hai 3 vite ❤️❤️❤️' },
       { icon: '⏱️', text: 'Massimo 2 minuti' },
     ],
     load: () => import('./cadono/index.js').then((m) => m.default),
