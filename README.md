@@ -9,7 +9,7 @@ Un solo QR code ai tavoli e agli stand apre una web app con:
 
 Alla fine della sagra i **primi 10 in classifica** vincono un gadget.
 
-**Sito**: https://1997giaquinto.github.io/sagra-porcino/
+**Sito**: https://oratoriotorchiati.github.io/sagra-porcino/
 
 ## Costi
 

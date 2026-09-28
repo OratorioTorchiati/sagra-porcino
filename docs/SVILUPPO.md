@@ -2,8 +2,8 @@
 
 ## Indirizzi
 
-- **Sito pubblicato**: https://1997giaquinto.github.io/sagra-porcino/
-- **Repository**: https://github.com/1997giaquinto/sagra-porcino
+- **Sito pubblicato**: https://oratoriotorchiati.github.io/sagra-porcino/
+- **Repository**: https://github.com/OratorioTorchiati/sagra-porcino
 
 ## Node.js (portatile, nessuna installazione)
 
@@ -42,13 +42,13 @@ Automatico: **ogni push sul branch `main`** avvia il workflow `.github/workflows
 
 ## Come è stato creato il repository (per rifarlo da zero)
 
-1. Su GitHub: nuovo repository **pubblico** `sagra-porcino`, senza README (oppure `gh repo create sagra-porcino --public --source . --push` dalla cartella del progetto).
-2. Settings → Pages → Build and deployment → Source: **GitHub Actions** (oppure `gh api -X POST repos/<utente>/sagra-porcino/pages -f build_type=workflow`).
+1. Su GitHub, nell'organizzazione **OratorioTorchiati** (gratuita, creata da https://github.com/organizations/plan): nuovo repository **pubblico** `sagra-porcino`, senza README (oppure `gh repo create OratorioTorchiati/sagra-porcino --public --source . --push` dalla cartella del progetto).
+2. Settings → Pages → Build and deployment → Source: **GitHub Actions** (oppure `gh api -X POST repos/OratorioTorchiati/sagra-porcino/pages -f build_type=workflow`).
 3. Push su `main`: parte il primo deploy.
 
 ## Git
 
-- Email dei commit: **solo** `1997giaquinto@gmail.com`, impostata nel repository (`git config user.email`), mai quella di lavoro.
+- Email dei commit: **solo** quella personale, impostata nel repository (`git config user.email`), mai quella di lavoro.
 - Fine riga LF per tutti i file (`.gitattributes`).
 - Commit piccoli, messaggi in italiano.
 

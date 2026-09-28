@@ -31,12 +31,16 @@ Questo file **ha la precedenza** sugli altri documenti. Aggiornarlo a ogni nuova
 | D23 | **Blocco PIN** dopo **10** tentativi errati per lo stesso nickname, per 15 minuti. | Più che altro simbolico: non ci si aspettano attacchi. |
 | D24 | **Senza login** si vedono: menù, schermata Minigiochi (Come funziona, stato dei giochi), classifica, griglia oggetti segreti, informativa. Il login serve solo per giocare, scansionare gli adesivi, caricare immagini e vedere il proprio profilo. | Le RPC "pubbliche" funzionano senza chiave di sessione. |
 | D25 | **Modalità prova**: fino alla Tappa 5 (giochi collegati al server) i giochi sul sito sono sempre in prova. Dopo, prova solo per lo staff e nelle build di sviluppo. | |
-| D26 | **Punteggi con valori impossibili** (oltre il massimo teorico, dati incoerenti, durate impossibili) → esclusi automaticamente; lo staff può rimetterli. | Come gestire le partite "strane" (possibile bot) e l'invio di punteggi falsi: in discussione, vedi Q11. |
+| D26 | **Punteggi con valori impossibili** (oltre il massimo teorico, dati incoerenti, durate impossibili) → esclusi automaticamente; lo staff può rimetterli. | Partite "strane" (possibile bot) e punteggi falsi: vedi D33. |
 | D27 | **Menù**: l'organizzatore compila `contenuti/menu.csv` (separatore `;`, si apre con Excel). Uno script lo converte in automatico durante la build; il menù è incluso nell'app e funziona offline. | Righe che iniziano con `#` = commenti. Prima consegna anche in altri formati (PDF, foto, Word): lo trascrive Claude. |
 | D28 | **Selfie** facoltativo: si fa solo se avanza tempo. Se fatto, la foto (compressa, ~40 KB) va nel database, leggibile solo dalle RPC staff. | Senza Supabase Auth le policy di Storage non si applicano. |
 | D29 | **Font** inclusi nell'app (funzionano offline, nessuna richiesta a Google): **Atkinson Hyperlegible Next** per i testi (progettato per la massima leggibilità), **Fraunces** per i titoli. | Licenza OFL. |
 | D30 | **Sviluppo locale** con Node.js **portatile** (nessuna installazione): `C:\Users\g.giaquinto\tools\node-v24.21.0-win-x64`. | Vedi `docs/SVILUPPO.md`. |
 | D31 | **Calendario**: Tappe 0–7 entro il 12/10, pannello staff essenziale il 13–14/10, prova generale il 15–16/10. Selfie solo se avanza tempo. | |
+| D32 | **Home con 2 box** (Menù, Minigiochi); **il profilo diventa un'icona in alto a destra**: cerchietto con personaggio anonimo e, a sinistra, la scritta "Accedi" (supera D1 e `01-SPECIFICHE.md` §3). | Dopo il login (Tappa 4) al posto dell'anonimo compare il personaggio del giocatore con il suo nickname. |
+| D33 | **Invio della partita** (risolve Q11): il telefono invia il punteggio calcolato **più la sequenza delle azioni** del giocatore (tocchi, mosse, risposte, con i tempi). Il server **non rigioca la partita** (niente carico sul backend): salva la sequenza e fa un insieme **prefissato di controlli** di validità e coerenza (es. punteggio ricostruibile dalle azioni, tempi di reazione umani, intervalli non troppo regolari, durata coerente). Impossibile → escluso; strano (possibile bot) → contato ma segnalato allo staff. | I controlli per ogni gioco si definiscono alla Tappa 5. Prima dei premi lo staff controlla le prime 15–20 posizioni. |
+| D34 | **Quiz**: una sola chiamata a fine partita con risposte e tempi misurati dal telefono; il server calcola il punteggio. | Tempi falsificabili: si accetta (al massimo 250 punti di bonus). |
+| D35 | Il repository e il sito appartengono all'**organizzazione GitHub `OratorioTorchiati`** (gratuita), così l'indirizzo non mostra l'account personale: **https://oratoriotorchiati.github.io/sagra-porcino/**. | La radice `oratoriotorchiati.github.io` resta libera per futuri progetti dell'oratorio. |
 
 ## Questioni aperte
 
@@ -54,7 +58,7 @@ Valori di default già scelti, in modo che il lavoro non si blocchi. Da conferma
 | Q8 | Nome ufficiale della sagra e del paese (per titoli e grafica)? | "Sagra del Porcino". |
 | Q9 | Il personaggio si può cambiare dopo la registrazione? | No. |
 | Q10 | Dominio personalizzato? | No, URL di GitHub Pages. |
-| Q11 | Come impedire l'invio di punteggi falsi (anche solo con gli strumenti per sviluppatori del browser) e riconoscere i bot? | Proposta: il telefono invia la **lista delle azioni** della partita e il server **rigioca la partita** (Edge Function con lo stesso codice del gioco) ricalcolando il punteggio; la stessa lista serve a riconoscere i bot. Da decidere prima della Tappa 2. |
+| Q11 | ~~Come impedire l'invio di punteggi falsi e riconoscere i bot?~~ | **Risolta** → D33, D34. |
 | Q12 | QR degli oggetti segreti condivisibili (link o foto girati su WhatsApp). | L'utente sta pensando a una soluzione; se ne riparla alla Tappa 7. |
 | Q13 | Punteggio del Memory: il "non completato" (50 × coppie) può superare il "completato lento" (min 200). | Da ripensare alla Tappa 3: completare deve valere sempre più che non completare. |
 
@@ -65,4 +69,4 @@ Aggiungere una riga a fine di ogni tappa.
 | Tappa | Stato | Data | Note |
 |---|---|---|---|
 | — | Specifiche scritte | 2026-09-28 | Pronto per iniziare la Tappa 0. |
-| 0 | Completata (da provare sul telefono) | 2026-09-28 | Sito online su https://1997giaquinto.github.io/sagra-porcino/ con deploy automatico. Home con 3 box e pagine segnaposto; verificati a 360px navigazione, tasto indietro e assenza di scroll orizzontale. Al posto dell'emoji 🍄 (sui telefoni è un fungo velenoso rosso a puntini) si usa l'illustrazione del porcino. |
+| 0 | Completata (da provare sul telefono) | 2026-09-28 | Sito online su https://oratoriotorchiati.github.io/sagra-porcino/ con deploy automatico. Home con 3 box e pagine segnaposto; verificati a 360px navigazione, tasto indietro e assenza di scroll orizzontale. Al posto dell'emoji 🍄 (sui telefoni è un fungo velenoso rosso a puntini) si usa l'illustrazione del porcino. |
