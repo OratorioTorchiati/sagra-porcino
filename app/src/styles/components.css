@@ -779,7 +779,6 @@ img.memory-card__image {
 
 .memory-card.is-swapping .memory-card__back {
   box-shadow: 0 10px 24px rgba(43, 29, 18, 0.35);
-  outline: 3px solid #ffd166;
 }
 
 /* Coppia trovata: rimpicciolisce e sfuma, come se si allontanasse verso lo sfondo (resta il posto vuoto) */

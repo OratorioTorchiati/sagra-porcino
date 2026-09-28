@@ -6,8 +6,8 @@ export default {
   durationS: 120,
   /** Secondi prima che due carte diverse si richiudano */
   mismatchDelayS: 0.8,
-  /** Dopo un errore le due carte, richiuse, si scambiano di posto: durata della rigirata e dello scambio */
-  flipBackS: 0.35,
+  /** Dopo un errore le due carte si rigirano e intanto si scambiano di posto: durata dello scambio
+   *  (più lunga della rigirata, 0,3 s, così il contenuto cambia quando sono già coperte) */
   swapS: 0.6,
   /** Una coppia trovata resta visibile per questo tempo, poi sparisce verso lo sfondo */
   matchShowS: 0.5,

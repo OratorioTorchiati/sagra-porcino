@@ -1,6 +1,6 @@
 // "Memory del paese": griglia 4×4, si girano due carte alla volta, massimo 2 minuti.
 // Coppia trovata → resta visibile un attimo, poi sparisce verso lo sfondo.
-// Coppia sbagliata → le carte si rigirano e si SCAMBIANO DI POSTO, con uno spostamento ben visibile.
+// Coppia sbagliata → le carte si rigirano e, nello stesso momento, si SCAMBIANO DI POSTO.
 // Interfaccia HTML (niente canvas). Le animazioni seguono il tempo di gioco (in pausa si fermano).
 
 import { html, escapeHtml } from '../../lib/dom.js';
@@ -103,12 +103,14 @@ export function createMemory({ rng, config, hud, log, dom, isRunning }) {
       schedule(config.matchShowS, () => pair.forEach((i) => buttons[i].classList.add('is-removed')));
       if (logic.isComplete()) completedAt = now;
     } else if (outcome === 'mismatch') {
+      // Le carte si rigirano e intanto scivolano una al posto dell'altra (il contenuto si scambia
+      // solo alla fine dello spostamento, quando sono già coperte)
       const [a, b] = logic.open;
       schedule(config.mismatchDelayS, () => {
         setOpen(a, false);
         setOpen(b, false);
+        animateSwap(a, b);
       });
-      schedule(config.mismatchDelayS + config.flipBackS, () => animateSwap(a, b));
     }
     refreshHud();
   });
