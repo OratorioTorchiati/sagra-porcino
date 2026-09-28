@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-hidden="true">
+  <!-- ombra -->
+  <ellipse cx="60" cy="109" rx="36" ry="5" fill="#2b1d12" opacity="0.12"/>
+  <!-- foglia d'autunno -->
+  <path d="M22 108 C18 96 26 86 38 88 C38 100 32 108 22 108 Z" fill="#c8861a"/>
+  <path d="M22 108 C27 100 31 95 37 89" fill="none" stroke="#8a5a12" stroke-width="1.6" stroke-linecap="round"/>
+  <!-- gambo panciuto -->
+  <path d="M45 66 C39 82 37 97 45 105 C51 111 71 111 77 105 C85 97 83 82 76 66 Z" fill="#f1e5cc" stroke="#c9b48f" stroke-width="2"/>
+  <!-- reticolo del gambo -->
+  <path d="M50 78 C54 76 58 78 62 76 C66 78 70 76 73 78 M48 88 C53 86 58 88 62 86 C66 88 71 86 75 88 M49 98 C54 96 58 98 62 96 C66 98 70 96 74 98" fill="none" stroke="#d8c7a3" stroke-width="1.6" stroke-linecap="round"/>
+  <!-- sottocappello -->
+  <path d="M24 70 C44 66 76 66 96 70 C90 77 30 77 24 70 Z" fill="#dcc79a"/>
+  <!-- cappello -->
+  <path d="M13 64 C13 35 35 16 60 16 C86 16 107 35 107 64 C107 71 101 73 95 72 C76 68 44 68 25 72 C19 73 13 71 13 64 Z" fill="#8b5a2b"/>
+  <!-- riflesso -->
+  <ellipse cx="44" cy="35" rx="15" ry="7" transform="rotate(-24 44 35)" fill="#a9733f" opacity="0.75"/>
+  <ellipse cx="62" cy="26" rx="5" ry="2.5" transform="rotate(-8 62 26)" fill="#c08a52" opacity="0.7"/>
+</svg>

@@ -1,0 +1,18 @@
+/* Font inclusi nell'app (solo caratteri latini): funzionano offline, nessuna richiesta esterna.
+   Licenza SIL Open Font License 1.1, vedi src/assets/fonts/LICENSE-*.txt */
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('../assets/fonts/atkinson-hyperlegible-next-latin-wght-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('../assets/fonts/fraunces-latin-wght-normal.woff2') format('woff2');
+}

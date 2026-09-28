@@ -1,0 +1,30 @@
+/* Variabili di stile: palette autunnale, tipografia, misure minime per utenti di tutte le età. */
+
+:root {
+  /* Colori */
+  --color-bg: #fbf5ea;          /* crema */
+  --color-surface: #ffffff;
+  --color-text: #2b1d12;        /* marrone molto scuro */
+  --color-text-muted: #5c4633;
+  --color-primary: #7a4a1e;     /* marrone porcino, testo bianco sopra: contrasto AAA */
+  --color-primary-dark: #5e3814;
+  --color-accent: #c8861a;      /* ocra, solo decorazioni (non per testi) */
+  --color-forest: #2f5d3a;      /* verde bosco */
+  --color-border: #e4d5bd;
+  --color-focus: #1f4fd1;
+
+  /* Tipografia */
+  --font-body: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-title: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --text-base: 1.125rem;        /* 18px: minimo per i testi */
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --text-xxl: 2.25rem;
+
+  /* Misure */
+  --tap-min: 56px;              /* altezza minima dei bottoni */
+  --page-max: 480px;
+  --gutter: 16px;
+  --radius: 18px;
+  --shadow: 0 2px 0 rgba(43, 29, 18, 0.08), 0 6px 16px rgba(43, 29, 18, 0.08);
+}
