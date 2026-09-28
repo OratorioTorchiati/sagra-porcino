@@ -14,6 +14,8 @@ Web app per smartphone per la **Sagra del Porcino** del paese, raggiungibile da 
 4. `docs/04-ROADMAP.md`: **le tappe di lavoro**. Si lavora una tappa alla volta.
 5. `docs/05-DECISIONI.md`: decisioni prese, questioni aperte e registro dei progressi
 
+Comandi, Node portatile e deploy: `docs/SVILUPPO.md`.
+
 Se qualcosa nei documenti è in conflitto: `05-DECISIONI.md` vince su tutto, poi `01-SPECIFICHE.md`.
 
 ## Come lavorare

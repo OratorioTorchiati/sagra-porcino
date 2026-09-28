@@ -9,6 +9,8 @@ Un solo QR code ai tavoli e agli stand apre una web app con:
 
 Alla fine della sagra i **primi 10 in classifica** vincono un gadget.
 
+**Sito**: https://1997giaquinto.github.io/sagra-porcino/
+
 ## Costi
 
 Zero: sito su **GitHub Pages**, dati su **Supabase** (piano gratuito).
@@ -23,6 +25,8 @@ Zero: sito su **GitHub Pages**, dati su **Supabase** (piano gratuito).
 | `docs/03-GIOCHI.md` | I 4 minigiochi nel dettaglio |
 | `docs/04-ROADMAP.md` | Il lavoro diviso in tappe incrementali |
 | `docs/05-DECISIONI.md` | Decisioni prese, questioni aperte, avanzamento |
+| `docs/SVILUPPO.md` | Guida tecnica: comandi, Node portatile, deploy |
+| `app/` | Il sito (progetto Vite) |
 | `contenuti/` | Cosa devono fornire gli organizzatori (menù, domande, foto) |
 
 ## Come partire con Claude Code
