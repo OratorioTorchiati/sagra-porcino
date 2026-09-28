@@ -46,12 +46,17 @@ function matchRoute(routes, path) {
 }
 
 /**
- * Avvia il router. Ogni pagina è una funzione (params) → { title, element }.
+ * Avvia il router. Ogni pagina è una funzione (params) → { title, element, destroy? }.
+ * `destroy` viene chiamata quando si lascia la pagina (es. per fermare una partita).
  */
 export function startRouter(root, { routes, notFound }) {
+  let currentPage = null;
+
   function show() {
+    currentPage?.destroy?.();
     const match = matchRoute(routes, currentPath());
     const page = match ? match.render(match.params) : notFound();
+    currentPage = page;
 
     root.replaceChildren(page.element);
     document.title = page.title ? `${page.title} · ${EVENT_NAME}` : EVENT_NAME;
