@@ -1185,7 +1185,6 @@ img.memory-card__image {
 
 /* ---------- Codice del telefono (reset del PIN dallo staff) ---------- */
 
-.forgot-pin,
 .profile-info {
   padding: 1rem;
   border-radius: var(--radius);
@@ -1193,18 +1192,15 @@ img.memory-card__image {
   border: 2px solid var(--color-border);
 }
 
-.forgot-pin p,
 .profile-info p {
   margin: 0 0 0.5rem;
   line-height: 1.4;
 }
 
-.forgot-pin p:last-child,
 .profile-info p:last-child {
   margin-bottom: 0;
 }
 
-.forgot-pin__title,
 .profile-info__title {
   font-weight: 800;
   font-size: var(--text-lg);
@@ -1230,4 +1226,59 @@ img.memory-card__image {
 
 .profile-info {
   margin-top: 1rem;
+}
+
+/* PIN dimenticato: riquadro da mostrare allo staff */
+.dialog__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.forgot-dialog .form-error {
+  margin-top: 0.75rem;
+}
+
+.staff-card {
+  padding: 1.25rem 1rem;
+  border: 3px dashed var(--color-accent);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  text-align: center;
+}
+
+.staff-card p {
+  margin: 0;
+}
+
+.staff-card__title {
+  font-family: var(--font-title);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--color-forest);
+  margin-bottom: 0.75rem !important;
+}
+
+.staff-card__nickname {
+  font-family: var(--font-title);
+  font-size: var(--text-xxl);
+  font-weight: 900;
+  color: var(--color-primary);
+  overflow-wrap: anywhere;
+  margin-bottom: 0.75rem !important;
+}
+
+.staff-card__label {
+  color: var(--color-text-muted);
+}
+
+.forgot-dialog__hint {
+  margin: 1rem 0;
+  line-height: 1.4;
+}
+
+/* Nelle finestre i bottoni occupano tutta la larghezza: più facili da toccare */
+.dialog .button {
+  width: 100%;
 }

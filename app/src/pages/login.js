@@ -30,14 +30,35 @@ export function renderLogin() {
         </label>
         <div class="form-error" role="alert" hidden></div>
         <button type="submit" class="button button--play">ENTRA</button>
-        <div class="forgot-pin">
-          <p class="forgot-pin__title">🔑 PIN dimenticato?</p>
-          <p>Vai allo stand della sagra <strong>con il telefono con cui hai creato l'account</strong> e mostra questo codice allo staff:</p>
-          <p class="device-code" data-device-code>…</p>
-          <p>Lo staff controllerà il codice e ti darà un nuovo PIN.</p>
-        </div>
+        <button type="button" class="button button--secondary" data-action="forgot">🔑 Ho dimenticato il PIN</button>
         <p class="form-alt">Non hai un account? <a href="#/registrati">Registrati</a></p>
-      </form>`
+      </form>
+
+      <!-- PIN dimenticato: nickname → riquadro da mostrare allo staff (D56) -->
+      <dialog class="dialog forgot-dialog" aria-labelledby="forgot-title">
+        <div data-step="nickname">
+          <h2 class="dialog__title" id="forgot-title">PIN dimenticato</h2>
+          <label class="form-field">
+            <span class="form-field__label">Scrivi il tuo nickname</span>
+            <input class="form-field__input" name="forgot-nickname" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="16">
+          </label>
+          <div class="form-error" role="alert" hidden></div>
+          <div class="dialog__actions">
+            <button type="button" class="button" data-action="forgot-show">Avanti</button>
+            <button type="button" class="button button--secondary" data-action="forgot-close">Annulla</button>
+          </div>
+        </div>
+        <div data-step="card" hidden>
+          <div class="staff-card">
+            <p class="staff-card__title">Mostra questo allo staff</p>
+            <p class="staff-card__nickname"></p>
+            <p class="staff-card__label">Codice del telefono</p>
+            <p class="device-code" data-device-code>…</p>
+          </div>
+          <p class="forgot-dialog__hint">Vai allo stand della sagra <strong>con questo telefono</strong> (quello con cui hai creato l'account): lo staff controllerà il codice e ti darà un nuovo PIN.</p>
+          <button type="button" class="button" data-action="forgot-close">Chiudi</button>
+        </div>
+      </dialog>`
       }
     </main>
   `);
@@ -76,6 +97,39 @@ export function renderLogin() {
       }
       submit.disabled = false;
       submit.textContent = 'ENTRA';
+    });
+
+    // PIN dimenticato: si scrive il nickname e compare il riquadro "Mostra questo allo staff"
+    const dialog = element.querySelector('.forgot-dialog');
+    const stepNickname = dialog.querySelector('[data-step="nickname"]');
+    const stepCard = dialog.querySelector('[data-step="card"]');
+    const forgotInput = dialog.querySelector('[name="forgot-nickname"]');
+    const forgotError = dialog.querySelector('.form-error');
+
+    element.addEventListener('click', (event) => {
+      const action = event.target.closest('[data-action]')?.dataset.action;
+      if (action === 'forgot') {
+        forgotInput.value = form.elements.nickname.value.trim();
+        forgotError.hidden = true;
+        stepNickname.hidden = false;
+        stepCard.hidden = true;
+        dialog.showModal();
+      } else if (action === 'forgot-show') {
+        const nickname = forgotInput.value.trim();
+        if (!/^[A-Za-z0-9_]{3,16}$/.test(nickname)) {
+          forgotError.textContent = 'Scrivi il tuo nickname (da 3 a 16 caratteri: lettere, numeri e _).';
+          forgotError.hidden = false;
+          return;
+        }
+        dialog.querySelector('.staff-card__nickname').textContent = nickname;
+        stepNickname.hidden = true;
+        stepCard.hidden = false;
+      } else if (action === 'forgot-close') {
+        dialog.close();
+      }
+    });
+    forgotInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') dialog.querySelector('[data-action="forgot-show"]').click();
     });
   }
 
