@@ -19,11 +19,13 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/001_accounts.sql` | 4 | giocatori, dispositivi, sessioni, blocco PIN, registrazione/accesso |
 | `supabase/migrations/002_nickname_filter.sql` | 4 | filtro bestemmie e insulti nei nickname (senza censurare Armadio, Claudio...) |
 | `supabase/migrations/003_games_attempts.sql` | 5 | giochi, tentativi (3 al giorno), punteggi ricontrollati, domande del quiz di esempio |
+| `supabase/migrations/004_reset_ore_9.sql` | 5 | tentativi che si rinnovano alle 9 di mattina, nomi "Quiz" e "Memory Torchiati" |
 
 Impostazioni dei giochi (SQL Editor):
 
 ```sql
 update settings set value = '3' where key = 'attempts_per_day';                                   -- tentativi al giorno per gioco
+update settings set value = '9' where key = 'attempts_reset_hour';                                -- ora in cui tornano i tentativi (0 = mezzanotte)
 update settings set value = '"2026-10-17T15:00:00+02:00"' where key = 'games_open_from';          -- apertura (null = già aperti)
 update settings set value = '"2026-10-18T23:00:00+02:00"' where key = 'games_open_until';         -- chiusura della classifica
 update games set enabled = false where id = 'memory';                                             -- spegnere un gioco

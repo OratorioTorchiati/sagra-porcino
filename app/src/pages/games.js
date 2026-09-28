@@ -22,9 +22,10 @@ const closeText = (date) => `${dayFormat.format(date)} alle ${hourFormat.format(
 
 function howItWorksItems(state) {
   const perDay = state?.attempts_per_day ?? 3;
+  const resetHour = state?.reset_hour ?? 9;
   const until = state?.open_until ? closeText(new Date(state.open_until)) : null;
   return [
-    `🎮 <strong>${perDay} tentativi al giorno</strong> per ogni gioco: a mezzanotte tornano ${perDay}`,
+    `🎮 <strong>${perDay} tentativi al giorno</strong> per ogni gioco: ogni mattina alle ${resetHour} tornano ${perDay}`,
     '👆 Il tentativo si conta appena premi <strong>GIOCA</strong>',
     '🚫 <strong>Non barare!</strong> Se chiudi il gioco in corso, ti verrà sottratto un tentativo',
     '🏅 Vale il tuo <strong>punteggio migliore</strong>',
@@ -36,19 +37,20 @@ function howItWorksItems(state) {
 
 const listMarkup = (state) => `<ul class="how-it-works__list">${howItWorksItems(state).map((item) => `<li>${item}</li>`).join('')}</ul>`;
 
-/** Riga di stato sotto il nome del gioco */
+/** Righe di stato sotto il nome del gioco: tentativi e (a capo) miglior punteggio */
 function cardStatus(game, state, player) {
-  if (PRACTICE_MODE) return 'Gioca in prova';
-  if (!player) return 'Accedi per giocare';
-  if (!state) return 'Tocca per giocare';
+  if (PRACTICE_MODE) return ['Gioca in prova'];
+  if (!player) return ['Accedi per giocare'];
+  if (!state) return ['Tocca per giocare'];
   const reason = blockedReason(state, game.id);
   const best = gameInfo(state, game.id)?.best;
-  const bestText = best !== null && best !== undefined ? ` · Il tuo migliore: ${best}` : '';
-  if (reason?.code === 'closed') return `Gioco concluso${bestText}`;
-  if (reason) return `🔒 ${reason.code === 'no_attempts' ? 'Tentativi finiti per oggi' : reason.text}${bestText}`;
-  if (state.unlimited) return `Staff: tentativi illimitati${bestText}`;
-  const left = attemptsLeft(state, game.id);
-  return `Tentativi oggi: ${left}/${state.attempts_per_day}${bestText}`;
+  const bestLine = best !== null && best !== undefined ? `Il tuo migliore: <strong>${best}</strong>` : null;
+  let first;
+  if (reason?.code === 'closed') first = 'Gioco concluso';
+  else if (reason) first = `🔒 ${reason.text}`;
+  else if (state.unlimited) first = 'Staff: tentativi illimitati';
+  else first = `Tentativi oggi: <strong>${attemptsLeft(state, game.id)}/${state.attempts_per_day}</strong>`;
+  return [first, bestLine].filter(Boolean);
 }
 
 function cardsMarkup(state, player) {
@@ -60,7 +62,7 @@ function cardsMarkup(state, player) {
           <span class="home-box__icon" aria-hidden="true">${game.icon}</span>
           <span class="home-box__body">
             <span class="home-box__title home-box__title--game">${game.name}</span>
-            <span class="home-box__text">${cardStatus(game, state, player)}</span>
+            ${cardStatus(game, state, player).map((line) => `<span class="home-box__text home-box__text--line">${line}</span>`).join('')}
           </span>
           <span class="home-box__arrow" aria-hidden="true">›</span>
         </a>`;

@@ -33,6 +33,9 @@ export function attemptsLeft(state, gameId) {
   return Math.max(0, state.attempts_per_day - info.attempts_used_today);
 }
 
+/** Testo fisso quando un gioco non ha più tentativi (D64) */
+export const NO_ATTEMPTS_TEXT = 'Hai esaurito i tentativi per oggi. Torna domani';
+
 const dateFormat = new Intl.DateTimeFormat('it-IT', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
 
 /** Motivo per cui ora non si può giocare (null se si può). Lo staff non ha limiti. */
@@ -45,6 +48,6 @@ export function blockedReason(state, gameId) {
     return { code: 'not_yet', text: when ? `I giochi aprono ${when}.` : 'I giochi non sono ancora aperti.' };
   }
   if (state.window === 'closed') return { code: 'closed', text: 'I giochi sono conclusi.' };
-  if (attemptsLeft(state, gameId) === 0) return { code: 'no_attempts', text: 'Hai finito i tentativi di oggi: domani ne avrai di nuovo.' };
+  if (attemptsLeft(state, gameId) === 0) return { code: 'no_attempts', text: NO_ATTEMPTS_TEXT };
   return null;
 }

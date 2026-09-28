@@ -7,7 +7,7 @@ import { readJson, writeJson } from '../lib/storage.js';
 import { rpc, NetworkError } from '../lib/api.js';
 import { currentPlayer, sessionToken, refreshProfile } from '../lib/account.js';
 import { enqueueScore, onSubmitResult, resultFor, isPending } from '../lib/queue.js';
-import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason } from '../lib/games-state.js';
+import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason, NO_ATTEMPTS_TEXT } from '../lib/games-state.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { GAMES, PRACTICE_MODE } from '../games/registry.js';
 import { GameSession } from '../games/engine/session.js';
@@ -118,7 +118,10 @@ export function renderGame({ gameId }) {
           </div>`;
       } else {
         const reason = blockedReason(gamesState, game.id);
-        if (reason) {
+        if (reason?.code === 'no_attempts') {
+          // Al posto del bottone GIOCA (D64)
+          markup = `<p class="no-attempts">${NO_ATTEMPTS_TEXT}</p>`;
+        } else if (reason) {
           markup = notice('blocked', `⏳ ${reason.text}`);
         } else if (gamesState?.unlimited) {
           markup = notice('info', '🛠️ <strong>Staff</strong>: tentativi illimitati. I tuoi punti non vanno in classifica.');
@@ -248,7 +251,7 @@ export function renderGame({ gameId }) {
         <dl class="result-stats">${isQuiz ? '' : statsMarkup(gameDef, result.stats)}</dl>
         <p class="result-status" aria-live="polite"></p>
         <p class="result-attempts">${
-          start.unlimited ? '' : start.attemptsLeft > 0 ? `Tentativi rimasti oggi: <strong>${start.attemptsLeft}</strong>` : 'Per oggi hai finito i tentativi di questo gioco: domani ne avrai di nuovo.'
+          start.unlimited ? '' : start.attemptsLeft > 0 ? `Tentativi rimasti oggi: <strong>${start.attemptsLeft}</strong>` : NO_ATTEMPTS_TEXT
         }</p>
         <div class="result-actions">
           ${canReplay ? '<button type="button" class="button button--play" data-action="again">Rigioca</button>' : ''}

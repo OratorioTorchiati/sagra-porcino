@@ -1338,6 +1338,22 @@ dialog:not([open]) {
   padding: 0 1.1rem 1rem;
 }
 
+.home-box__text--line {
+  display: block;
+}
+
+/* Al posto del bottone GIOCA quando i tentativi di oggi sono finiti */
+.no-attempts {
+  margin: 0;
+  padding: 1rem;
+  border: 2px dashed var(--color-text-muted);
+  border-radius: 1rem;
+  text-align: center;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
 .game-card--locked {
   opacity: 0.75;
   background: #f4efe6;
