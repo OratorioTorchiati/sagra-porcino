@@ -1,6 +1,7 @@
 // Pannello staff → "Rivedi partita" (D75): la partita registrata rigiocata dal suo seme e dalle sue azioni,
 // a schermo intero, con il tempo che scorre in alto e un'"onda" dove il giocatore ha toccato.
-// In basso "Approva" oppure "Escludi giocatore" (account e telefono bloccati, D76); in alto "Indietro".
+// In basso "Approva", "Conferma esclusione" oppure "Ban <giocatore>" (account e telefono bloccati, D76);
+// in alto "Indietro".
 
 import { escapeHtml } from '../lib/dom.js';
 import { GAMES } from '../games/registry.js';
@@ -73,7 +74,8 @@ export async function openReplay(attemptId, ctx, errorEl, onDone) {
       ${approximate ? '<p class="replay-top__notes">⚠️ Partita registrata prima del replay: quello che vedi è solo indicativo.</p>' : ''}`;
     bottom.innerHTML = `
       <button type="button" class="button" data-decision="approve">✅ Approva</button>
-      <button type="button" class="button button--danger" data-decision="exclude">⛔ Escludi giocatore</button>`;
+      <button type="button" class="button button--secondary" data-decision="exclusion">🚫 Conferma esclusione</button>
+      <button type="button" class="button button--danger replay-bottom__wide" data-decision="ban">⛔ Ban ${escapeHtml(attempt.nickname)}</button>`;
   }
 
   container.addEventListener('click', async (event) => {
@@ -82,18 +84,30 @@ export async function openReplay(attemptId, ctx, errorEl, onDone) {
     if (action === 'again') return start();
     const decision = event.target.closest('[data-decision]')?.dataset.decision;
     if (decision === 'approve') {
-      const ok = await askDialog({ title: 'Approvare questa partita?', body: '<p>Resta valida in classifica e sparisce da questo elenco.</p>', confirmLabel: 'Approva' });
-      if (ok && (await staffCall(ctx, 'set_attempt_status', { p_attempt_id: attempt.id, p_status: 'valid' }, errorEl))) close(true);
-    } else if (decision === 'exclude') {
       const ok = await askDialog({
-        title: `Escludere ${escapeHtml(attempt.nickname)}?`,
+        title: 'Approvare questa partita?',
+        body: `<p>Diventa valida e ${attempt.status === 'rejected' ? '<strong>conterà</strong>' : 'continua a contare'} in classifica (${attempt.raw_score ?? 0} punti). Sparisce da questo elenco.</p>`,
+        confirmLabel: 'Approva',
+      });
+      if (ok && (await staffCall(ctx, 'set_attempt_status', { p_attempt_id: attempt.id, p_status: 'valid' }, errorEl))) close(true);
+    } else if (decision === 'exclusion') {
+      const ok = await askDialog({
+        title: 'Confermare l\'esclusione?',
+        body: '<p>La partita <strong>non conta</strong> e sparisce, anche dal database. Il tentativo resta usato. Il giocatore può continuare a giocare.</p>',
+        confirmLabel: 'Conferma esclusione',
+        danger: true,
+      });
+      if (ok && (await staffCall(ctx, 'confirm_exclusion', { p_attempt_id: attempt.id }, errorEl))) close(true);
+    } else if (decision === 'ban') {
+      const ok = await askDialog({
+        title: `Ban di ${escapeHtml(attempt.nickname)}?`,
         body: `<p>L'account viene <strong>bloccato</strong>: non potrà più entrare né giocare e sparisce dalla classifica.
           Anche il suo <strong>telefono resta bloccato</strong>: non potrà creare un altro account.</p>
           <p>Questa partita viene cancellata. Si può riattivare l'account da Giocatori.</p>`,
-        confirmLabel: 'Escludi',
+        confirmLabel: 'Ban',
         danger: true,
       });
-      if (ok && (await staffCall(ctx, 'exclude_player', { p_attempt_id: attempt.id }, errorEl))) close(true);
+      if (ok && (await staffCall(ctx, 'ban_player', { p_attempt_id: attempt.id }, errorEl))) close(true);
     }
   });
 

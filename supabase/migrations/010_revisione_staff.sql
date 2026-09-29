@@ -1,12 +1,12 @@
 -- =====================================================================================
--- 010 — Partite escluse cancellate; "Escludi giocatore" al posto di "Scarta" (D76)
+-- 010 — Revisione staff delle partite: Approva / Conferma esclusione / Ban (D76, D77)
 --
--- - Le partite con dati impossibili ('rejected') NON restano nel database: submit_score risponde "non valida"
---   e le cancella. Il tentativo però resta usato: i tentativi del giorno ora si contano in attempts_used
---   (per giocatore, gioco e giorno), non contando le partite.
+-- - Partite SEGNALATE (strane: contano) ed ESCLUSE dal server (dati impossibili: non contano) restano in attesa
+--   della decisione dello staff, che per entrambe sceglie: Approva (valida, conta), Conferma esclusione
+--   (non conta, la partita sparisce), Ban del giocatore (account e telefono bloccati). Il server non banna mai.
+-- - I tentativi del giorno si contano in attempts_used (per giocatore, gioco e giorno), non contando le partite:
+--   una partita cancellata non restituisce il tentativo.
 -- - Nuovo segnale in Acchiappa: più di metà dei porcini (almeno 10) toccati entro 2 px dal centro → segnalata.
--- - Nel pannello staff si rivedono solo le partite SEGNALATE. Le scelte sono: Approva (resta valida)
---   oppure Escludi giocatore (account disattivato + telefono bloccato; la partita sospetta si cancella).
 --
 -- Come applicarla: Supabase → SQL Editor → incolla tutto il file → Run. Si può rieseguire.
 -- =====================================================================================
@@ -26,9 +26,6 @@ insert into public.attempts_used (player_id, game_id, day, used)
 select player_id, game_id, day, count(*) from public.attempts
 where not exists (select 1 from public.attempts_used)
 group by player_id, game_id, day;
-
--- Via le partite escluse rimaste dalle prove (il loro tentativo è già nel contatore)
-delete from public.attempts where status = 'rejected';
 
 create or replace function public.start_attempt(p_token text, p_game_id text)
 returns jsonb language plpgsql volatile security definer set search_path = public as $$
@@ -59,7 +56,7 @@ begin
 
   -- Un avvio alla volta per giocatore e gioco (niente doppio tocco che supera il limite)
   perform pg_advisory_xact_lock(hashtext(v_player.id::text || ':' || p_game_id));
-  -- Tentativi usati oggi: dal contatore (le partite escluse vengono cancellate, ma il tentativo resta usato)
+  -- Tentativi usati oggi: dal contatore (le esclusioni confermate cancellano la partita, ma il tentativo resta usato)
   select coalesce((select used from attempts_used where player_id = v_player.id and game_id = p_game_id and day = _today()), 0) into v_used;
   if not v_staff and v_used >= v_per_day then
     return jsonb_build_object('ok', false, 'error', 'NO_ATTEMPTS_LEFT', 'attempts_per_day', v_per_day);
@@ -127,57 +124,6 @@ begin
           (select max(a.raw_score) from attempts a where a.player_id = v_player.id and a.game_id = g.id and a.status in ('valid', 'flagged')) end
       ) order by g.sort)
       from games g));
-end;
-$$;
-
--- Come in 003, ma le partite escluse vengono cancellate subito
-create or replace function public.submit_score(p_attempt_id uuid, p_raw_score int, p_stats jsonb, p_actions jsonb)
-returns jsonb language plpgsql volatile security definer set search_path = public as $$
-declare
-  v_attempt attempts;
-  v_game games;
-  v_check jsonb;
-  v_best int;
-begin
-  select * into v_attempt from attempts where id = p_attempt_id for update;
-  if v_attempt.id is null then
-    return jsonb_build_object('ok', false, 'error', 'ATTEMPT_UNKNOWN');
-  end if;
-  select * into v_game from games where id = v_attempt.game_id;
-
-  if v_attempt.submitted_at is null then
-    v_check := _check_attempt(v_attempt, v_game, p_raw_score, p_stats, p_actions);
-    update attempts set
-      submitted_at = now(),
-      client_score = p_raw_score,
-      raw_score = (v_check ->> 'score')::int,
-      stats = p_stats,
-      actions = p_actions,
-      status = v_check ->> 'status',
-      check_notes = array(select jsonb_array_elements_text(v_check -> 'notes'))
-    where id = v_attempt.id
-    returning * into v_attempt;
-  end if;
-
-  select max(raw_score) into v_best from attempts
-  where player_id = v_attempt.player_id and game_id = v_attempt.game_id and status in ('valid', 'flagged');
-
-  -- Partita esclusa (dati impossibili): si risponde "non valida" e la si cancella dal database.
-  -- Il tentativo resta usato (contatore attempts_used). Un reinvio troverà ATTEMPT_UNKNOWN.
-  if v_attempt.status = 'rejected' then
-    delete from attempts where id = v_attempt.id;
-    return jsonb_build_object('ok', true, 'status', 'rejected', 'raw_score', 0, 'best', v_best, 'correct', null, 'total', 0);
-  end if;
-
-  return jsonb_build_object(
-    'ok', true,
-    'status', v_attempt.status,
-    'raw_score', v_attempt.raw_score,
-    'best', v_best,
-    'correct', case when v_attempt.game_id = 'quiz' then
-      (select count(*) from jsonb_array_elements(coalesce(v_attempt.stats -> 'answers', '[]')) a
-       join quiz_questions q on q.id = (a ->> 'questionId')::int and q.correct_index = (a ->> 'choice')::int) end,
-    'total', coalesce(array_length(v_attempt.quiz_question_ids, 1), 0));
 end;
 $$;
 
@@ -363,75 +309,25 @@ begin
 end;
 $$;
 
--- Come in 008, senza la colonna delle escluse
-create or replace function public.staff_player_detail(p_token text, p_nickname text)
-returns jsonb language plpgsql volatile security definer set search_path = public as $$
-declare
-  v_staff players := _staff_player(p_token);
-  v_player players;
-begin
-  if v_staff.id is null then return _staff_denied(); end if;
-  select * into v_player from players where lower(nickname) = lower(trim(coalesce(p_nickname, '')));
-  if v_player.id is null then
-    return jsonb_build_object('ok', false, 'error', 'NOT_FOUND');
-  end if;
-  return jsonb_build_object('ok', true, 'player', jsonb_build_object(
-    'nickname', v_player.nickname,
-    'avatar', v_player.avatar,
-    'role', v_player.role,
-    'disabled', v_player.disabled,
-    'created_at', v_player.created_at,
-    'card', _player_card(v_player.id),
-    -- Telefoni con cui si è registrato (il codice "EF27-B764" lo calcola l'app dal device_id)
-    'devices', coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'device_id', d.device_id, 'created_at', d.created_at, 'user_agent', d.user_agent,
-        'same_fingerprint', (select count(distinct d2.player_id) from devices d2
-                             where d2.fingerprint = d.fingerprint and d2.player_id <> v_player.id))
-        order by d.created_at)
-      from devices d where d.player_id = v_player.id), '[]'),
-    -- Telefoni da cui è entrato (sessioni ancora valide)
-    'sessions', coalesce((
-      select jsonb_agg(jsonb_build_object('device_id', s.device_id, 'last_seen_at', s.last_seen_at, 'user_agent', s.user_agent)
-        order by s.last_seen_at desc)
-      from sessions s where s.player_id = v_player.id and s.expires_at > now()), '[]'),
-    'extra_points', coalesce((
-      select jsonb_agg(jsonb_build_object('id', e.id, 'points', e.points, 'reason', e.reason, 'created_at', e.created_at)
-        order by e.created_at desc)
-      from extra_points e where e.player_id = v_player.id), '[]'),
-    'games', coalesce((
-      select jsonb_agg(jsonb_build_object(
-        'game_id', g.id, 'name', g.name,
-        'best', (select max(a.raw_score) from attempts a where a.player_id = v_player.id and a.game_id = g.id and a.status in ('valid', 'flagged')),
-        'valid', (select count(*) from attempts a where a.player_id = v_player.id and a.game_id = g.id and a.status = 'valid'),
-        'flagged', (select count(*) from attempts a where a.player_id = v_player.id and a.game_id = g.id and a.status = 'flagged'),
-        'pending', (select count(*) from attempts a where a.player_id = v_player.id and a.game_id = g.id and a.status = 'pending'))
-        order by g.sort)
-      from games g), '[]'),
-    'login_failures', (select count(*) from login_failures f
-                       where f.nickname_lower = lower(v_player.nickname) and f.failed_at > now() - interval '15 minutes')));
-end;
-$$;
-
-create or replace function public.staff_review_list(p_token text, p_status text default 'flagged')
+-- Partite in attesa della decisione dello staff: segnalate (contano) ed escluse (non contano),
+-- di giocatori non bannati. Quelle decise (approvate / esclusione confermata / ban) non compaiono più.
+create or replace function public.staff_review_list(p_token text, p_status text default null)
 returns jsonb language plpgsql volatile security definer set search_path = public as $$
 declare
   v_staff players := _staff_player(p_token);
 begin
   if v_staff.id is null then return _staff_denied(); end if;
-  -- Solo le partite segnalate di giocatori non esclusi (le escluse non esistono più)
   return jsonb_build_object('ok', true, 'attempts', coalesce((
     select jsonb_agg(jsonb_build_object(
       'id', a.id, 'nickname', p.nickname, 'game_id', a.game_id, 'status', a.status,
       'raw_score', a.raw_score, 'client_score', a.client_score, 'notes', a.check_notes, 'submitted_at', a.submitted_at)
       order by a.submitted_at desc)
-    from (select * from attempts where status = 'flagged' order by submitted_at desc nulls last limit 200) a
+    from (select * from attempts where status in ('flagged', 'rejected') order by submitted_at desc nulls last limit 300) a
     join players p on p.id = a.player_id and not p.disabled), '[]'));
 end;
 $$;
 
--- Approva una partita segnalata (torna "valida"). Per le partite sospette non si scarta la partita:
--- si esclude il giocatore (staff_exclude_player).
+-- Approva: la partita (segnalata o esclusa) diventa valida e conta, con il punteggio ricalcolato dal server
 create or replace function public.staff_set_attempt_status(p_token text, p_attempt_id uuid, p_status text)
 returns jsonb language plpgsql volatile security definer set search_path = public as $$
 declare
@@ -443,20 +339,37 @@ begin
     return jsonb_build_object('ok', false, 'error', 'STATUS_INVALID');
   end if;
   select * into v_attempt from attempts where id = p_attempt_id for update;
-  if v_attempt.id is null or v_attempt.status <> 'flagged' then
+  if v_attempt.id is null or v_attempt.status not in ('flagged', 'rejected') then
     return jsonb_build_object('ok', false, 'error', 'NOT_FOUND');
   end if;
   update attempts set status = 'valid', check_notes = array_append(check_notes, 'approvata_da_staff') where id = v_attempt.id;
   perform _staff_log(v_staff, 'attempt_valid', (select nickname from players where id = v_attempt.player_id),
-    jsonb_build_object('attempt_id', v_attempt.id, 'game_id', v_attempt.game_id, 'raw_score', v_attempt.raw_score));
+    jsonb_build_object('attempt_id', v_attempt.id, 'game_id', v_attempt.game_id, 'from', v_attempt.status, 'raw_score', v_attempt.raw_score));
   return jsonb_build_object('ok', true);
 end;
 $$;
 
--- Escludi il giocatore di una partita sospetta: account disattivato (non entra, non gioca, sparisce dalla
--- classifica) e telefono bloccato (resta legato all'account: non ci si può registrare di nuovo).
--- La partita sospetta viene cancellata.
-create or replace function public.staff_exclude_player(p_token text, p_attempt_id uuid)
+-- Conferma esclusione: la partita non conta e sparisce (anche dal database); il tentativo resta usato
+create or replace function public.staff_confirm_exclusion(p_token text, p_attempt_id uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_staff players := _staff_player(p_token);
+  v_attempt attempts;
+begin
+  if v_staff.id is null then return _staff_denied(); end if;
+  select * into v_attempt from attempts where id = p_attempt_id and status in ('flagged', 'rejected');
+  if v_attempt.id is null then return jsonb_build_object('ok', false, 'error', 'NOT_FOUND'); end if;
+  delete from attempts where id = v_attempt.id;
+  perform _staff_log(v_staff, 'exclusion', (select nickname from players where id = v_attempt.player_id),
+    jsonb_build_object('game_id', v_attempt.game_id, 'from', v_attempt.status, 'raw_score', v_attempt.raw_score, 'notes', v_attempt.check_notes));
+  return jsonb_build_object('ok', true);
+end;
+$$;
+
+-- Ban del giocatore di una partita: account disattivato (non entra, non gioca, fuori dalla classifica) e
+-- telefono bloccato (resta legato all'account: niente nuovo account). La partita viene cancellata.
+-- Solo lo staff lo fa, mai il server da solo.
+create or replace function public.staff_ban_player(p_token text, p_attempt_id uuid)
 returns jsonb language plpgsql volatile security definer set search_path = public as $$
 declare
   v_staff players := _staff_player(p_token);
@@ -471,11 +384,15 @@ begin
   update players set disabled = true where id = v_player.id;
   delete from sessions where player_id = v_player.id;
   delete from attempts where id = v_attempt.id;
-  perform _staff_log(v_staff, 'exclude', v_player.nickname,
+  perform _staff_log(v_staff, 'ban', v_player.nickname,
     jsonb_build_object('game_id', v_attempt.game_id, 'raw_score', v_attempt.raw_score, 'notes', v_attempt.check_notes));
   return jsonb_build_object('ok', true);
 end;
 $$;
 
-revoke execute on function public.staff_exclude_player(text, uuid) from public;
-grant execute on function public.staff_exclude_player(text, uuid) to anon, authenticated;
+-- Il "Scarta" della 009 (staff_exclude_player non è mai esistita sul database) non serve più
+drop function if exists public.staff_exclude_player(text, uuid);
+
+revoke execute on function public.staff_confirm_exclusion(text, uuid), public.staff_ban_player(text, uuid) from public;
+grant execute on function public.staff_confirm_exclusion(text, uuid) to anon, authenticated;
+grant execute on function public.staff_ban_player(text, uuid) to anon, authenticated;

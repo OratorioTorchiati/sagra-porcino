@@ -25,7 +25,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/007_classifica.sql` | 6 | classifica (somma dei migliori + punti extra), aggiornata dai trigger, scheda giocatore |
 | `supabase/migrations/008_staff.sql` | 8 | pannello staff: giocatori, reset PIN, disattiva/cancella, punti extra, partite da controllare, impostazioni, registro |
 | `supabase/migrations/009_staff_ricerca_replay.sql` | 8 | ricerca, classifica e registro del pannello a pagine (con filtri), dati per "Rivedi partita" |
-| `supabase/migrations/010_esclusi_cancellati.sql` | 8 | partite escluse cancellate (tentativo comunque usato), "Escludi giocatore", segnale "tocchi al centro" |
+| `supabase/migrations/010_revisione_staff.sql` | 8 | revisione staff delle partite segnalate ed escluse (Approva / Conferma esclusione / Ban), tentativi contati a parte, segnale "tocchi al centro" |
 
 Impostazioni dei giochi (SQL Editor):
 

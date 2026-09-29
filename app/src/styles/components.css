@@ -2199,3 +2199,14 @@ dialog:not([open]) {
 .staff-filters .button {
   grid-column: 1 / -1;
 }
+
+/* Revisione: tipo di partita e terzo bottone (Ban) a tutta larghezza */
+.staff-tag--flag {
+  background: #fff4dc;
+  color: #7a4a00;
+  border: 1px solid #f0cf86;
+}
+
+.game-screen--replay .replay-bottom__wide {
+  grid-column: 1 / -1;
+}

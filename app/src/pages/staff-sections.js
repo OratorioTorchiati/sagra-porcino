@@ -13,9 +13,9 @@ const gameName = (id) => GAMES[id]?.name ?? id;
 
 export function renderReviewSection(root, ctx) {
   root.innerHTML = `
-    <p class="staff-muted">Partite strane (possibili bot): CONTANO già in classifica. Rivedile: se sono regolari
-      <strong>approvale</strong>, altrimenti <strong>escludi il giocatore</strong> (account e telefono bloccati).
-      Le partite con dati impossibili il server le cancella da solo.</p>
+    <p class="staff-muted">Partite in attesa della vostra decisione: le <strong>segnalate</strong> (strane, possibili bot)
+      contano già in classifica, le <strong>escluse</strong> dal server (dati impossibili) non contano.
+      Rivedile e scegli: Approva, Conferma esclusione oppure Ban del giocatore.</p>
     <div class="form-error" role="alert" hidden></div>
     <div class="staff-review-list"></div>`;
   const error = root.querySelector('.form-error');
@@ -30,6 +30,7 @@ export function renderReviewSection(root, ctx) {
           .map(
             (a) => `
           <li class="staff-card">
+            <p>${a.status === 'rejected' ? '<span class="staff-tag staff-tag--off">⛔ Esclusa · non conta</span>' : '<span class="staff-tag staff-tag--flag">🚩 Segnalata · conta</span>'}</p>
             <p><strong>${escapeHtml(a.nickname)}</strong> · ${escapeHtml(gameName(a.game_id))} · ${formatDate(a.submitted_at)}</p>
             <p>Punti: <strong>${a.raw_score ?? '—'}</strong>${a.client_score !== null && a.client_score !== a.raw_score && a.game_id !== 'quiz' ? ` (il telefono diceva ${a.client_score})` : ''}</p>
             <p class="staff-warn">${a.notes.map((n) => escapeHtml(noteLabel(n))).join(' · ') || '—'}</p>
@@ -179,7 +180,8 @@ const ACTIONS = {
   extra_points_removed: 'ha tolto punti extra a',
   attempt_valid: 'ha approvato una partita di',
   attempt_rejected: 'ha scartato una partita di',
-  exclude: 'ha escluso (partita sospetta)',
+  ban: 'ha bannato',
+  exclusion: 'ha confermato l\'esclusione di una partita di',
   settings: 'ha cambiato le impostazioni',
 };
 
@@ -187,7 +189,8 @@ const ACTIONS = {
 const ACTION_FILTERS = [
   ['', 'Tutte le azioni'],
   ['reset_pin', 'Reset PIN'],
-  ['exclude', 'Giocatori esclusi (partite sospette)'],
+  ['ban', 'Ban di giocatori'],
+  ['exclusion', 'Esclusioni confermate'],
   ['account', 'Account (disattiva, riattiva, cancella)'],
   ['extra', 'Punti extra'],
   ['attempt', 'Partite approvate'],
