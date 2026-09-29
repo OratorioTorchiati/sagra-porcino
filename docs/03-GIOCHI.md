@@ -15,8 +15,7 @@ Regole comuni a tutti i giochi:
 
 ### Regole mostrate al giocatore
 > ⏱️ 1 minuto
-> 👆 Tocca i porcini
-> 🔥 Tanti porcini di fila = punti moltiplicati! Ogni porcino ricarica il tempo
+> 👆 Tocca i porcini per far crescere il moltiplicatore
 > ☠️ Funghi velenosi: si riparte da ×1
 > ⏳ Oggetti: il moltiplicatore perde tempo
 

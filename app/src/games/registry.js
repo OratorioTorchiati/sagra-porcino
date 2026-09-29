@@ -15,8 +15,7 @@ export const GAMES = {
     night: 1,
     rules: [
       { icon: '⏱️', text: '1 minuto' },
-      { icon: '👆', text: 'Tocca i porcini', gallery: 'good' },
-      { icon: '🔥', text: 'Tanti porcini di fila = punti moltiplicati! Ogni porcino ricarica il tempo' },
+      { icon: '👆', text: 'Tocca i porcini per far crescere il moltiplicatore', gallery: 'good' },
       { icon: '☠️', text: 'Funghi velenosi: si riparte da ×1', gallery: 'poison' },
       { icon: '⏳', text: 'Oggetti: il moltiplicatore perde tempo', gallery: 'objects' },
     ],
