@@ -135,6 +135,8 @@ Bottoni: **GIOCA** · **Indietro**. I testi delle regole per ogni gioco sono in 
 - **Totale** = somma dei punti dei 4 giochi + punti oggetti segreti. Massimo teorico: 4.500.
 - **Pari merito**: vince chi ha trovato più oggetti segreti; se ancora pari, chi ha raggiunto per primo quel totale (orario dell'ultimo punteggio che ha contribuito).
 
+> Punteggio e classifica: vedi **D71** in `05-DECISIONI.md` (niente normalizzazione, primi 20, podio, live).
+
 ### 6.6 Classifica
 
 - Dentro la tab Minigiochi.

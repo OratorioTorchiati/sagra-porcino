@@ -206,6 +206,27 @@ if (starts[1]?.attempt_id && perDay >= 2) {
   check(`Acchiappa col moltiplicatore a tempo → valida, stesso punteggio dell'app (${state.score})`, acc?.status === 'valid' && acc.raw_score === state.score, JSON.stringify(acc));
 }
 
+// Classifica (007): totale = somma dei migliori per gioco, live con la versione, scheda di un giocatore
+{
+  const board = (await rpc('get_leaderboard', { p_token: t5Token, p_version: null })).body;
+  const card = (await rpc('get_player_card', { p_nickname: t5Nick })).body;
+  const best = card?.player?.best ?? {};
+  const sum = Object.values(best).reduce((a, b) => a + b, 0);
+  check('classifica: il mio totale è la somma dei migliori per gioco (senza normalizzare)', board?.ok && board.me?.total === sum && sum > 0, JSON.stringify(best));
+  check('classifica: Memory conta il migliore (982, anche se segnalato), non la somma dei tentativi', best.memory === 982);
+  check('classifica: ho una posizione e i primi sono in ordine di punti', board?.me?.position >= 1 && board.top.every((e, i, all) => i === 0 || all[i - 1].total >= e.total));
+  check('classifica: pari punti = stessa posizione', board.top.every((e, i, all) => i === 0 || (e.total === all[i - 1].total) === (e.position === all[i - 1].position)));
+  check('classifica: al massimo i primi 20 (più eventuali pari merito del 20°)', board.top.every((e) => e.position <= 20));
+  const again = (await rpc('get_leaderboard', { p_token: t5Token, p_version: board.version })).body;
+  check('classifica live: se non cambia nulla il server risponde solo "invariata"', again?.unchanged === true && !again.top);
+  const guest = (await rpc('get_leaderboard', { p_token: null, p_version: null })).body;
+  check('classifica visibile anche senza account (senza la riga "me")', guest?.ok && guest.me === null && Array.isArray(guest.top));
+  check('scheda di un giocatore inesistente → non trovato', (await rpc('get_player_card', { p_nickname: 'zz-nessuno' })).body?.error === 'NOT_FOUND');
+  const quiz2 = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'quiz' })).body;
+  const afterStart = (await rpc('get_leaderboard', { p_token: t5Token, p_version: board.version })).body;
+  check('avviare una partita non cambia la classifica (nessun ricaricamento per chi la guarda)', quiz2?.ok && afterStart?.unchanged === true, JSON.stringify(quiz2));
+}
+
 const failed = results.filter((ok) => !ok).length;
 console.log(`\n${results.length - failed}/${results.length} controlli superati. Giocatori di prova: ${nick}, ${lockNick}, ${t5Nick} (da cancellare prima della sagra).`);
 process.exit(failed ? 1 : 0);

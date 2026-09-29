@@ -10,6 +10,7 @@ import { renderHome } from './pages/home.js';
 import { renderMenu } from './pages/menu.js';
 import { renderGames } from './pages/games.js';
 import { renderGame } from './pages/game.js';
+import { renderLeaderboard } from './pages/leaderboard.js';
 import { renderProfile } from './pages/profile.js';
 import { renderRegister } from './pages/register.js';
 import { renderLogin } from './pages/login.js';
@@ -21,6 +22,7 @@ startRouter(document.getElementById('app'), {
     '/': renderHome,
     '/menu': renderMenu,
     '/giochi': renderGames,
+    '/giochi/classifica': renderLeaderboard, // prima di :gameId
     '/giochi/:gameId': renderGame,
     '/profilo': renderProfile,
     '/registrati': renderRegister,

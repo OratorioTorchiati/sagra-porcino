@@ -2,7 +2,7 @@
 // - la prima volta si vede solo "Come funziona", aperto: con "Capito" (o Registrati/Accedi senza account)
 //   compare la lista dei giochi;
 // - dalla volta dopo "Come funziona" resta in cima, chiuso: si riapre toccandolo, senza bottoni (D63).
-// La classifica arriva con la Tappa 6, gli oggetti segreti con la Tappa 7.
+// In alto il bottone della Classifica (Tappa 6, D71); gli oggetti segreti arriveranno con la Tappa 7.
 
 import { html } from '../lib/dom.js';
 import { readJson, writeJson } from '../lib/storage.js';
@@ -75,6 +75,7 @@ export function renderGames() {
     <main class="page">
       ${topBarMarkup()}
       <h1 class="page-title"><span class="page-title__icon" aria-hidden="true">${gamepadSvg}</span>Minigiochi</h1>
+      ${PRACTICE_MODE ? '' : '<a class="button button--leaderboard" href="#/giochi/classifica">🏆 Classifica</a>'}
       <div class="games-body"></div>
       <p class="games-updated" aria-live="polite"></p>
     </main>

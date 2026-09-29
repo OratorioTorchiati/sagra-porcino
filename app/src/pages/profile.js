@@ -1,13 +1,22 @@
-// Il mio profilo (docs/01-SPECIFICHE.md §10). Tappa 4: personaggio, nickname, Esci.
-// Punti, posizione e oggetti trovati arrivano con le Tappe 6–7; il QR per il premio con la Tappa 8.
+// Il mio profilo (docs/01-SPECIFICHE.md §10): personaggio, nickname, punti (Tappa 6: totale, posizione,
+// migliori per gioco, punti extra; la stessa scheda che si apre toccando un giocatore in classifica), Esci.
+// Il QR per il premio arriva con la Tappa 8.
 
 import { html, escapeHtml, openDialog, closeDialog } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { currentPlayer, logout, refreshProfile } from '../lib/account.js';
 import { characterById } from '../characters/characters.js';
 import avatarAnonimoSvg from '../assets/avatar-anonimo.svg?raw';
+import { playerStatsMarkup } from '../components/player-card.js';
+import { cachedMyCard, fetchPlayerCard } from '../lib/leaderboard.js';
 
-function loggedMarkup(player) {
+function statsMarkup(player, card) {
+  if (player.role === 'staff') return '<p class="notice">🛠️ Sei dello <strong>staff</strong>: i tuoi punti non vanno in classifica.</p>';
+  if (!card) return '<p class="leaderboard-note">Caricamento dei punti…</p>';
+  return `${playerStatsMarkup(card)}<a class="button button--leaderboard" href="#/giochi/classifica">🏆 Vai alla classifica</a>`;
+}
+
+function loggedMarkup(player, card) {
   const character = characterById(player.avatar);
   return `
     <div class="profile-card">
@@ -15,10 +24,7 @@ function loggedMarkup(player) {
       <p class="profile-card__nickname">${escapeHtml(player.nickname)}</p>
       ${character ? `<p class="profile-card__character">${escapeHtml(character.name)}</p>` : ''}
     </div>
-    <div class="notice">
-      <p class="notice__title">Punti e classifica</p>
-      <p>Qui vedrai i tuoi punti, la tua posizione e il codice per ritirare il premio.</p>
-    </div>
+    <div class="profile-stats">${statsMarkup(player, card)}</div>
     <div class="logout">
       <button type="button" class="button button--secondary" data-action="logout">Esci</button>
     </div>
@@ -58,7 +64,7 @@ export function renderProfile() {
 
   function render() {
     const player = currentPlayer();
-    body.innerHTML = player ? loggedMarkup(player) : guestMarkup;
+    body.innerHTML = player ? loggedMarkup(player, cachedMyCard()) : guestMarkup;
   }
   render();
 
@@ -78,6 +84,16 @@ export function renderProfile() {
 
   // Aggiorna dal server (se la sessione non vale più, si esce); senza rete resta la copia sul telefono
   if (currentPlayer()) refreshProfile().then(render).catch(() => {});
+  // Punti aggiornati (senza rete resta l'ultima scheda salvata)
+  const me = currentPlayer();
+  if (me && me.role !== 'staff') {
+    fetchPlayerCard(me.nickname)
+      .then((card) => {
+        const box = body.querySelector('.profile-stats');
+        if (card && box) box.innerHTML = statsMarkup(me, card);
+      })
+      .catch(() => {});
+  }
 
   return { title: 'Il mio profilo', element };
 }

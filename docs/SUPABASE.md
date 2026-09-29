@@ -22,6 +22,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/004_reset_ore_9.sql` | 5 | tentativi che si rinnovano alle 9 di mattina, nomi "Quiz" e "Memory Torchiati" |
 | `supabase/migrations/005_acchiappa_moltiplicatore_a_tempo.sql` | 5 | Acchiappa: 5 punti a porcino e moltiplicatore a tempo |
 | `supabase/migrations/006_acchiappa_tempi_piu_lunghi.sql` | 5 | Acchiappa: moltiplicatori 7/6/5 secondi |
+| `supabase/migrations/007_classifica.sql` | 6 | classifica (somma dei migliori + punti extra), aggiornata dai trigger, scheda giocatore |
 
 Impostazioni dei giochi (SQL Editor):
 
@@ -56,7 +57,7 @@ I file si possono rieseguire senza danni (`create ... if not exists`, `create or
 Nel SQL Editor:
 
 ```sql
-delete from players where nickname like 'zz%';   -- giocatori di prova (sessioni, dispositivi e tentativi si cancellano da soli)
+delete from players where nickname like 'zz%';   -- giocatori di prova (sessioni, dispositivi, tentativi e riga in classifica si cancellano da soli)
 delete from login_failures;
 delete from attempts;                              -- TUTTI i tentativi (classifica azzerata): solo prima della sagra!
 delete from quiz_questions;                        -- domande di esempio, prima di caricare quelle vere

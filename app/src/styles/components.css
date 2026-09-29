@@ -1478,3 +1478,329 @@ dialog:not([open]) {
 .result-attempts:empty {
   display: none;
 }
+
+/* ---------- Classifica (Tappa 6) ---------- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.button--leaderboard {
+  width: 100%;
+  margin: 0 0 1rem;
+  background: #ffd166;
+  color: var(--color-text);
+  border: 2px solid #e2ad3b;
+}
+
+.button--leaderboard:active {
+  background: #f5c24f;
+}
+
+.leaderboard-prize {
+  margin: 0 0 0.5rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.leaderboard-offline {
+  margin: 0 0 0.75rem;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.leaderboard-note,
+.leaderboard-empty {
+  margin: 1rem 0;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+/* Podio: 2° a sinistra, 1° al centro (più alto), 3° a destra */
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  gap: 0.4rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.podium__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.podium__players {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.2rem;
+  width: 100%;
+}
+
+.podium__player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+  max-width: 100%;
+  padding: 0.25rem;
+  border: none;
+  border-radius: 14px;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.podium__avatar {
+  width: 64px;
+  height: 64px;
+}
+
+.podium__step--1 .podium__avatar {
+  width: 84px;
+  height: 84px;
+}
+
+.podium__step--shared .podium__avatar {
+  width: 48px;
+  height: 48px;
+}
+
+.podium__avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.podium__name {
+  max-width: 100%;
+  margin-top: 0.15rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.podium__player.is-me .podium__avatar {
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--color-forest);
+}
+
+.podium__block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  margin-top: 0.3rem;
+  padding-top: 0.4rem;
+  border-radius: 12px 12px 0 0;
+  color: var(--color-text);
+}
+
+.podium__place {
+  font-family: var(--font-title);
+  font-size: var(--text-xl);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.podium__points {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.podium__step--1 .podium__block {
+  height: 6.5rem;
+  background: #ffd166;
+}
+
+.podium__step--2 .podium__block {
+  height: 5rem;
+  background: #d9dde3;
+}
+
+.podium__step--3 .podium__block {
+  height: 4rem;
+  background: #e8b48a;
+}
+
+/* Righe dal 4° in poi */
+.rank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rank-row {
+  display: grid;
+  grid-template-columns: 2.6rem 40px 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 0.4rem 0.8rem;
+  border: 2px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.rank-row--prize {
+  background: #fff4dc;
+  border-color: #f0cf86;
+}
+
+.rank-row.is-me {
+  border: 3px solid var(--color-forest);
+  background: #e7f3e9;
+}
+
+.rank-row__pos {
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.rank-row__avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.rank-row__avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.rank-row__name {
+  min-width: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.rank-row__points {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.me-tag {
+  display: inline-block;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--color-forest);
+  color: #fff;
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+
+.rank-divider {
+  margin: 0.3rem 0;
+  padding-top: 0.5rem;
+  border-top: 2px dashed #e2ad3b;
+  text-align: center;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.rank-gap {
+  text-align: center;
+  font-size: var(--text-lg);
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+.rank-list--me {
+  margin-top: 0.4rem;
+}
+
+/* Scheda punti (profilo e finestra della classifica) */
+.profile-card--compact {
+  padding: 0 0 0.5rem;
+}
+
+.profile-card--compact .profile-card__avatar {
+  width: 96px;
+  height: 96px;
+}
+
+.profile-card--compact .profile-card__nickname {
+  font-size: var(--text-xl);
+}
+
+.player-stats {
+  margin-bottom: 1rem;
+}
+
+.player-stats__summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.player-stats__summary p {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 0.6rem;
+  border-radius: 14px;
+  background: #fff4dc;
+  text-align: center;
+}
+
+.player-stats__label {
+  color: var(--color-text-muted);
+}
+
+.player-stats__total strong {
+  font-size: var(--text-xl);
+  color: var(--color-primary);
+}
+
+.player-stats__position span:last-child {
+  font-size: var(--text-lg);
+}
+
+.player-stats__games {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.player-stats__game {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.9rem;
+}
+
+.player-stats__game + .player-stats__game {
+  border-top: 1px solid var(--color-border);
+}
+
+.player-stats__game strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.player-dialog .dialog__actions {
+  margin-top: 0;
+}

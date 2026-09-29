@@ -148,6 +148,8 @@ login_failures (nickname text, failed_at timestamptz)
 
 ### 3.5 Calcolo della classifica
 
+> **Superato da D71** (`05-DECISIONI.md`): niente normalizzazione, totale = somma dei migliori + punti extra, tabella `leaderboard` aggiornata dai trigger (migrazione 007). Il testo qui sotto è la versione originale.
+
 Una vista o funzione SQL:
 
 1. `best_raw` = per ogni (utente, gioco) il massimo `raw_score` tra i tentativi inviati e non `flagged` (i flagged restano esclusi finché lo staff non li approva).
