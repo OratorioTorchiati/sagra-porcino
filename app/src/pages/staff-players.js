@@ -105,7 +105,7 @@ function detailMarkup(p) {
     </div>
     ${playerStatsMarkup(p.card)}
 
-    <h3 class="staff-h3">📱 Codice del telefono</h3>
+    <h3 class="staff-h3">📱 Codici dei devices</h3>
     <p class="staff-muted phone-legend">📝 Registrazione · 🟢 Attivo · 📵 Ban device · 🕒 Ultimi accessi</p>
     <ul class="phone-list">${devices}</ul>
     ${p.login_failures ? `<p class="staff-warn">PIN sbagliato ${p.login_failures} volte negli ultimi 15 minuti.</p>` : ''}
