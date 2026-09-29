@@ -34,6 +34,7 @@ export function watchLeaderboard({ onData, onWindow, onOnline }) {
   let timer = null;
   let stopped = false;
   let online = null;
+  let first = true; // la prima richiesta si fa sempre; le successive solo con la pagina visibile
 
   function setOnline(value) {
     if (value !== online) {
@@ -45,7 +46,8 @@ export function watchLeaderboard({ onData, onWindow, onOnline }) {
   async function poll() {
     clearTimeout(timer);
     if (stopped) return;
-    if (document.visibilityState !== 'hidden') {
+    if (first || document.visibilityState !== 'hidden') {
+      first = false;
       try {
         const data = await fetchLeaderboard(version);
         if (stopped) return;
@@ -89,5 +91,5 @@ export function cachedMyCard() {
   return cached && cached.nickname === myNickname() ? cached.card : null;
 }
 
-/** 1640 → "1.640" */
-export const formatPoints = (n) => Number(n ?? 0).toLocaleString('it-IT');
+/** 1640 → "1.640" (sempre col punto: l'italiano di Intl non lo mette nei numeri a 4 cifre) */
+export const formatPoints = (n) => String(Math.round(Number(n ?? 0))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
