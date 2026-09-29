@@ -140,4 +140,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 015 applicata. Acchiappa: gli oggetti tolgono 2 s alla partita, riccio tra i velenosi (D81). |
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 016 applicata. PIN di 5 cifre non troppo semplice, 5 tentativi con messaggi e blocco che cresce 1/5/15/60 minuti (D82). |
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 017 applicata. Blocco dei tentativi per nickname + IP, tetti per IP e per nickname (D83); verificato che l'IP arriva da Cloudflare e non si falsifica. Migrazione 018 applicata (IP di riserva affidabile): 103/103 controlli. |
-| 8 (ritocchi) | Completata | 2026-09-29 | Acchiappa: livelli a timer, ricariche -0,5 s, anello della serie a ×1, correzione del lag iniziale (D84); migrazione 019. |
+| 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 019 applicata. Acchiappa: livelli a timer, ricariche -0,5 s, anello della serie a ×1, correzione del lag iniziale (D84). |
