@@ -38,7 +38,8 @@ export async function staffCall(ctx, name, params, errorEl) {
 
 const ERRORS = {
   NOT_FOUND: 'Non trovato.',
-  PIN_INVALID: 'Il PIN deve avere 4 cifre.',
+  PIN_INVALID: 'Il PIN deve avere 5 cifre.',
+  PIN_TOO_SIMPLE: 'PIN troppo semplice (cifre tutte uguali o in fila): scegline un altro.',
   CONFIRM_MISMATCH: 'Il nickname scritto non corrisponde.',
   POINTS_INVALID: 'Scrivi un numero di punti diverso da zero (es. 50 o -50).',
   REASON_REQUIRED: 'Scrivi il motivo.',

@@ -53,7 +53,7 @@ Si chiede alla prima volta che l'utente vuole giocare (o dal Profilo). Passi, **
 
 1. **Personaggio**: ne viene proposto uno **a caso già selezionato**; frecce o griglia per cambiarlo. Galleria di 8–12 personaggi originali a tema bosco (elenco in §9).
 2. **Nickname**: 3–16 caratteri, lettere/numeri/underscore, unico (senza distinzione maiuscole/minuscole), filtro base per parolacce.
-3. **PIN a 4 cifre**, da scrivere due volte. Messaggio: "Ricordalo: ti serve per ritirare il premio".
+3. **PIN a 5 cifre** (D82: prima 4; niente PIN troppo semplici), da scrivere due volte. Messaggio: "Ricordalo: ti serve per ritirare il premio".
 4. **Selfie**: **solo se l'impostazione staff `selfie_enabled` è attiva** (default: disattivata). Vedi §8.
 5. Due caselle obbligatorie:
    - "Ho letto l'informativa privacy" (link a una pagina semplice);

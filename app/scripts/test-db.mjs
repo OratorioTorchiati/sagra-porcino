@@ -71,17 +71,21 @@ for (const name of ALLOWED) {
 check(`parole innocue ammesse (${ALLOWED.length} casi, es. Armadio, Claudio)`, allowedFails.length === 0, allowedFails.length ? `bloccati per errore: ${allowedFails.join(', ')}` : '');
 
 // ---------- Registrazione ----------
-const reg = await rpc('register', { p_nickname: nick, p_avatar: 'riccio', p_pin: '1234', p_device_id: device1, p_fingerprint: 'test', p_user_agent: 'test-db' });
+const reg = await rpc('register', { p_nickname: nick, p_avatar: 'riccio', p_pin: '24680', p_device_id: device1, p_fingerprint: 'test', p_user_agent: 'test-db' });
 check('registrazione riuscita', reg.body?.ok === true && reg.body.token?.length === 64, JSON.stringify(reg.body?.error ?? ''));
 const token = reg.body?.token;
 
-const again = await rpc('register', { p_nickname: `zzu${suffix}`, p_avatar: 'riccio', p_pin: '1234', p_device_id: device1 });
+const again = await rpc('register', { p_nickname: `zzu${suffix}`, p_avatar: 'riccio', p_pin: '24680', p_device_id: device1 });
 check('stesso telefono, secondo account → rifiutato', again.body?.error === 'DEVICE_ALREADY_USED' && again.body.nickname_hint === `${nick.slice(0, 3)}***`, JSON.stringify(again.body));
 
-const dupe = await rpc('register', { p_nickname: nick.toUpperCase(), p_avatar: 'riccio', p_pin: '1234', p_device_id: device2 });
+const dupe = await rpc('register', { p_nickname: nick.toUpperCase(), p_avatar: 'riccio', p_pin: '24680', p_device_id: device2 });
 check('nickname già usato (maiuscole diverse) → rifiutato', dupe.body?.error === 'NICKNAME_TAKEN', JSON.stringify(dupe.body));
-check('...e il telefono 2 resta libero (niente account a metà)', (await rpc('register', { p_nickname: `zzv${suffix}`, p_avatar: 'x', p_pin: '1234', p_device_id: device2 })).body?.error === 'AVATAR_INVALID');
-check('PIN non di 4 cifre → rifiutato', (await rpc('register', { p_nickname: `zzw${suffix}`, p_avatar: 'riccio', p_pin: '12a4', p_device_id: device3 })).body?.error === 'PIN_INVALID');
+check('...e il telefono 2 resta libero (niente account a metà)', (await rpc('register', { p_nickname: `zzv${suffix}`, p_avatar: 'x', p_pin: '24680', p_device_id: device2 })).body?.error === 'AVATAR_INVALID');
+check('PIN non di 5 cifre → rifiutato', (await rpc('register', { p_nickname: `zzw${suffix}`, p_avatar: 'riccio', p_pin: '12a45', p_device_id: device3 })).body?.error === 'PIN_INVALID');
+check('PIN di 4 cifre per un nuovo account → rifiutato', (await rpc('register', { p_nickname: `zzw${suffix}`, p_avatar: 'riccio', p_pin: '7391', p_device_id: device3 })).body?.error === 'PIN_INVALID');
+for (const simple of ['00000', '12345', '98765']) {
+  check(`PIN troppo semplice (${simple}) → rifiutato`, (await rpc('register', { p_nickname: `zzw${suffix}`, p_avatar: 'riccio', p_pin: simple, p_device_id: device3 })).body?.error === 'PIN_TOO_SIMPLE');
+}
 
 // ---------- Profilo e sessione ----------
 const profile = await rpc('get_my_profile', { p_token: token });
@@ -89,18 +93,26 @@ check('profilo con la chiave di sessione', profile.body?.ok === true && profile.
 check('chiave falsa → non collegato', (await rpc('get_my_profile', { p_token: 'f'.repeat(64) })).body?.error === 'NOT_LOGGED_IN');
 
 // ---------- Accesso da un altro telefono ----------
-const login2 = await rpc('login', { p_nickname: nick.toUpperCase(), p_secret: '1234', p_device_id: device3 });
+const login2 = await rpc('login', { p_nickname: nick.toUpperCase(), p_secret: '24680', p_device_id: device3 });
 check('stesso account da un altro telefono con il PIN → consentito', login2.body?.ok === true);
 const wrong = await rpc('login', { p_nickname: nick, p_secret: '0000', p_device_id: device3 });
-check('PIN sbagliato → rifiutato con tentativi rimasti', wrong.body?.error === 'WRONG_CREDENTIALS' && wrong.body.attempts_left === 9, JSON.stringify(wrong.body));
-check('PIN giusto dopo un errore → consentito (e azzera gli errori)', (await rpc('login', { p_nickname: nick, p_secret: '1234' })).body?.ok === true);
+check('PIN sbagliato → rifiutato con tentativi rimasti', wrong.body?.error === 'WRONG_CREDENTIALS' && wrong.body.attempts_left === 4, JSON.stringify(wrong.body));
+check('PIN giusto dopo un errore → consentito (e azzera gli errori)', (await rpc('login', { p_nickname: nick, p_secret: '24680' })).body?.ok === true);
 
-// ---------- Blocco dopo 10 PIN sbagliati ----------
+// ---------- 5 tentativi, poi blocco che cresce (1, 5, 15, 60 minuti) ----------
 const lockNick = `zzl${suffix}`;
-await rpc('register', { p_nickname: lockNick, p_avatar: 'gufetto', p_pin: '4321', p_device_id: crypto.randomUUID() });
-for (let i = 0; i < 10; i++) await rpc('login', { p_nickname: lockNick, p_secret: '0000' });
-const locked = await rpc('login', { p_nickname: lockNick, p_secret: '4321' });
-check('dopo 10 PIN sbagliati: bloccato anche con il PIN giusto', locked.body?.error === 'LOCKED' && locked.body.retry_after_s > 800, JSON.stringify(locked.body));
+await rpc('register', { p_nickname: lockNick, p_avatar: 'gufetto', p_pin: '27182', p_device_id: crypto.randomUUID() });
+const lefts = [];
+for (let i = 0; i < 4; i++) lefts.push((await rpc('login', { p_nickname: lockNick, p_secret: '00000' })).body?.attempts_left);
+check('PIN sbagliati: tentativi rimasti 4, 3, 2, 1', lefts.join() === '4,3,2,1', lefts.join());
+const fifth = (await rpc('login', { p_nickname: lockNick, p_secret: '00000' })).body;
+check('5° PIN sbagliato → bloccato per 1 minuto', fifth?.error === 'LOCKED' && fifth.retry_after_s > 50 && fifth.retry_after_s <= 60, JSON.stringify(fifth));
+const locked = await rpc('login', { p_nickname: lockNick, p_secret: '27182' });
+check('bloccato anche con il PIN giusto', locked.body?.error === 'LOCKED', JSON.stringify(locked.body));
+const lockedAt = Date.now();
+const ghost = [];
+for (let i = 0; i < 5; i++) ghost.push((await rpc('login', { p_nickname: `zzq${suffix}`, p_secret: '00000' })).body?.error);
+check('nickname che non esiste: stessi tentativi e stesso blocco', ghost.join() === 'WRONG_CREDENTIALS,WRONG_CREDENTIALS,WRONG_CREDENTIALS,WRONG_CREDENTIALS,LOCKED', ghost.join());
 
 // ---------- Uscita ----------
 await rpc('logout', { p_token: token });
@@ -112,7 +124,7 @@ check('le altre sessioni (altro telefono) restano valide', (await rpc('get_my_pr
 // =====================================================================================
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const t5Nick = `zzg${suffix}`;
-const t5 = await rpc('register', { p_nickname: t5Nick, p_avatar: 'scoiattolo', p_pin: '5555', p_device_id: crypto.randomUUID() });
+const t5 = await rpc('register', { p_nickname: t5Nick, p_avatar: 'scoiattolo', p_pin: '55155', p_device_id: crypto.randomUUID() });
 const t5Token = t5.body?.token;
 
 const publicState = await rpc('get_games_state', { p_token: null });
@@ -218,6 +230,18 @@ if (starts[1]?.attempt_id && perDay >= 2) {
   }
 }
 
+// Blocco che cresce (016): finito il primo blocco (1 minuto), altri 5 errori → 5 minuti
+{
+  const wait = 61000 - (Date.now() - lockedAt);
+  if (wait > 0) {
+    console.log(`(attendo ${Math.ceil(wait / 1000)} s: finisce il primo blocco)`);
+    await sleep(wait);
+  }
+  let last;
+  for (let i = 0; i < 5; i++) last = (await rpc('login', { p_nickname: lockNick, p_secret: '00000' })).body;
+  check('secondo blocco → 5 minuti', last?.error === 'LOCKED' && last.retry_after_s > 280 && last.retry_after_s <= 300, JSON.stringify(last));
+}
+
 // Classifica (007): totale = somma dei migliori per gioco, live con la versione, scheda di un giocatore
 {
   const board = (await rpc('get_leaderboard', { p_token: t5Token, p_version: null })).body;
@@ -260,7 +284,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
     }
   }
   check('pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le 20 funzioni', denied.length === 0, denied.join(' | '));
-  const stillThere = (await rpc('login', { p_nickname: t5Nick, p_secret: '5555' })).body;
+  const stillThere = (await rpc('login', { p_nickname: t5Nick, p_secret: '55155' })).body;
   check('...e i tentativi del giocatore non hanno cambiato nulla (PIN e account intatti)', stillThere?.ok === true);
 }
 
@@ -286,15 +310,16 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   // Giocatore usa e getta per le azioni pesanti
   const vNick = `zzv${suffix}`;
   const vDevice = crypto.randomUUID();
-  const v = (await rpc('register', { p_nickname: vNick, p_avatar: 'riccio', p_pin: '1111', p_device_id: vDevice })).body;
+  const v = (await rpc('register', { p_nickname: vNick, p_avatar: 'riccio', p_pin: '31415', p_device_id: vDevice })).body;
   const vStart = (await rpc('start_attempt', { p_token: v.token, p_game_id: 'memory' })).body;
   await sleep(6500);
   await rpc('submit_score', { p_attempt_id: vStart.attempt_id, p_raw_score: 942, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) });
-  const reset = await staff('reset_pin', { p_nickname: vNick, p_new_pin: '4321' });
+  const reset = await staff('reset_pin', { p_nickname: vNick, p_new_pin: '27182' });
   const oldSession = (await rpc('get_my_profile', { p_token: v.token })).body;
-  const newLogin = (await rpc('login', { p_nickname: vNick, p_secret: '4321' })).body;
+  const newLogin = (await rpc('login', { p_nickname: vNick, p_secret: '27182' })).body;
   check('staff: reset PIN → il vecchio accesso si chiude, si entra col nuovo PIN', reset?.ok && oldSession?.ok === false && newLogin?.ok, JSON.stringify(reset));
-  check('staff: PIN non di 4 cifre → rifiutato', (await staff('reset_pin', { p_nickname: vNick, p_new_pin: '12' }))?.error === 'PIN_INVALID');
+  check('staff: PIN non di 5 cifre → rifiutato', (await staff('reset_pin', { p_nickname: vNick, p_new_pin: '1234' }))?.error === 'PIN_INVALID');
+  check('staff: PIN troppo semplice → rifiutato', (await staff('reset_pin', { p_nickname: vNick, p_new_pin: '11111' }))?.error === 'PIN_TOO_SIMPLE');
 
   const cardBefore = (await rpc('get_player_card', { p_nickname: vNick })).body.player;
   await staff('add_extra_points', { p_nickname: vNick, p_points: 100, p_reason: 'prova' });
@@ -306,15 +331,15 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('staff: punti extra senza motivo → rifiutati', (await staff('add_extra_points', { p_nickname: vNick, p_points: 5, p_reason: ' ' }))?.error === 'REASON_REQUIRED');
 
   await staff('set_disabled', { p_nickname: vNick, p_disabled: true });
-  const disabledLogin = (await rpc('login', { p_nickname: vNick, p_secret: '4321' })).body;
+  const disabledLogin = (await rpc('login', { p_nickname: vNick, p_secret: '27182' })).body;
   const boardDisabled = (await rpc('get_player_card', { p_nickname: vNick })).body;
   check('staff: disattivato → non entra e sparisce dalla classifica', disabledLogin?.error === 'DISABLED' && boardDisabled?.error === 'NOT_FOUND');
   await staff('set_disabled', { p_nickname: vNick, p_disabled: false });
-  check('staff: riattivato → entra di nuovo', (await rpc('login', { p_nickname: vNick, p_secret: '4321' })).body?.ok === true);
+  check('staff: riattivato → entra di nuovo', (await rpc('login', { p_nickname: vNick, p_secret: '27182' })).body?.ok === true);
 
   check('staff: cancellazione con nickname sbagliato → rifiutata', (await staff('delete_player', { p_nickname: vNick, p_confirm: 'altro' }))?.error === 'CONFIRM_MISMATCH');
   const del = await staff('delete_player', { p_nickname: vNick, p_confirm: vNick });
-  const reRegister = (await rpc('register', { p_nickname: `zzw${suffix}`, p_avatar: 'riccio', p_pin: '1111', p_device_id: vDevice })).body;
+  const reRegister = (await rpc('register', { p_nickname: `zzw${suffix}`, p_avatar: 'riccio', p_pin: '31415', p_device_id: vDevice })).body;
   check('staff: cancellato → account sparito e il telefono può registrarsi di nuovo', del?.ok && (await staff('search_players', { p_query: vNick })).players.length === 0 && reRegister?.ok, JSON.stringify(reRegister));
 
   const flagged = await staff('review_list', { p_status: 'flagged' });
@@ -342,13 +367,13 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   // Ban: account e telefono bloccati, partita cancellata (solo lo staff)
   const xNick = `zzx${suffix}`;
   const xDevice = crypto.randomUUID();
-  const x = (await rpc('register', { p_nickname: xNick, p_avatar: 'riccio', p_pin: '2222', p_device_id: xDevice })).body;
+  const x = (await rpc('register', { p_nickname: xNick, p_avatar: 'riccio', p_pin: '22122', p_device_id: xDevice })).body;
   const xStart = (await rpc('start_attempt', { p_token: x.token, p_game_id: 'memory' })).body;
   await sleep(6500);
   const xRes = (await rpc('submit_score', { p_attempt_id: xStart.attempt_id, p_raw_score: 982, p_stats: { durationMs: 6000 }, p_actions: memoryActions(8, 6000) })).body;
   const excluded = await staff('ban_player', { p_attempt_id: xStart.attempt_id });
-  const xLogin = (await rpc('login', { p_nickname: xNick, p_secret: '2222' })).body;
-  const xAgain = (await rpc('register', { p_nickname: `zzy${suffix}`, p_avatar: 'riccio', p_pin: '2222', p_device_id: xDevice })).body;
+  const xLogin = (await rpc('login', { p_nickname: xNick, p_secret: '22122' })).body;
+  const xAgain = (await rpc('register', { p_nickname: `zzy${suffix}`, p_avatar: 'riccio', p_pin: '22122', p_device_id: xDevice })).body;
   const xList = await staff('review_list', {});
   check('staff: ban → non entra più, il telefono non può creare un altro account, la partita sparisce',
     xRes?.status === 'flagged' && excluded?.ok && xLogin?.error === 'DISABLED' && xAgain?.error === 'DEVICE_ALREADY_USED' && !xList.attempts.some((a) => a.id === xStart.attempt_id),
@@ -357,13 +382,13 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const dNick = `zzd${suffix}`;
   const dDevice = crypto.randomUUID();
   const dOther = crypto.randomUUID();
-  const d = (await rpc('register', { p_nickname: dNick, p_avatar: 'riccio', p_pin: '3333', p_device_id: dDevice })).body;
+  const d = (await rpc('register', { p_nickname: dNick, p_avatar: 'riccio', p_pin: '33833', p_device_id: dDevice })).body;
   const dBan = await staff('ban_device', { p_device_id: dDevice, p_ban: true });
   const dSession = (await rpc('get_my_profile', { p_token: d.token })).body;
-  const dLogin = (await rpc('login', { p_nickname: dNick, p_secret: '3333', p_device_id: dDevice })).body;
-  const friendLogin = (await rpc('login', { p_nickname: t5Nick, p_secret: '5555', p_device_id: dDevice })).body;
-  const dRegister = (await rpc('register', { p_nickname: `zze${suffix}`, p_avatar: 'riccio', p_pin: '3333', p_device_id: dDevice })).body;
-  const dElsewhere = (await rpc('login', { p_nickname: dNick, p_secret: '3333', p_device_id: dOther })).body;
+  const dLogin = (await rpc('login', { p_nickname: dNick, p_secret: '33833', p_device_id: dDevice })).body;
+  const friendLogin = (await rpc('login', { p_nickname: t5Nick, p_secret: '55155', p_device_id: dDevice })).body;
+  const dRegister = (await rpc('register', { p_nickname: `zze${suffix}`, p_avatar: 'riccio', p_pin: '33833', p_device_id: dDevice })).body;
+  const dElsewhere = (await rpc('login', { p_nickname: dNick, p_secret: '33833', p_device_id: dOther })).body;
   check('staff: ban telefono → da lì non si entra con nessun account (nemmeno di altri), non ci si registra, le sessioni si chiudono',
     dBan?.ok && dSession?.ok === false && dLogin?.error === 'DEVICE_BANNED' && friendLogin?.error === 'DEVICE_BANNED' && dRegister?.error === 'DEVICE_BANNED',
     JSON.stringify({ dSession: dSession?.error, dLogin: dLogin?.error, friendLogin: friendLogin?.error, dRegister: dRegister?.error }));
@@ -379,7 +404,7 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const dOnlyOther = await staff('player_accesses', { p_nickname: dNick, p_device_id: dOther });
   check('staff: ultimi accessi di un solo telefono', dOnlyOther?.accesses?.length >= 1 && dOnlyOther.accesses.every((a) => a.device_id === dOther));
   await staff('ban_device', { p_device_id: dDevice, p_ban: false });
-  check('staff: sbloccato → da quel telefono si entra di nuovo', (await rpc('login', { p_nickname: dNick, p_secret: '3333', p_device_id: dDevice })).body?.ok === true);
+  check('staff: sbloccato → da quel telefono si entra di nuovo', (await rpc('login', { p_nickname: dNick, p_secret: '33833', p_device_id: dDevice })).body?.ok === true);
 
   check('staff: il giocatore bannato sparisce dalla classifica', (await rpc('get_player_card', { p_nickname: xNick })).body?.error === 'NOT_FOUND');
 

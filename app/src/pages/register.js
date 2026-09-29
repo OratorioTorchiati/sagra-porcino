@@ -9,6 +9,7 @@ import { NetworkError, serverConfigured } from '../lib/api.js';
 import { currentPlayer, register, checkNickname } from '../lib/account.js';
 import { authErrorMessage, OFFLINE_MESSAGE, NOT_CONFIGURED_MESSAGE, takeAfterLogin } from './auth-messages.js';
 import { privacyContentMarkup } from './privacy.js';
+import { PIN_LENGTH, pinProblem, PIN_TOO_SIMPLE_MESSAGE } from '../lib/pin.js';
 
 const NICK_RE = /^[A-Za-z0-9_]{3,16}$/;
 
@@ -66,14 +67,15 @@ export function renderRegister() {
         </div>
 
         <div class="form-section" role="group" aria-labelledby="sezione-3">
-          <h2 class="form-section__title" id="sezione-3">3. Scegli un PIN di 4 cifre</h2>
+          <h2 class="form-section__title" id="sezione-3">3. Scegli un PIN di 5 cifre</h2>
           <label class="form-field">
             <span class="form-field__label">PIN</span>
-            <input class="form-field__input form-field__input--pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" required>
+            <input class="form-field__input form-field__input--pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="new-password" required>
+            <span class="form-field__status" data-pin-status aria-live="polite"></span>
           </label>
           <label class="form-field">
             <span class="form-field__label">Ripeti il PIN</span>
-            <input class="form-field__input form-field__input--pin" name="pin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" required>
+            <input class="form-field__input form-field__input--pin" name="pin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="new-password" required>
           </label>
           <p class="attempt-notice attempt-notice--warning">⚠️ <strong>ATTENZIONE!</strong> Puoi creare un solo account per telefono, tieni bene a mente il tuo PIN</p>
         </div>
@@ -158,6 +160,15 @@ export function renderRegister() {
     }, 400);
   });
 
+  // PIN troppo semplice: lo si dice appena scritte le 5 cifre (D82)
+  const pinStatus = element.querySelector('[data-pin-status]');
+  form.elements.pin.addEventListener('input', () => {
+    const pin = form.elements.pin.value;
+    const tooSimple = pin.length === PIN_LENGTH && pinProblem(pin) === 'PIN_TOO_SIMPLE';
+    pinStatus.textContent = tooSimple ? `❌ ${PIN_TOO_SIMPLE_MESSAGE}` : '';
+    pinStatus.dataset.kind = tooSimple ? 'bad' : '';
+  });
+
   element.querySelector('[data-action="privacy"]').addEventListener('click', () => openDialog(element.querySelector('dialog')));
   element.querySelector('[data-action="privacy-close"]').addEventListener('click', () => closeDialog(element.querySelector('dialog')));
 
@@ -174,7 +185,8 @@ export function renderRegister() {
     const pin = form.elements.pin.value;
     const problems = [];
     if (!NICK_RE.test(nickname)) problems.push('Il nickname deve avere da 3 a 16 caratteri: solo lettere, numeri e _.');
-    if (!/^[0-9]{4}$/.test(pin)) problems.push('Il PIN deve avere 4 cifre.');
+    const pinError = pinProblem(pin);
+    if (pinError) problems.push(authErrorMessage({ error: pinError }));
     else if (pin !== form.elements.pin2.value) problems.push('I due PIN non sono uguali.');
     if (!form.elements.privacy.checked) problems.push('Spunta la casella dell\'informativa privacy.');
     if (!form.elements.age.checked) problems.push('Spunta la casella dell\'età.');

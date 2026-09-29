@@ -7,6 +7,7 @@ import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { NetworkError, serverConfigured } from '../lib/api.js';
 import { currentPlayer, login } from '../lib/account.js';
 import { authErrorMessage, OFFLINE_MESSAGE, NOT_CONFIGURED_MESSAGE, takeAfterLogin } from './auth-messages.js';
+import { LOGIN_PIN_RE } from '../lib/pin.js';
 import { fillDeviceCode } from '../components/device-code.js';
 
 export function renderLogin() {
@@ -25,8 +26,8 @@ export function renderLogin() {
           <input class="form-field__input" name="nickname" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="16" required>
         </label>
         <label class="form-field">
-          <span class="form-field__label">PIN (4 cifre)</span>
-          <input class="form-field__input form-field__input--pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="current-password" required>
+          <span class="form-field__label">PIN</span>
+          <input class="form-field__input form-field__input--pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="current-password" required>
         </label>
         <div class="form-error" role="alert" hidden></div>
         <button type="submit" class="button button--play">ENTRA</button>
@@ -79,7 +80,7 @@ export function renderLogin() {
       errorBox.hidden = true;
       const nickname = form.elements.nickname.value.trim();
       const pin = form.elements.pin.value;
-      if (!nickname || !/^[0-9]{4}$/.test(pin)) return showError('Scrivi il tuo nickname e il PIN di 4 cifre.');
+      if (!nickname || !LOGIN_PIN_RE.test(pin)) return showError('Scrivi il tuo nickname e il tuo PIN.');
       if (!serverConfigured) return showError(NOT_CONFIGURED_MESSAGE);
 
       submit.disabled = true;

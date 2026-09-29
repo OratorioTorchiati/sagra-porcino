@@ -1,5 +1,7 @@
 // Messaggi in italiano semplice per i codici di errore del server (registrazione e accesso).
 
+import { PIN_TOO_SIMPLE_MESSAGE } from '../lib/pin.js';
+
 export function authErrorMessage(result) {
   switch (result.error) {
     case 'NICKNAME_INVALID':
@@ -11,18 +13,22 @@ export function authErrorMessage(result) {
     case 'DEVICE_ALREADY_USED':
       return `Da questo telefono è già stato creato un account (nickname: ${result.nickname_hint}). Accedi con quello.`;
     case 'PIN_INVALID':
-      return 'Il PIN deve avere 4 cifre.';
+      return 'Il PIN deve avere 5 cifre.';
+    case 'PIN_TOO_SIMPLE':
+      return `${PIN_TOO_SIMPLE_MESSAGE}: niente cifre tutte uguali o in fila (00000, 12345...).`;
     case 'AVATAR_INVALID':
       return 'Scegli un personaggio.';
     case 'DEVICE_MISSING':
       return 'Il telefono non è stato riconosciuto. Ricarica la pagina e riprova.';
+    // 5 tentativi, poi un blocco che cresce a ogni volta (D82): dal 3° tentativo si vedono quelli rimasti
     case 'WRONG_CREDENTIALS':
-      return result.attempts_left <= 3
-        ? `Nickname o PIN sbagliati. Ancora ${result.attempts_left} ${result.attempts_left === 1 ? 'tentativo' : 'tentativi'}, poi dovrai aspettare 15 minuti.`
-        : 'Nickname o PIN sbagliati.';
+      if (result.attempts_left === 1) return 'Non agitarti e pensa più a fondo, hai soltanto un altro tentativo.';
+      if (result.attempts_left === 2) return 'Nickname o PIN sbagliati. 2 tentativi rimanenti, mantieni la calma.';
+      if (result.attempts_left === 3) return 'Nickname o PIN sbagliati. 3 tentativi rimanenti.';
+      return 'Nickname o PIN sbagliati.';
     case 'LOCKED': {
       const minutes = Math.max(1, Math.ceil((result.retry_after_s ?? 900) / 60));
-      return `Troppi tentativi sbagliati. Riprova tra ${minutes} ${minutes === 1 ? 'minuto' : 'minuti'}.`;
+      return `Tentativi finiti. Riprova tra ${minutes} ${minutes === 1 ? 'minuto' : 'minuti'}.`;
     }
     case 'DISABLED':
       return 'Questo account è stato bloccato dagli organizzatori. Rivolgiti allo stand della sagra.';
