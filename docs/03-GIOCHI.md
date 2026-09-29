@@ -60,7 +60,7 @@ Durata ≈ 60 s (tolleranza per pause); punteggio ≤ `max_raw_score` calcolato 
 ## ❓ Gioco 2 — Quiz del paese (1ª sera)
 
 ### Regole mostrate al giocatore
-> ❓ 5 domande sul paese
+> ❓ 5 domande sui funghi
 > ✅ Scegli la risposta giusta tra 4
 > ⚡ Più sei veloce, più punti fai!
 

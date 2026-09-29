@@ -399,21 +399,21 @@
   border-radius: var(--radius);
   background: var(--color-surface);
   box-shadow: var(--shadow);
-  font-size: var(--text-lg);
+  font-size: var(--text-base);
   font-weight: 700;
   line-height: 1.3;
 }
 
 .rules__icon {
   flex: none;
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   width: 2rem;
   text-align: center;
 }
 
 .rules__icon svg {
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 1.7rem;
+  height: 1.7rem;
   margin: 0 auto;
 }
 

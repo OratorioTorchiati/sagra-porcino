@@ -25,12 +25,12 @@ function howItWorksItems(state) {
   const resetHour = state?.reset_hour ?? 9;
   const until = state?.open_until ? closeText(new Date(state.open_until)) : null;
   return [
-    `🎮 <strong>${perDay} tentativi al giorno</strong> per ogni gioco: ogni mattina alle ${resetHour} tornano ${perDay}`,
-    '👆 Il tentativo si conta appena premi <strong>GIOCA</strong>',
-    '🚫 <strong>Non barare!</strong> Se chiudi il gioco in corso, ti verrà sottratto un tentativo',
-    '🏅 Vale il tuo <strong>punteggio migliore</strong>',
-    '🎁 I <strong>primi 10</strong> in classifica vincono un premio!',
-    until ? `⏰ Il termine dei giochi sarà <strong>${until}</strong>` : null,
+    `🎮 <strong>${perDay} tentativi al giorno</strong> per ogni gioco: alle ${resetHour}:00 si resettano`,
+    '🚫 <strong>Non barare!</strong> Il tentativo si conta appena premi <strong>GIOCA</strong> e non ti conta il punteggio se chiudi il gioco in corso.',
+    '🏅 Vale <strong>SOLO il punteggio migliore</strong>, per ogni gioco',
+    until
+      ? `⏰ Termine dei giochi: <strong>${until}</strong> → i <strong>primi 10</strong> vinceranno un premio!`
+      : '🎁 I <strong>primi 10</strong> vinceranno un premio!',
     '👤 Serve un <strong>account</strong> per salvare il punteggio',
   ].filter(Boolean);
 }

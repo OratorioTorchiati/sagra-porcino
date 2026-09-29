@@ -27,7 +27,7 @@ export const GAMES = {
     icon: '❓',
     night: 1,
     rules: [
-      { icon: '❓', text: '5 domande sul paese' },
+      { icon: '❓', text: '5 domande sui funghi' },
       { icon: '✅', text: 'Scegli la risposta giusta tra 4' },
       { icon: '⚡', text: 'Più sei veloce, più punti fai!' },
     ],
