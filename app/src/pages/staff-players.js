@@ -7,7 +7,7 @@ import { deviceCode } from '../lib/device.js';
 import { formatPoints } from '../lib/leaderboard.js';
 import { avatarSvg, playerStatsMarkup } from '../components/player-card.js';
 import { staffCall, formatDate, askDialog, pagerMarkup } from './staff-ui.js';
-import { deviceKind, browserName, DEVICE_ICONS } from '../lib/staff.js';
+import { deviceKind, deviceName, browserName, DEVICE_ICONS } from '../lib/staff.js';
 
 function resultsMarkup({ players, total, page, page_size: size }) {
   if (!players.length) return '<p class="leaderboard-note">Nessun giocatore trovato.</p>';
@@ -26,10 +26,12 @@ function resultsMarkup({ players, total, page, page_size: size }) {
     .join('')}</ul>${pagerMarkup(page, total, size)}`;
 }
 
-/** 📱 telefono o 💻 computer (niente se non si sa) */
-function kindIcon(ua) {
+/** "📱 iPhone", "💻 Windows"... sotto il codice */
+function kindLabel(ua) {
   const kind = deviceKind(ua);
-  return kind ? `<span class="kind-icon" title="${kind === 'mobile' ? 'Telefono' : 'Computer'}" aria-label="${kind === 'mobile' ? 'Telefono' : 'Computer'}">${DEVICE_ICONS[kind]}</span>` : '';
+  const name = deviceName(ua);
+  if (!kind && !name) return 'Dispositivo sconosciuto';
+  return `${kind ? `${DEVICE_ICONS[kind]} ` : ''}${name ?? (kind === 'mobile' ? 'Telefono' : 'Computer')}`;
 }
 
 /** Telefoni del giocatore senza ripetizioni: quello della registrazione e quelli con un accesso attivo */
@@ -60,12 +62,12 @@ function detailMarkup(p) {
         .map(
           (d) => `<li class="phone-row">
             <div class="phone-row__info">
-              <span class="phone-row__code">${kindIcon(d.userAgent)}<strong class="device-code">${deviceCode(d.id)}</strong></span>
-              <div class="phone-row__tags">
-                ${d.registration ? '<span class="phone-tag" title="Telefono della registrazione" aria-label="Telefono della registrazione">📝</span>' : ''}
-                ${d.active ? '<span class="phone-tag phone-tag--active" title="Accesso attivo">🟢 Attivo</span>' : ''}
-                ${d.banned ? '<span class="staff-tag staff-tag--off">📵 bloccato</span>' : ''}
-              </div>
+              <span class="phone-row__code">
+                <strong class="device-code">${deviceCode(d.id)}</strong>
+                ${d.registration ? '<span class="phone-icon" title="Telefono della registrazione" aria-label="Telefono della registrazione">📝</span>' : ''}
+                ${d.active ? '<span class="phone-icon" title="Accesso attivo" aria-label="Accesso attivo">🟢</span>' : ''}
+              </span>
+              <span class="phone-row__kind">${kindLabel(d.userAgent)}${d.banned ? ' · <span class="staff-tag staff-tag--off">📵 bloccato</span>' : ''}</span>
               ${d.sameFingerprint ? `<span class="staff-warn">stessa impronta di altri ${d.sameFingerprint} account</span>` : ''}
             </div>
             <div class="phone-row__actions">
@@ -104,7 +106,7 @@ function detailMarkup(p) {
     ${playerStatsMarkup(p.card)}
 
     <h3 class="staff-h3">📱 Codice del telefono</h3>
-    <p class="staff-muted phone-legend">📝 Registrazione · 📵 Ban device · 🕒 Ultimi accessi</p>
+    <p class="staff-muted phone-legend">📝 Registrazione · 🟢 Attivo · 📵 Ban device · 🕒 Ultimi accessi</p>
     <ul class="phone-list">${devices}</ul>
     ${p.login_failures ? `<p class="staff-warn">PIN sbagliato ${p.login_failures} volte negli ultimi 15 minuti.</p>` : ''}
 

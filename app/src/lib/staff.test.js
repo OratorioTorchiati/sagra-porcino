@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isoToRomeLocal, romeLocalToIso, toCsv, noteLabel, deviceKind, browserName } from './staff.js';
+import { isoToRomeLocal, romeLocalToIso, toCsv, noteLabel, deviceKind, browserName, deviceName } from './staff.js';
 import { playerPhones } from '../pages/staff-players.js';
 
 describe('date del pannello staff (ora italiana)', () => {
@@ -54,15 +54,16 @@ describe('telefono o computer, e browser (dal user agent)', () => {
   const EDGE = `${WINDOWS} Edg/140.0.0.0`;
   const MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
   it.each([
-    [IPHONE, 'mobile', 'Safari'],
-    [ANDROID, 'mobile', 'Chrome'],
-    [SAMSUNG, 'mobile', 'Samsung Internet'],
-    [WINDOWS, 'computer', 'Chrome'],
-    [EDGE, 'computer', 'Edge'],
-    [MAC, 'computer', 'Safari'],
-  ])('%#', (ua, kind, browser) => {
+    [IPHONE, 'mobile', 'Safari', 'iPhone'],
+    [ANDROID, 'mobile', 'Chrome', 'Android'],
+    [SAMSUNG, 'mobile', 'Samsung Internet', 'Android'],
+    [WINDOWS, 'computer', 'Chrome', 'Windows'],
+    [EDGE, 'computer', 'Edge', 'Windows'],
+    [MAC, 'computer', 'Safari', 'Mac'],
+  ])('%#', (ua, kind, browser, name) => {
     expect(deviceKind(ua)).toBe(kind);
     expect(browserName(ua)).toBe(browser);
+    expect(deviceName(ua)).toBe(name);
   });
   it('sconosciuto', () => {
     expect(deviceKind(null)).toBe(null);

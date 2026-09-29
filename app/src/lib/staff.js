@@ -101,3 +101,16 @@ export function browserName(ua) {
 }
 
 export const DEVICE_ICONS = { mobile: '📱', computer: '💻' };
+
+/** Nome del dispositivo dal "user agent": iPhone, iPad, Android, Windows, Mac, Linux, Chromebook */
+export function deviceName(ua) {
+  if (!ua) return null;
+  if (/iPhone|iPod/.test(ua)) return 'iPhone';
+  if (/iPad/.test(ua)) return 'iPad';
+  if (/Android/.test(ua)) return 'Android';
+  if (/Windows/.test(ua)) return 'Windows';
+  if (/CrOS/.test(ua)) return 'Chromebook';
+  if (/Macintosh|Mac OS X/.test(ua)) return 'Mac';
+  if (/Linux/.test(ua)) return 'Linux';
+  return null;
+}

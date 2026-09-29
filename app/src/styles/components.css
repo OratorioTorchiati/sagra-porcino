@@ -2425,3 +2425,14 @@ dialog:not([open]) {
   margin-right: 0.3rem;
   font-size: 1rem;
 }
+
+/* Riga di un telefono: codice + icone 📝 🟢, sotto il tipo di dispositivo */
+.phone-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.phone-row__kind {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+}
