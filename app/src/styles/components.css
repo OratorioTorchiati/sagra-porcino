@@ -2210,3 +2210,9 @@ dialog:not([open]) {
 .game-screen--replay .replay-bottom__wide {
   grid-column: 1 / -1;
 }
+
+.game-screen--replay .replay-bottom .button {
+  padding: 0 0.5rem;
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
