@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isoToRomeLocal, romeLocalToIso, toCsv, noteLabel } from './staff.js';
+import { playerPhones } from '../pages/staff-players.js';
 
 describe('date del pannello staff (ora italiana)', () => {
   it('ottobre è ora legale (+02:00)', () => {
@@ -29,5 +30,18 @@ describe('motivi delle partite', () => {
   it('in italiano semplice, codice sconosciuto così com\'è', () => {
     expect(noteLabel('tocchi_troppo_regolari')).toMatch(/regolari/);
     expect(noteLabel('nuovo_codice')).toBe('nuovo_codice');
+  });
+});
+
+describe('telefoni del giocatore (pannello staff)', () => {
+  it('ognuno una volta sola, con registrazione, attivo e bloccato', () => {
+    const phones = playerPhones({
+      devices: [{ device_id: 'a', banned: false, same_fingerprint: 2 }],
+      sessions: [{ device_id: 'a', banned: false }, { device_id: 'b', banned: true }, { device_id: 'b', banned: true }, { device_id: null }],
+    });
+    expect(phones).toEqual([
+      { id: 'a', registration: true, active: true, banned: false, sameFingerprint: 2 },
+      { id: 'b', registration: false, active: true, banned: true, sameFingerprint: 0 },
+    ]);
   });
 });

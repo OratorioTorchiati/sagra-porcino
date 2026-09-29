@@ -6,7 +6,7 @@ import { escapeHtml } from '../lib/dom.js';
 import { deviceCode } from '../lib/device.js';
 import { formatPoints } from '../lib/leaderboard.js';
 import { avatarSvg, playerStatsMarkup } from '../components/player-card.js';
-import { staffCall, formatDate, askDialog, pagerMarkup } from './staff-ui.js';
+import { staffCall, formatDate, askDialog, pagerMarkup, browserName } from './staff-ui.js';
 
 function resultsMarkup({ players, total, page, page_size: size }) {
   if (!players.length) return '<p class="leaderboard-note">Nessun giocatore trovato.</p>';
@@ -25,24 +25,42 @@ function resultsMarkup({ players, total, page, page_size: size }) {
     .join('')}</ul>${pagerMarkup(page, total, size)}`;
 }
 
+/** Telefoni del giocatore senza ripetizioni: quello della registrazione e quelli con un accesso attivo */
+export function playerPhones(p) {
+  const byId = new Map();
+  const get = (id) => {
+    if (!byId.has(id)) byId.set(id, { id, registration: false, active: false, banned: false, sameFingerprint: 0 });
+    return byId.get(id);
+  };
+  for (const d of p.devices) Object.assign(get(d.device_id), { registration: true, banned: d.banned, sameFingerprint: d.same_fingerprint });
+  for (const s of p.sessions) {
+    if (!s.device_id) continue;
+    const phone = get(s.device_id);
+    phone.active = true;
+    phone.banned = phone.banned || s.banned;
+  }
+  return [...byId.values()];
+}
+
 function detailMarkup(p) {
   const codes = p.devices.map((d) => deviceCode(d.device_id));
-  // Codice del telefono con il bottone per bloccarlo / sbloccarlo (D78)
-  const deviceMarkup = (id, banned) =>
-    `<strong class="device-code">${deviceCode(id)}</strong>${banned ? ' <span class="staff-tag staff-tag--off">📵 bloccato</span>' : ''}
-     <button type="button" class="staff-link" data-action="${banned ? 'device-unban' : 'device-ban'}" data-device="${id}">${banned ? '🔓 Sblocca' : '📵 Ban telefono'}</button>`;
-  const devices = p.devices.length
-    ? p.devices
+  // Telefoni del giocatore, ognuno una volta sola (D79): 📝 = registrazione, 🟢 = accesso attivo ora;
+  // accanto il bottone per bloccarlo / sbloccarlo (D78)
+  const phones = playerPhones(p);
+  const devices = phones.length
+    ? phones
         .map(
-          (d) => `<li>${deviceMarkup(d.device_id, d.banned)} · registrato ${formatDate(d.created_at)}${
-            d.same_fingerprint ? ` · <span class="staff-warn">stessa impronta di altri ${d.same_fingerprint} account</span>` : ''
-          }</li>`,
+          (d) => `<li class="phone-row">
+            <span class="phone-row__code"><strong class="device-code">${deviceCode(d.id)}</strong>
+              ${d.registration ? '<span class="phone-tag" title="Telefono della registrazione">📝 Registrazione</span>' : ''}
+              ${d.active ? '<span class="phone-tag phone-tag--active" title="Accesso attivo">🟢 Attivo</span>' : ''}
+              ${d.banned ? '<span class="staff-tag staff-tag--off">📵 bloccato</span>' : ''}</span>
+            ${d.sameFingerprint ? `<span class="staff-warn">stessa impronta di altri ${d.sameFingerprint} account</span>` : ''}
+            <button type="button" class="staff-link" data-action="${d.banned ? 'device-unban' : 'device-ban'}" data-device="${d.id}">${d.banned ? '🔓 Sblocca' : '📵 Ban telefono'}</button>
+          </li>`,
         )
         .join('')
     : '<li>Nessuno (account creato a mano)</li>';
-  const sessions = p.sessions.length
-    ? p.sessions.map((s) => `<li>${s.device_id ? deviceMarkup(s.device_id, s.banned) : 'telefono sconosciuto'} · ultimo uso ${formatDate(s.last_seen_at)}</li>`).join('')
-    : '<li>Nessun accesso attivo</li>';
   const games = p.games
     .map(
       (g) => `<tr><td>${escapeHtml(g.name)}</td><td>${g.best ?? '—'}</td><td>${g.valid}</td><td>${g.flagged ? `<span class="staff-warn">${g.flagged}</span>` : 0}</td><td>${g.rejected}</td></tr>`,
@@ -70,9 +88,8 @@ function detailMarkup(p) {
 
     <h3 class="staff-h3">📱 Codice del telefono</h3>
     <p class="staff-muted">Per il reset del PIN il codice mostrato dal giocatore deve essere uno di questi.</p>
-    <ul class="staff-list">${devices}</ul>
-    <h3 class="staff-h3">Accessi attivi</h3>
-    <ul class="staff-list">${sessions}</ul>
+    <ul class="phone-list">${devices}</ul>
+    <button type="button" class="button button--secondary" data-action="accesses">🕒 Ultimi accessi</button>
     ${p.login_failures ? `<p class="staff-warn">PIN sbagliato ${p.login_failures} volte negli ultimi 15 minuti.</p>` : ''}
 
     <h3 class="staff-h3">Partite</h3>
@@ -180,7 +197,7 @@ export function renderPlayersSection(root, ctx) {
     if (!action || !current) return;
     const nick = current.nickname;
     const detailError = detail.querySelector('.form-error');
-    const codes = current.devices.map((d) => deviceCode(d.device_id));
+    const codes = playerPhones(current).map((d) => deviceCode(d.id));
 
     if (action === 'back') {
       showList();
@@ -236,6 +253,15 @@ export function renderPlayersSection(root, ctx) {
       if (ok && (await staffCall(ctx, 'set_disabled', { p_nickname: nick, p_disabled: disable }, detailError))) {
         showDetail(nick, disable ? '✅ Account bannato.' : '✅ Ban tolto.');
       }
+    } else if (action === 'accesses') {
+      const res = await staffCall(ctx, 'player_accesses', { p_nickname: nick }, detailError);
+      if (!res) return;
+      const rows = res.accesses.length
+        ? `<ul class="staff-list access-list">${res.accesses
+            .map((a) => `<li>${formatDate(a.created_at)} · ${a.device_id ? `<strong class="device-code">${deviceCode(a.device_id)}</strong>` : 'telefono sconosciuto'}${a.registration ? ' 📝' : ''} · ${escapeHtml(browserName(a.user_agent))}</li>`)
+            .join('')}</ul>`
+        : '<p>Nessun accesso registrato.</p>';
+      await askDialog({ title: `Ultimi accessi di ${escapeHtml(nick)}`, body: `<p class="staff-muted">Gli ultimi 20, dal più recente. 📝 = telefono della registrazione.</p>${rows}`, confirmLabel: 'Chiudi', infoOnly: true });
     } else if (action === 'device-ban' || action === 'device-unban') {
       const ban = action === 'device-ban';
       const deviceId = event.target.closest('[data-device]').dataset.device;

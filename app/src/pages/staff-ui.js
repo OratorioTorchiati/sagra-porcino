@@ -53,7 +53,7 @@ const ERRORS = {
  * Finestra di conferma con eventuali campi. Restituisce i valori del form (oggetto) o null se annullata.
  * `validate(values)` può restituire un messaggio d'errore per non chiudere.
  */
-export function askDialog({ title, body = '', confirmLabel = 'Conferma', danger = false, validate }) {
+export function askDialog({ title, body = '', confirmLabel = 'Conferma', danger = false, validate, infoOnly = false }) {
   return new Promise((resolve) => {
     const dialog = html(`
       <dialog class="dialog staff-dialog">
@@ -63,7 +63,7 @@ export function askDialog({ title, body = '', confirmLabel = 'Conferma', danger 
           <div class="form-error" role="alert" hidden></div>
           <div class="dialog__actions">
             <button type="submit" class="button${danger ? ' button--danger' : ''}" value="ok">${confirmLabel}</button>
-            <button type="button" class="button button--secondary" data-action="cancel">Annulla</button>
+            ${infoOnly ? '' : '<button type="button" class="button button--secondary" data-action="cancel">Annulla</button>'}
           </div>
         </form>
       </dialog>`);
@@ -86,7 +86,7 @@ export function askDialog({ title, body = '', confirmLabel = 'Conferma', danger 
       }
       finish(values);
     });
-    dialog.querySelector('[data-action="cancel"]').addEventListener('click', () => finish(null));
+    dialog.querySelector('[data-action="cancel"]')?.addEventListener('click', () => finish(null));
     dialog.addEventListener('cancel', (event) => {
       event.preventDefault();
       finish(null);
@@ -94,6 +94,23 @@ export function askDialog({ title, body = '', confirmLabel = 'Conferma', danger 
     openDialog(dialog);
     dialog.querySelector('input')?.focus();
   });
+}
+
+/** "iPhone · Safari", "Android · Chrome"... dal user agent (solo indicativo) */
+export function browserName(ua = '') {
+  const device = /iPhone|iPad/.test(ua) ? 'iPhone' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : /Mac OS/.test(ua) ? 'Mac' : 'altro';
+  const browser = /SamsungBrowser/.test(ua)
+    ? 'Samsung Internet'
+    : /Edg\//.test(ua)
+      ? 'Edge'
+      : /Firefox|FxiOS/.test(ua)
+        ? 'Firefox'
+        : /Chrome|CriOS/.test(ua)
+          ? 'Chrome'
+          : /Safari/.test(ua)
+            ? 'Safari'
+            : 'browser';
+  return ua ? `${device} · ${browser}` : 'browser sconosciuto';
 }
 
 /** "← Prima · Pagina 2 di 5 · Dopo →" (bottoni con data-page); niente se c'è una pagina sola */

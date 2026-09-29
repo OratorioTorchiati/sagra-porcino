@@ -2286,3 +2286,56 @@ dialog:not([open]) {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* Telefoni del giocatore: una riga per telefono, con le etichette Registrazione / Attivo (D79) */
+.phone-list {
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.phone-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.phone-row__code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.phone-row .staff-link {
+  min-height: 40px;
+}
+
+.phone-tag {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: #efe6d6;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.phone-tag--active {
+  background: #e7f3e9;
+  color: var(--color-forest);
+}
+
+.access-list {
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-left: 1.1rem;
+}

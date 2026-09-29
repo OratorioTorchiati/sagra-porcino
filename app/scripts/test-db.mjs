@@ -245,6 +245,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
     ['staff_get_settings', {}], ['staff_update_settings', { p_values: { attempts_per_day: 99 } }], ['staff_leaderboard', {}], ['staff_log_list', {}],
     ['staff_attempt_replay', { p_attempt_id: crypto.randomUUID() }], ['staff_ban_player', { p_attempt_id: crypto.randomUUID() }], ['staff_confirm_exclusion', { p_attempt_id: crypto.randomUUID() }],
     ['staff_ban_device', { p_device_id: crypto.randomUUID(), p_ban: true }], ['staff_banned_devices', {}],
+    ['staff_player_accesses', { p_nickname: t5Nick }],
   ];
   const denied = [];
   for (const [name, params] of calls) {
@@ -253,7 +254,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
       if (res?.error !== 'NOT_STAFF') denied.push(`${name}(${token ? 'giocatore' : 'senza sessione'}): ${JSON.stringify(res)}`);
     }
   }
-  check('pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le 19 funzioni', denied.length === 0, denied.join(' | '));
+  check('pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le 20 funzioni', denied.length === 0, denied.join(' | '));
   const stillThere = (await rpc('login', { p_nickname: t5Nick, p_secret: '5555' })).body;
   check('...e i tentativi del giocatore non hanno cambiato nulla (PIN e account intatti)', stillThere?.ok === true);
 }
@@ -365,6 +366,11 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const dList = await staff('banned_devices');
   const dDetail = await staff('player_detail', { p_nickname: dNick });
   check('staff: il telefono bloccato è nell\'elenco e segnato nella scheda del giocatore', dList?.devices?.some((x) => x.device_id === dDevice && x.nickname === dNick) && dDetail?.player?.devices?.[0]?.banned === true);
+  const dAccess = await staff('player_accesses', { p_nickname: dNick });
+  check('staff: ultimi accessi (registrazione e login, anche dopo l'uscita), dal più recente',
+    dAccess?.accesses?.length >= 2 && dAccess.accesses.length <= 20 && dAccess.accesses.some((a) => a.device_id === dOther && !a.registration) &&
+    dAccess.accesses.some((a) => a.device_id === dDevice && a.registration) &&
+    dAccess.accesses.every((a, i, all) => i === 0 || all[i - 1].created_at >= a.created_at), JSON.stringify(dAccess?.accesses?.length));
   await staff('ban_device', { p_device_id: dDevice, p_ban: false });
   check('staff: sbloccato → da quel telefono si entra di nuovo', (await rpc('login', { p_nickname: dNick, p_secret: '3333', p_device_id: dDevice })).body?.ok === true);
 
