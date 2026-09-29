@@ -39,6 +39,7 @@ export function renderRegister() {
     <main class="page auth-page">
       ${topBarMarkup()}
       <h1 class="page-title">Crea il tuo account</h1>
+      <p class="attempt-notice attempt-notice--warning">⚠️ <strong>ATTENZIONE!</strong> Puoi creare un solo account per telefono</p>
       <form class="auth-form" novalidate>
         <div class="form-section" role="group" aria-labelledby="sezione-1">
           <h2 class="form-section__title" id="sezione-1">1. Scegli il tuo personaggio</h2>
