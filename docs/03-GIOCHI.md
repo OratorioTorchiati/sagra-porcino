@@ -17,7 +17,7 @@ Regole comuni a tutti i giochi:
 > ⏱️ 1 minuto
 > 👆 Tocca i porcini per far crescere il moltiplicatore
 > ☠️ Funghi velenosi: si riparte da ×1
-> ⏳ Oggetti: il moltiplicatore perde tempo
+> ⏳ Evita anche questi: fanno perdere tempo
 
 ### Meccanica
 - **Durata fissa**: 60 secondi (configurabile).

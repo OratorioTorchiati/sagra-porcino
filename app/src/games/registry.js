@@ -17,7 +17,7 @@ export const GAMES = {
       { icon: '⏱️', text: '1 minuto' },
       { icon: '👆', text: 'Tocca i porcini per far crescere il moltiplicatore', gallery: 'good' },
       { icon: '☠️', text: 'Funghi velenosi: si riparte da ×1', gallery: 'poison' },
-      { icon: '⏳', text: 'Oggetti: il moltiplicatore perde tempo', gallery: 'objects' },
+      { icon: '⏳', text: 'Evita anche questi: fanno perdere tempo', gallery: 'objects' },
     ],
     load: () => import('./acchiappa/index.js').then((m) => m.default),
   },
