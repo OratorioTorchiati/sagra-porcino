@@ -1013,6 +1013,9 @@ img.memory-card__image {
   max-width: 10rem;
   letter-spacing: 0.4em;
   font-size: 1.5rem;
+  /* cifre e trattini al centro (il rientro compensa la spaziatura dopo l'ultimo carattere) */
+  text-align: center;
+  text-indent: 0.4em;
 }
 
 /* 5 trattini quando è vuoto: si capisce che servono 5 cifre (D86) */
