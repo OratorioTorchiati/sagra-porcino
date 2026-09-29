@@ -5,6 +5,11 @@
 
 export default {
   durationS: 60,
+  /**
+   * La partita parte già "avanti": all'inizio velocità, comparse e porcini sono quelli che prima c'erano
+   * dopo 15 secondi (0.25 = 15 s su 60), e in un minuto si arriva comunque al massimo (D86).
+   */
+  startProgress: 0.25,
 
   /** Punti per porcino (moltiplicati per il moltiplicatore). 29/09: da 10 a 5 (medie oltre i 2000) */
   pointsPerPorcino: 5,
@@ -38,8 +43,8 @@ export default {
   maxOnScreen: [5, 10],
   /** Secondi tra una comparsa e l'altra: inizio → fine (con ±30% di variazione) */
   spawnInterval: [0.6, 0.33],
-  /** Probabilità che l'elemento sia un porcino: inizio → fine */
-  goodChance: [0.62, 0.55],
+  /** Probabilità che l'elemento sia un porcino: inizio → fine. 29/09: un po' di più (era 0.62 → 0.55, D86) */
+  goodChance: [0.7, 0.64],
   /** Tra i cattivi: probabilità che sia un fungo velenoso (altrimenti un oggetto) */
   poisonousChance: 0.5,
 

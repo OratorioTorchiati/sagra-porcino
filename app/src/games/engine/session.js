@@ -32,6 +32,7 @@ import { html } from '../../lib/dom.js';
 import { setUpdateBlocked } from '../../lib/app-update.js';
 import { createRng } from './rng.js';
 import { STEP_S } from './step.js';
+import { canvasDpr } from './dpr.js';
 
 const COUNTDOWN_STEP_MS = 800;
 const MAX_FRAME_S = 0.05; // un frame lento (o una pausa del browser) non fa saltare il gioco
@@ -360,8 +361,13 @@ export class GameSession {
       const scale = Math.min(width / gameW, height / gameH);
       this.view = { scale, x: (width - gameW * scale) / 2, y: (height - gameH * scale) / 2 };
     }
+    // Stessa misura di prima (succede spesso sul telefono quando si apre il gioco): niente da rifare.
+    // Ridimensionare il canvas lo ricrea da zero e il gioco ridisegna lo sfondo: nei primi secondi erano scatti.
+    const key = `${width}x${height}x${gameW}x${gameH}`;
+    if (key === this.sizeKey) return;
+    this.sizeKey = key;
     if (this.usesCanvas) {
-      const dpr = Math.min(window.devicePixelRatio || 1, 3);
+      const dpr = canvasDpr();
       this.canvas.width = Math.round(width * dpr);
       this.canvas.height = Math.round(height * dpr);
       this.canvas.style.width = `${width}px`;

@@ -1,5 +1,6 @@
 // Sfondo morbido e poco invasivo (sottobosco sfocato), disegnato una volta su un canvas a parte.
-// Solo gradienti: niente filtri di sfocatura, veloce su tutti i telefoni.
+// Solo gradienti: niente filtri di sfocatura, veloce su tutti i telefoni. È sfumato, quindi basta la risoluzione 1×
+// (a 3× costava 9 volte tanto e si rifaceva a ogni cambio di misura, nei primi secondi di gioco).
 
 import { createRng } from './rng.js';
 
@@ -16,11 +17,9 @@ const MEADOW = {
  */
 export function softBackground(width, height, palette = MEADOW) {
   const canvas = document.createElement('canvas');
-  const dpr = Math.min(window.devicePixelRatio || 1, 3);
-  canvas.width = Math.round(width * dpr);
-  canvas.height = Math.round(height * dpr);
+  canvas.width = Math.round(width);
+  canvas.height = Math.round(height);
   const g = canvas.getContext('2d');
-  g.scale(dpr, dpr);
 
   const sky = g.createLinearGradient(0, 0, 0, height);
   sky.addColorStop(0, palette.top);

@@ -229,7 +229,7 @@ export function renderPlayersSection(root, ctx) {
           <p>Prima controlla il <strong>codice del telefono</strong> che il giocatore ti mostra (Accedi → "Ho dimenticato il PIN"). Deve essere:</p>
           <p class="device-code device-code--big">${codes.length ? codes.join('<br>') : 'nessun telefono registrato'}</p>
           <label class="form-field"><span class="form-field__label">Nuovo PIN (5 cifre)</span>
-            <input class="form-field__input form-field__input--pin" name="pin" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off"></label>
+            <input class="form-field__input form-field__input--pin" name="pin" placeholder="-----" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off"></label>
           <p class="staff-muted">Dillo al giocatore a voce: potrà entrare subito con il nuovo PIN.</p>`,
         confirmLabel: 'Imposta PIN',
         validate: (v) => (pinProblem(v.pin) ? authErrorMessage({ error: pinProblem(v.pin) }) : null),

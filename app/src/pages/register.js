@@ -59,12 +59,12 @@ export function renderRegister() {
           <h2 class="form-section__title" id="sezione-3">3. Scegli un PIN di 5 cifre</h2>
           <label class="form-field">
             <span class="form-field__label">PIN</span>
-            <input class="form-field__input form-field__input--pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="new-password" required>
+            <input class="form-field__input form-field__input--pin" name="pin" placeholder="-----" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="new-password" required>
             <span class="form-field__status" data-pin-status aria-live="polite"></span>
           </label>
           <label class="form-field">
             <span class="form-field__label">Ripeti il PIN</span>
-            <input class="form-field__input form-field__input--pin" name="pin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="new-password" required>
+            <input class="form-field__input form-field__input--pin" name="pin2" placeholder="-----" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="new-password" required>
           </label>
           <p class="attempt-notice attempt-notice--warning">⚠️ <strong>ATTENZIONE!</strong> Puoi creare un solo account per telefono, tieni bene a mente il tuo PIN</p>
         </div>

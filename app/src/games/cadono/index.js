@@ -5,6 +5,7 @@ import { createCadono } from './game.js';
 import { FALLING, BASKET, BASKET_ASPECT, GOLDEN } from './sprites.js';
 import { PORCINI } from '../shared/porcini.js';
 import { rasterizeSprites, rasterizeSvg } from '../engine/sprites.js';
+import { canvasDpr } from '../engine/dpr.js';
 
 export default {
   config,
@@ -20,7 +21,7 @@ export default {
   },
 
   async loadAssets() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const dpr = canvasDpr();
     const [sprites, basket] = await Promise.all([
       rasterizeSprites(FALLING, config.itemSize * dpr),
       rasterizeSvg(BASKET, config.basketWidth * dpr, (config.basketWidth / BASKET_ASPECT) * dpr),

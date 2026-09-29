@@ -31,8 +31,10 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
   let nowMs = 0;
   let endMs = config.durationS * 1000; // gli oggetti toccati la anticipano (D81)
 
+  /** Avanzamento della difficoltà, da startProgress (al via) a 1 (alla fine del minuto) */
   function progress(t) {
-    return Math.min(1, t / config.durationS);
+    const start = config.startProgress ?? 0;
+    return Math.min(1, start + (1 - start) * (t / config.durationS));
   }
 
   function refreshHud() {
@@ -180,7 +182,13 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
     draw(ctx) {
       if (!background) background = softBackground(width, height);
       if (!warmedUp) {
-        warmUpSprites(ctx, assets.sprites); // primo frame, durante il conto alla rovescia
+        // primo frame, durante il conto alla rovescia: disegni e carattere delle scritte già pronti al via
+        warmUpSprites(ctx, assets.sprites);
+        ctx.save();
+        ctx.globalAlpha = 0.01;
+        ctx.font = `800 34px ${TEXT_FONT}`;
+        ctx.fillText('+5 ×2', -100, -100);
+        ctx.restore();
         warmedUp = true;
       }
       ctx.drawImage(background, 0, 0, width, height);

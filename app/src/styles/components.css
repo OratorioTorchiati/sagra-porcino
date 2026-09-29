@@ -1015,6 +1015,13 @@ img.memory-card__image {
   font-size: 1.5rem;
 }
 
+/* 5 trattini quando è vuoto: si capisce che servono 5 cifre (D86) */
+.form-field__input--pin::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.8;
+  letter-spacing: 0.4em;
+}
+
 .form-field__hint {
   color: var(--color-text-muted);
   line-height: 1.3;

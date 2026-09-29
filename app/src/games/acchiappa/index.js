@@ -4,6 +4,7 @@ import config from './config.js';
 import { createAcchiappa } from './game.js';
 import { ALL_SPRITES, GOOD, BAD_POISONOUS, BAD_OBJECTS } from './sprites.js';
 import { rasterizeSprites } from '../engine/sprites.js';
+import { canvasDpr } from '../engine/dpr.js';
 
 export default {
   config,
@@ -21,8 +22,7 @@ export default {
   },
 
   async loadAssets() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    return { sprites: await rasterizeSprites(ALL_SPRITES, config.sizeMax * dpr) };
+    return { sprites: await rasterizeSprites(ALL_SPRITES, config.sizeMax * canvasDpr()) };
   },
 
   create: createAcchiappa,
