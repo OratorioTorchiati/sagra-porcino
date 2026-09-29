@@ -16,8 +16,9 @@ Regole comuni a tutti i giochi:
 ### Regole mostrate al giocatore
 > ⏱️ 1 minuto
 > 👆 Tocca i porcini
-> ❌ Evita funghi velenosi e altri oggetti
-> 🔥 Tanti porcini di fila = punti moltiplicati!
+> 🔥 Tanti porcini di fila = punti moltiplicati! Ogni porcino ricarica il tempo
+> ☠️ Funghi velenosi: si riparte da ×1
+> ⏳ Oggetti: il moltiplicatore perde tempo
 
 ### Meccanica
 - **Durata fissa**: 60 secondi (configurabile).
@@ -35,7 +36,8 @@ Regole comuni a tutti i giochi:
   - **oggetti a tema ma sbagliati**: castagna, riccio di castagna, pigna, foglia secca, lumaca.
 - **Punti**:
   - porcino toccato: **+5 × moltiplicatore** (era +10 fino al 29/09, D67);
-  - elemento cattivo toccato: **la serie si azzera** (moltiplicatore torna ×1), con feedback visivo e vibrazione breve (se disponibile). Nessun punto tolto;
+  - fungo velenoso toccato: **la serie si azzera** (moltiplicatore torna ×1), con feedback visivo e vibrazione breve (se disponibile). Nessun punto tolto;
+  - oggetto toccato (castagna, riccio, pigna, foglia, lumaca): **-1,5 s** al tempo del moltiplicatore (D80); se il tempo finisce si scende subito di un livello. Stesso feedback, nessun punto tolto, la serie non si interrompe;
   - tocco a vuoto: nessun effetto.
 - **Moltiplicatore** in base alla serie di porcini consecutivi:
 
@@ -43,10 +45,10 @@ Regole comuni a tutti i giochi:
   |---|---|
   | 0–4 | ×1 |
   | 5–9 | ×2 |
-  | 10–19 | ×3 |
-  | 20+ | ×4 |
+  | 10–14 | ×3 |
+  | 15+ | ×4 |
 
-  **Il moltiplicatore dura poco** (D67, D68): ×2 7 s, ×3 6 s, ×4 5 s. Scaduto, scende di un livello (che riparte col suo tempo pieno) e la serie riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano alla soglia successiva. Un elemento cattivo riporta subito a ×1.
+  **Il moltiplicatore ha un tempo** (D67, D68, D80): salendo di livello parte pieno (×2 7 s, ×3 6 s, ×4 5 s) e **ogni porcino preso lo ricarica** (×2 +2 s, ×3 +1,5 s, ×4 +1 s), mai oltre il pieno: serve solo contro l'inattività. Scaduto, scende di un livello (che riparte col suo tempo pieno) e la serie riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano alla soglia successiva. Un oggetto toglie 1,5 s; un fungo velenoso riporta subito a ×1.
   Mostrato nell'HUD dentro un **anello che si consuma come un orologio**; a ogni cambio di livello piccola animazione e anello di nuovo pieno; effetto 🔥 quando sale.
 - **Sfondo**: poco invasivo, a tema (sottobosco/prato di montagna sfocato, toni tenui), per non disturbare la lettura dei funghi.
 

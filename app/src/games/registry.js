@@ -1,6 +1,6 @@
 // Elenco dei minigiochi. Il codice di ogni gioco si scarica solo quando si apre (import dinamico),
 // ma viene comunque messo in cache dal service worker per giocare offline.
-// I testi delle regole sono quelli di docs/03-GIOCHI.md. `gallery: 'good' | 'bad'` mostra dentro
+// I testi delle regole sono quelli di docs/03-GIOCHI.md. `gallery` mostra dentro
 // quel box le immagini di cosa prendere / evitare (definite dal modulo del gioco in `rulesGallery`).
 // L'emoji 🍄 non si usa mai: sui telefoni è un fungo rosso a puntini (velenoso).
 
@@ -16,8 +16,9 @@ export const GAMES = {
     rules: [
       { icon: '⏱️', text: '1 minuto' },
       { icon: '👆', text: 'Tocca i porcini', gallery: 'good' },
-      { icon: '❌', text: 'Evita funghi velenosi e altri oggetti', gallery: 'bad' },
-      { icon: '🔥', text: 'Tanti porcini di fila = punti moltiplicati, ma per pochi secondi!' },
+      { icon: '🔥', text: 'Tanti porcini di fila = punti moltiplicati! Ogni porcino ricarica il tempo' },
+      { icon: '☠️', text: 'Funghi velenosi: si riparte da ×1', gallery: 'poison' },
+      { icon: '⏳', text: 'Oggetti: il moltiplicatore perde tempo', gallery: 'objects' },
     ],
     load: () => import('./acchiappa/index.js').then((m) => m.default),
   },

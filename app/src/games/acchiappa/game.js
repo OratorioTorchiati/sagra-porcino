@@ -251,7 +251,8 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
       nowMs = Math.round(t * 1000);
       score = expire(score, nowMs, config);
       const before = currentMultiplier(score, config);
-      const { state, points } = applyHit(score, best.good ? 'good' : 'bad', nowMs, config);
+      const hit = best.good ? 'good' : POISONOUS_KINDS.includes(best.kind) ? 'poison' : 'object';
+      const { state, points } = applyHit(score, hit, nowMs, config);
       score = state;
       log('tap', tapX, tapY, best.good ? 'good' : 'bad', best.kind, ageMs, Math.round(best.size), Math.round(bestDist));
 
@@ -268,7 +269,7 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
         addText(best.x, best.y, '✕', '#c8231b');
         flash('bad');
         navigator.vibrate?.(80);
-        if (before > 1) hud.pulse('multiplier');
+        if (currentMultiplier(score, config) < before) hud.pulse('multiplier');
       }
       refreshHud();
     },

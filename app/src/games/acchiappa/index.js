@@ -16,7 +16,8 @@ export default {
   /** Disegni da mostrare nella schermata delle regole */
   rulesGallery: {
     good: Object.values(GOOD),
-    bad: [...Object.values(BAD_POISONOUS), ...Object.values(BAD_OBJECTS)],
+    poison: Object.values(BAD_POISONOUS),
+    objects: Object.values(BAD_OBJECTS),
   },
 
   async loadAssets() {

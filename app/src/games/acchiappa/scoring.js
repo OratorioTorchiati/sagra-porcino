@@ -1,10 +1,12 @@
 // Calcolo dei punti di "Acchiappa il porcino" (funzioni pure, con test).
 // Il server rifà lo stesso calcolo dalla sequenza dei tocchi (supabase/migrations/005_acchiappa_moltiplicatore_a_tempo.sql).
 //
-// Moltiplicatore a tempo (D67): con `minStreak` porcini di fila si sale di livello e il nuovo moltiplicatore
-// dura `durationS` secondi; scaduto, si scende di un livello (che riparte col suo tempo pieno) e la serie
-// riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano alla soglia successiva.
-// Un elemento cattivo riporta subito a ×1. I tempi sono in millisecondi di gioco (gli stessi del registro azioni).
+// Moltiplicatore a tempo (D67, D80): con `minStreak` porcini di fila si sale di livello e il tempo del nuovo
+// moltiplicatore parte pieno (`durationS` secondi). Ogni porcino preso aggiunge `boostS` secondi, senza superare
+// il pieno: il tempo serve solo contro l'inattività. Scaduto, si scende di un livello (che riparte col suo tempo
+// pieno) e la serie riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano.
+// Un oggetto toglie `objectPenaltyS` secondi (se il tempo finisce si scende subito di un livello);
+// un fungo velenoso riporta subito a ×1. I tempi sono in millisecondi di gioco (gli stessi del registro azioni).
 
 /** Livello (indice in config.multipliers) raggiunto con una serie di `streak` porcini di fila */
 function levelFor(streak, config) {
@@ -48,7 +50,7 @@ export function expire(state, nowMs, config) {
 
 /**
  * Applica un tocco allo stato del punteggio.
- * @param {'good'|'bad'} hit
+ * @param {'good'|'poison'|'object'} hit porcino, fungo velenoso o oggetto ('bad' = velenoso)
  * @param {number} nowMs tempo di gioco del tocco, in ms interi
  * @returns {{state, points: number}} nuovo stato e punti guadagnati
  */
@@ -63,6 +65,9 @@ export function applyHit(state, hit, nowMs, config) {
     if (reached > level) {
       level = reached;
       levelEndsMs = nowMs + config.multipliers[level].durationS * 1000;
+    } else if (level > 0) {
+      const step = config.multipliers[level];
+      levelEndsMs = Math.min(levelEndsMs + step.boostS * 1000, nowMs + step.durationS * 1000);
     }
     return {
       points,
@@ -78,7 +83,20 @@ export function applyHit(state, hit, nowMs, config) {
       },
     };
   }
-  // Elemento cattivo: serie e moltiplicatore azzerati, nessun punto tolto
+  if (hit === 'object') {
+    // Oggetto: meno tempo al moltiplicatore; se finisce, si scende subito di un livello (col suo tempo pieno)
+    const errors = state.errors + 1;
+    if (state.level === 0) return { points: 0, state: { ...state, errors } };
+    let { level, streak } = state;
+    let levelEndsMs = state.levelEndsMs - config.objectPenaltyS * 1000;
+    if (levelEndsMs <= nowMs) {
+      level -= 1;
+      streak = config.multipliers[level].minStreak;
+      levelEndsMs = level > 0 ? nowMs + config.multipliers[level].durationS * 1000 : null;
+    }
+    return { points: 0, state: { ...state, level, levelEndsMs, streak, errors } };
+  }
+  // Fungo velenoso: serie e moltiplicatore azzerati, nessun punto tolto
   return { points: 0, state: { ...state, streak: 0, level: 0, levelEndsMs: null, run: 0, errors: state.errors + 1 } };
 }
 

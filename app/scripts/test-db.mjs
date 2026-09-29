@@ -184,20 +184,22 @@ check('quiz: il punteggio dichiarato dal telefono viene ignorato e ricalcolato',
   `giuste ${quizResult?.correct}, punti ${quizResult?.raw_score}`);
 
 // Acchiappa: il server rifà il punteggio col moltiplicatore a tempo esattamente come l'app (scoring.js).
-// Serie con salite, scadenze (×4 → ×3 → ×2 → ×1), un errore e ripartenze; serve un minuto vero dall'avvio.
+// Serie con salite, ricariche, scadenze (×4 → ×3 → ×2 → ×1), oggetti, un fungo velenoso e ripartenze;
+// serve un minuto vero dall'avvio.
 if (starts[1]?.attempt_id && perDay >= 2) {
   const taps = [];
   let ms = 800;
   const gaps = [310, 420, 530, 370, 460, 610, 340]; // intervalli irregolari (niente segnalazione "troppo regolari")
   for (let i = 0; i < 90; i++) {
     ms += gaps[i % gaps.length] + (i === 25 || i === 55 ? 9000 : 0); // due pause lunghe: il moltiplicatore scade
-    taps.push([ms, i === 70 ? 'bad' : 'good']);
+    taps.push([ms, i === 70 ? 'poison' : i === 18 || i === 40 || i === 41 || i === 80 ? 'object' : 'good']);
   }
   let state = initialScoreState();
   const actions = [[0, 'start']];
+  const KIND = { good: 'estivo', poison: 'ovolaccio', object: 'castagna' };
   for (const [t, hit] of taps) {
     state = applyHit(state, hit, t, acchiappaConfig).state;
-    actions.push([t, 'tap', 100, 200, hit, hit === 'good' ? 'estivo' : 'castagna', 420, 80, 5]);
+    actions.push([t, 'tap', 100, 200, hit === 'good' ? 'good' : 'bad', KIND[hit], 420, 80, 5]);
   }
   const wait = 61000 - (Date.now() - acchiappaStartedAt);
   if (wait > 0) {

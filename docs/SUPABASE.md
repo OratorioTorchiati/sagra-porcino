@@ -29,6 +29,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/011_ban_telefono.sql` | 8 | ban del telefono (da lì non si entra con nessun account), elenco telefoni bloccati |
 | `supabase/migrations/012_registro_accessi.sql` | 8 | registro degli accessi (ultimi 20 per giocatore nel pannello) |
 | `supabase/migrations/013_accessi_per_telefono.sql` | 8 | ultimi accessi di un solo telefono |
+| `supabase/migrations/014_acchiappa_ricarica_tempo.sql` | 8 | Acchiappa: ogni porcino ricarica il tempo del moltiplicatore, ×4 a 15, oggetti -1,5 s |
 
 Impostazioni dei giochi (SQL Editor):
 
