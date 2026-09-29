@@ -134,4 +134,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 010 applicata: revisione staff di segnalate ed escluse con Approva / Conferma esclusione / Ban (D76), tentativi contati a parte, segnale "tocchi al centro" (D77). Partite di prova da rivedere per Acchiappa, Quiz e Memory. `npm run test:db` 85/85. |
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazioni 011 e 012 applicate: Ban account / Ban telefono con elenco dei telefoni bloccati (D78); elenco unico dei telefoni con Registrazione / Attivo e ultimi 20 accessi (D79); Da controllare diviso in Segnalate / Escluse con conteggio. `npm run test:db` 90/90. |
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 014 applicata. Acchiappa: ricarica del tempo a ogni porcino, ×4 a 15, oggetti -1,5 s e velenosi a ×1 (D80). |
-| 8 (ritocchi) | Completata | 2026-09-29 | Acchiappa: gli oggetti tolgono 2 s alla partita, riccio tra i velenosi (D81); migrazione 015. |
+| 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 015 applicata. Acchiappa: gli oggetti tolgono 2 s alla partita, riccio tra i velenosi (D81). |
