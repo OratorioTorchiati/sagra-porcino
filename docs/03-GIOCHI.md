@@ -34,7 +34,7 @@ Regole comuni a tutti i giochi:
   - funghi **palesemente velenosi**: cappello rosso a puntini bianchi; fungo verdastro-giallognolo; eventuale fungo viola "fantasy". Devono essere impossibili da confondere con un porcino, anche per forma (non solo per colore);
   - **oggetti a tema ma sbagliati**: castagna, riccio di castagna, pigna, foglia secca, lumaca.
 - **Punti**:
-  - porcino toccato: **+10 × moltiplicatore**;
+  - porcino toccato: **+5 × moltiplicatore** (era +10 fino al 29/09, D67);
   - elemento cattivo toccato: **la serie si azzera** (moltiplicatore torna ×1), con feedback visivo e vibrazione breve (se disponibile). Nessun punto tolto;
   - tocco a vuoto: nessun effetto.
 - **Moltiplicatore** in base alla serie di porcini consecutivi:
@@ -46,7 +46,8 @@ Regole comuni a tutti i giochi:
   | 10–19 | ×3 |
   | 20+ | ×4 |
 
-  Mostrato grande nell'HUD con effetto 🔥 quando sale.
+  **Il moltiplicatore dura poco** (D67): ×2 6 s, ×3 5 s, ×4 4 s. Scaduto, scende di un livello (che riparte col suo tempo pieno) e la serie riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano alla soglia successiva. Un elemento cattivo riporta subito a ×1.
+  Mostrato grande nell'HUD con i secondi rimasti (es. "×3 · 4s") ed effetto 🔥 quando sale.
 - **Sfondo**: poco invasivo, a tema (sottobosco/prato di montagna sfocato, toni tenui), per non disturbare la lettura dei funghi.
 
 ### Punteggio grezzo
@@ -132,7 +133,7 @@ Punti dei porcini + bonus sopravvivenza. `stats`: porcini presi, porcini d'oro, 
 
 | Gioco | Sera | Durata | Punteggio grezzo |
 |---|---|---|---|
-| Acchiappa il porcino | 1 | 60 s fissi | +10 × moltiplicatore (serie) |
+| Acchiappa il porcino | 1 | 60 s fissi | +5 × moltiplicatore (serie, a tempo) |
 | Quiz del paese | 1 | 5 × 20 s max | 150 + fino a 50 di velocità per risposta giusta (max 1000) |
 | Porcini che cadono | 2 | max 120 s, 3 vite | +10 porcino, +50 porcino d'oro, bonus vite |
 | Memory del paese | 2 | max 180 s | 1000 − tempo − mosse extra (min 200) |

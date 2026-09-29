@@ -17,7 +17,7 @@ export const GAMES = {
       { icon: '⏱️', text: '1 minuto' },
       { icon: '👆', text: 'Tocca i porcini', gallery: 'good' },
       { icon: '❌', text: 'Evita funghi velenosi e altri oggetti', gallery: 'bad' },
-      { icon: '🔥', text: 'Tanti porcini di fila = punti moltiplicati!' },
+      { icon: '🔥', text: 'Tanti porcini di fila = punti moltiplicati, ma per pochi secondi!' },
     ],
     load: () => import('./acchiappa/index.js').then((m) => m.default),
   },

@@ -20,6 +20,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/002_nickname_filter.sql` | 4 | filtro bestemmie e insulti nei nickname (senza censurare Armadio, Claudio...) |
 | `supabase/migrations/003_games_attempts.sql` | 5 | giochi, tentativi (3 al giorno), punteggi ricontrollati, domande del quiz di esempio |
 | `supabase/migrations/004_reset_ore_9.sql` | 5 | tentativi che si rinnovano alle 9 di mattina, nomi "Quiz" e "Memory Torchiati" |
+| `supabase/migrations/005_acchiappa_moltiplicatore_a_tempo.sql` | 5 | Acchiappa: 5 punti a porcino e moltiplicatore a tempo |
 
 Impostazioni dei giochi (SQL Editor):
 

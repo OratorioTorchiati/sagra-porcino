@@ -2,7 +2,7 @@
 // si toccano i porcini e si evitano funghi velenosi e oggetti. Regole in docs/03-GIOCHI.md.
 
 import { GOOD, BAD_POISONOUS, BAD_OBJECTS } from './sprites.js';
-import { applyHit, initialScoreState, multiplierFor } from './scoring.js';
+import { applyHit, currentMultiplier, expire, initialScoreState, secondsLeft } from './scoring.js';
 import { softBackground } from '../engine/background.js';
 
 const GOOD_KINDS = Object.keys(GOOD);
@@ -26,6 +26,7 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
   let nextId = 1;
   let spawnTimer = 0.4;
   let score = initialScoreState();
+  let nowMs = 0;
 
   function progress(t) {
     return Math.min(1, t / config.durationS);
@@ -33,7 +34,8 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
 
   function refreshHud() {
     hud.set('score', score.score);
-    hud.set('multiplier', `×${multiplierFor(score.streak, config)}`);
+    const left = secondsLeft(score, nowMs);
+    hud.set('multiplier', left === null ? '×1' : `×${currentMultiplier(score, config)} · ${left}s`);
   }
   refreshHud();
 
@@ -133,6 +135,15 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
 
     update(dt, t) {
       const p = progress(t);
+      // Moltiplicatore a tempo: quando scade scende di un livello
+      nowMs = Math.round(t * 1000);
+      const levelBefore = score.level;
+      score = expire(score, nowMs, config);
+      if (score.level < levelBefore) {
+        hud.pulse('multiplier');
+        addText(width / 2, height * 0.4, `×${currentMultiplier(score, config)}`, '#7a6a55');
+      }
+      refreshHud();
       spawnTimer -= dt;
       const maxOnScreen = Math.round(lerp(config.maxOnScreen[0], config.maxOnScreen[1], p));
       if (spawnTimer <= 0) {
@@ -230,15 +241,17 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
       best.gone = true;
       entities = entities.filter((e) => e !== best);
       const ageMs = Math.round((t - best.born) * 1000);
-      const before = multiplierFor(score.streak, config);
-      const { state, points } = applyHit(score, best.good ? 'good' : 'bad', config);
+      nowMs = Math.round(t * 1000);
+      score = expire(score, nowMs, config);
+      const before = currentMultiplier(score, config);
+      const { state, points } = applyHit(score, best.good ? 'good' : 'bad', nowMs, config);
       score = state;
       log('tap', tapX, tapY, best.good ? 'good' : 'bad', best.kind, ageMs, Math.round(best.size), Math.round(bestDist));
 
       if (best.good) {
         addBurst(best.x, best.y, best.size, true);
         addText(best.x, best.y, `+${points}`, '#2f6b33');
-        const after = multiplierFor(score.streak, config);
+        const after = currentMultiplier(score, config);
         if (after > before) {
           hud.pulse('multiplier');
           addText(width / 2, height * 0.4, `×${after} 🔥`, '#c0561b');

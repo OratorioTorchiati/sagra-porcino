@@ -1,19 +1,23 @@
 // Tutti i numeri di "Acchiappa il porcino", da ritoccare dopo le prove senza cambiare la logica.
 // "Inizio → fine" = il valore passa gradualmente dal primo al secondo durante la partita.
 // 28/09: partenza resa più difficile dopo la prima prova (all'inizio era troppo facile).
+// 29/09: punti dimezzati e moltiplicatore a tempo.
 
 export default {
   durationS: 60,
 
-  /** Punti per porcino (moltiplicati per il moltiplicatore) */
-  pointsPerPorcino: 10,
+  /** Punti per porcino (moltiplicati per il moltiplicatore). 29/09: da 10 a 5 (medie oltre i 2000) */
+  pointsPerPorcino: 5,
 
-  /** Moltiplicatore in base alla serie di porcini di fila: da `minStreak` in su */
+  /**
+   * Moltiplicatore: con `minStreak` porcini di fila si sale; dura `durationS` secondi, poi scende di uno
+   * (29/09, D67). Vedi scoring.js.
+   */
   multipliers: [
     { minStreak: 0, multiplier: 1 },
-    { minStreak: 5, multiplier: 2 },
-    { minStreak: 10, multiplier: 3 },
-    { minStreak: 20, multiplier: 4 },
+    { minStreak: 5, multiplier: 2, durationS: 6 },
+    { minStreak: 10, multiplier: 3, durationS: 5 },
+    { minStreak: 20, multiplier: 4, durationS: 4 },
   ],
 
   /** Dimensione degli elementi in px (48 = minimo toccabile) */

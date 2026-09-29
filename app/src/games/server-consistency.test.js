@@ -1,4 +1,4 @@
-// Le regole ricontrollate dal server (supabase/migrations/003_games_attempts.sql) devono restare allineate
+// Le regole ricontrollate dal server (supabase/migrations/003_games_attempts.sql e successive) devono restare allineate
 // con la configurazione dei giochi: se si ritocca un config.js, questo test ricorda di aggiornare il database.
 
 import { describe, expect, it } from 'vitest';
@@ -10,7 +10,9 @@ import quizConfig from './quiz/config.js';
 import { maxRawScore as acchiappaMax } from './acchiappa/scoring.js';
 import { maxRawScore as cadonoMax } from './cadono/scoring.js';
 
-const sql = fs.readFileSync(new URL('../../../supabase/migrations/003_games_attempts.sql', import.meta.url), 'utf8');
+const migration = (name) => fs.readFileSync(new URL(`../../../supabase/migrations/${name}`, import.meta.url), 'utf8');
+const sql = migration('003_games_attempts.sql');
+const sql005 = migration('005_acchiappa_moltiplicatore_a_tempo.sql');
 
 function gameRow(id) {
   const m = sql.match(new RegExp(`\\('${id}', '[^']+', \\d+, (\\d+), (\\d+)\\)`));
@@ -19,7 +21,8 @@ function gameRow(id) {
 
 describe('allineamento con il database', () => {
   it('Acchiappa: durata e tetto del punteggio', () => {
-    expect(gameRow('acchiappa')).toEqual({ durationS: acchiappaConfig.durationS, maxRawScore: acchiappaMax(acchiappaConfig) });
+    expect(gameRow('acchiappa').durationS).toBe(acchiappaConfig.durationS);
+    expect(sql005).toContain(`set max_raw_score = ${acchiappaMax(acchiappaConfig)} where id = 'acchiappa'`);
   });
 
   it('Porcini che cadono: durata e tetto del punteggio', () => {
@@ -35,7 +38,18 @@ describe('allineamento con il database', () => {
     const fn = sql.match(/_acchiappa_multiplier[\s\S]*?select case (.*?) end;/)[1];
     const serverSteps = [...fn.matchAll(/p_streak >= (\d+) then (\d+)/g)].map((m) => ({ minStreak: Number(m[1]), multiplier: Number(m[2]) }));
     const clientSteps = acchiappaConfig.multipliers.filter((s) => s.minStreak > 0).sort((a, b) => b.minStreak - a.minStreak);
-    expect(serverSteps).toEqual(clientSteps);
+    expect(serverSteps).toEqual(clientSteps.map(({ minStreak, multiplier }) => ({ minStreak, multiplier })));
+  });
+
+  it('Acchiappa: punti per porcino e moltiplicatore a tempo uguali a quelli del server (005)', () => {
+    expect(sql005).toContain(`v_score := v_score + ${acchiappaConfig.pointsPerPorcino} * v_level;`);
+    const steps = acchiappaConfig.multipliers.filter((s) => s.multiplier > 1);
+    const mins = steps.map((s) => `when ${s.multiplier} then ${s.minStreak}`).join(' ');
+    const durations = steps.map((s) => `when ${s.multiplier} then ${s.durationS * 1000}`).join(' ');
+    expect(sql005).toContain(`select case p_level ${mins} else 0 end;`);
+    expect(sql005).toContain(`select case p_level ${durations} else 0 end;`);
+    // I livelli devono essere ×1, ×2, ×3, ×4 (il server usa il moltiplicatore come livello)
+    expect(acchiappaConfig.multipliers.map((s) => s.multiplier)).toEqual([1, 2, 3, 4]);
   });
 
   it('punti di Porcini che cadono e formula del Memory uguali a quelli del server', () => {

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import config from './config.js';
 import { createAcchiappa } from './game.js';
 import { createRng } from '../engine/rng.js';
+import { applyHit, initialScoreState } from './scoring.js';
 
 const WIDTH = 390;
 const HEIGHT = 700;
@@ -68,15 +69,16 @@ describe('Acchiappa il porcino (simulazione)', () => {
   });
 
   it('giocatore bravo: nessun errore, serie lunga, moltiplicatore massimo', () => {
-    const { result, hudValues } = simulate(3, perfect);
+    const { result, hudValues, actions } = simulate(3, perfect);
     expect(result.stats.errors).toBe(0);
     expect(result.stats.caught).toBeGreaterThan(40);
     expect(result.stats.maxStreak).toBe(result.stats.caught);
-    expect(hudValues.multiplier).toBe('×4');
     expect(hudValues.score).toBe(result.rawScore);
-    // 5×10 + 5×20 + 10×30 + il resto ×40
-    const n = result.stats.caught;
-    expect(result.rawScore).toBe(50 + 100 + 300 + (n - 20) * 40);
+    // Il punteggio si rifà dal registro dei tocchi (come sul server)
+    let state = initialScoreState();
+    for (const [ms, , , , hit] of actions.filter((a) => a[1] === 'tap' && a[4] !== 'none')) state = applyHit(state, hit, ms, config).state;
+    expect(state.score).toBe(result.rawScore);
+    expect(result.rawScore).toBeGreaterThan(result.stats.caught * config.pointsPerPorcino * 2);
   });
 
   it('giocatore distratto: errori e serie azzerate', () => {
