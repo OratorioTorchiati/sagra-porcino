@@ -3,7 +3,7 @@
 import { goBack } from '../router.js';
 import { accountLinkMarkup } from './account-link.js';
 
-// showAccount: false solo sulla pagina del profilo (il bottone porterebbe alla pagina stessa)
+// showAccount: false sulla pagina del profilo (il bottone porterebbe alla pagina stessa) e nel pannello staff
 export function topBarMarkup({ showAccount = true } = {}) {
   return `
     <div class="top-bar">

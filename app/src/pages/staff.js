@@ -25,9 +25,11 @@ const LOGIN_ERRORS = {
 };
 
 function loginMarkup(message = '') {
+  const player = currentPlayer();
   return `
     <form class="auth-form staff-login" novalidate>
       <p>Accesso riservato agli organizzatori.</p>
+      ${player ? `<p class="notice">Ora sei dentro come <strong>${escapeHtml(player.nickname)}</strong>: entrando come staff uscirai da questo account (poi potrai rientrare col suo PIN).</p>` : ''}
       <label class="form-field">
         <span class="form-field__label">Nickname staff</span>
         <input class="form-field__input" name="nickname" autocomplete="username" autocapitalize="off" spellcheck="false" required>
@@ -44,7 +46,7 @@ function loginMarkup(message = '') {
 export function renderStaff() {
   const element = html(`
     <main class="page staff-page">
-      ${topBarMarkup()}
+      ${topBarMarkup({ showAccount: false })}
       <h1 class="page-title">🛠️ Pannello staff</h1>
       <div class="staff-body"></div>
     </main>
