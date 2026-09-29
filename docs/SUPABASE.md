@@ -33,6 +33,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/015_acchiappa_oggetti_tempo.sql` | 8 | Acchiappa: gli oggetti tolgono 2 s alla partita, il riccio è velenoso |
 | `supabase/migrations/016_pin_sicurezza.sql` | 8 | PIN di 5 cifre non troppo semplice, 5 tentativi di accesso e blocco che cresce |
 | `supabase/migrations/017_blocco_per_ip.sql` | 8 | blocco dei tentativi per nickname + IP, tetto per IP e per nickname |
+| `supabase/migrations/018_ip_affidabile.sql` | 8 | IP del telefono solo da fonti affidabili (non falsificabile) |
 
 Impostazioni dei giochi (SQL Editor):
 

@@ -138,4 +138,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 014 applicata. Acchiappa: ricarica del tempo a ogni porcino, ×4 a 15, oggetti -1,5 s e velenosi a ×1 (D80). |
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 015 applicata. Acchiappa: gli oggetti tolgono 2 s alla partita, riccio tra i velenosi (D81). |
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 016 applicata. PIN di 5 cifre non troppo semplice, 5 tentativi con messaggi e blocco che cresce 1/5/15/60 minuti (D82). |
-| 8 (ritocchi) | Completata | 2026-09-29 | Blocco dei tentativi per nickname + IP, tetti per IP e per nickname (D83); migrazione 017. |
+| 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 017 applicata. Blocco dei tentativi per nickname + IP, tetti per IP e per nickname (D83); verificato che l'IP arriva da Cloudflare e non si falsifica. Migrazione 018 (IP di riserva affidabile) da applicare. |

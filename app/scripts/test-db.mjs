@@ -297,13 +297,13 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
 
   // IP visto dal server (017): c'è, e non si falsifica aggiungendo intestazioni alla richiesta
   const ipSeen = await staff('client_ip');
-  const spoofed = await (await fetch(`${BASE}/rest/v1/rpc/staff_client_ip`, {
-    method: 'POST',
-    headers: { ...headers, 'X-Forwarded-For': '203.0.113.7', 'CF-Connecting-IP': '203.0.113.8', 'X-Real-IP': '203.0.113.9' },
-    body: JSON.stringify({ p_token: S }),
-  })).json().catch(() => null);
-  check('il server vede l\'IP di chi fa la richiesta', ipSeen?.ok && ipSeen.ip && ipSeen.ip !== '?', JSON.stringify(ipSeen));
-  check('...e non si può falsificare con le intestazioni', spoofed?.ip === ipSeen?.ip, JSON.stringify(spoofed));
+  const withHeaders = (extra) =>
+    fetch(`${BASE}/rest/v1/rpc/staff_client_ip`, { method: 'POST', headers: { ...headers, ...extra }, body: JSON.stringify({ p_token: S }) });
+  const spoofed = await (await withHeaders({ 'X-Forwarded-For': '203.0.113.7', 'X-Real-IP': '203.0.113.9' })).json().catch(() => null);
+  const fakeCloudflare = await withHeaders({ 'CF-Connecting-IP': '203.0.113.8' });
+  check('il server vede l\'IP di chi fa la richiesta', ipSeen?.ok && ipSeen.ip && ipSeen.ip !== '?');
+  check('...e non si può falsificare con X-Forwarded-For o X-Real-IP', spoofed?.ip === ipSeen?.ip);
+  check('...né con un CF-Connecting-IP finto (Cloudflare rifiuta la richiesta)', fakeCloudflare.status === 403, String(fakeCloudflare.status));
 
   const found = await staff('search_players', { p_query: t5Nick });
   check('staff: ricerca per nickname', found?.players?.[0]?.nickname === t5Nick && found.total >= 1);
