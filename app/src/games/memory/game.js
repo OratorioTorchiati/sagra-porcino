@@ -40,6 +40,20 @@ export function createMemory({ rng, config, hud, log, dom, isRunning }) {
   `);
   dom.append(element);
   const buttons = [...element.querySelectorAll('.memory-card')];
+
+  // Didascalie su una riga: se non entrano, si rimpicciolisce il carattere (fino a 9 px) (D72)
+  function fitCaptions() {
+    for (const caption of element.querySelectorAll('.memory-card__caption')) {
+      caption.style.fontSize = '';
+      let size = parseFloat(getComputedStyle(caption).fontSize);
+      while (caption.scrollWidth > caption.clientWidth && size > 9) {
+        size -= 0.5;
+        caption.style.fontSize = `${size}px`;
+      }
+    }
+  }
+  requestAnimationFrame(fitCaptions);
+  window.addEventListener('resize', fitCaptions);
   const found = element.querySelector('.memory-found');
 
   const schedule = (delayS, run) => scheduled.push({ at: now + delayS, run });
@@ -116,6 +130,10 @@ export function createMemory({ rng, config, hud, log, dom, isRunning }) {
   });
 
   return {
+    destroy() {
+      window.removeEventListener('resize', fitCaptions);
+    },
+
     update(dt, t) {
       now = t;
       const due = scheduled.filter((s) => s.at <= t);

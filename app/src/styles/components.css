@@ -795,6 +795,8 @@ img.memory-card__image {
 .memory-card__caption {
   flex: none;
   padding: 0.1rem 0.15rem;
+  white-space: nowrap; /* una riga sola: se non entra, il gioco rimpicciolisce il carattere */
+  overflow: hidden;
   font-size: 0.8rem;
   font-weight: 700;
   line-height: 1.15;

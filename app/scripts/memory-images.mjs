@@ -28,7 +28,9 @@ const QUALITY = 80;
 
 /** Ritagli per singola immagine, in frazioni del soggetto già ritagliato: { top, bottom, left, right } (0–1) */
 const CROPS = {
-  // es. salvatore: { bottom: 0.55 } → tiene la parte alta (testa, aureola, globo)
+  // bottom = dove finisce il ritaglio, in frazione dell'altezza del soggetto (0.5 = tiene la metà alta)
+  salvatore: { bottom: 0.5 }, // mezzo busto: testa con aureola, mano e globo (D72)
+  monumento: { bottom: 2 / 3 }, // tolto 1/3 da sotto (D72)
 };
 
 /** Distanza di colore al quadrato */
