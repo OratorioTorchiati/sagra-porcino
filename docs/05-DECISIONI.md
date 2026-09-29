@@ -136,4 +136,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazioni 011 e 012 applicate: Ban account / Ban telefono con elenco dei telefoni bloccati (D78); elenco unico dei telefoni con Registrazione / Attivo e ultimi 20 accessi (D79); Da controllare diviso in Segnalate / Escluse con conteggio. `npm run test:db` 90/90. |
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 014 applicata. Acchiappa: ricarica del tempo a ogni porcino, ×4 a 15, oggetti -1,5 s e velenosi a ×1 (D80). |
 | 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 015 applicata. Acchiappa: gli oggetti tolgono 2 s alla partita, riccio tra i velenosi (D81). |
-| 8 (ritocchi) | Completata | 2026-09-29 | PIN di 5 cifre non troppo semplice, 5 tentativi con messaggi e blocco che cresce 1/5/15/60 minuti (D82); migrazione 016. |
+| 8 (ritocchi) | Completata | 2026-09-29 | Migrazione 016 applicata. PIN di 5 cifre non troppo semplice, 5 tentativi con messaggi e blocco che cresce 1/5/15/60 minuti (D82). |
