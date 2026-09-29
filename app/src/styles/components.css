@@ -1938,7 +1938,7 @@ dialog:not([open]) {
   margin-top: 1rem;
 }
 
-.staff-cards {
+.review-items {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1947,25 +1947,25 @@ dialog:not([open]) {
   gap: 0.6rem;
 }
 
-.staff-card {
+.review-item {
   padding: 0.8rem 1rem;
   border: 2px solid var(--color-border);
   border-radius: 14px;
   background: var(--color-surface);
 }
 
-.staff-card p {
+.review-item p {
   margin: 0 0 0.3rem;
 }
 
-.staff-card__actions {
+.review-item__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
-.staff-card__actions .button {
+.review-item__actions .button {
   width: 100%;
 }
 
@@ -2263,7 +2263,26 @@ dialog:not([open]) {
   color: #fff;
 }
 
-.staff-card > .button {
+.review-item > .button {
   width: 100%;
   margin-top: 0.4rem;
+}
+
+/* Scheda di una partita da controllare: etichetta a sinistra, valore a destra, una voce per riga */
+.review-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  text-align: left;
+}
+
+.review-card dt {
+  color: var(--color-text-muted);
+}
+
+.review-card dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }

@@ -40,13 +40,17 @@ export function renderReviewSection(root, ctx) {
     help.innerHTML = `${REVIEW_KINDS[kind].help} Rivedile e scegli: Approva, Conferma esclusione oppure Ban del giocatore.`;
     const shown = attempts.filter((x) => x.status === kind);
     list.innerHTML = shown.length
-      ? `<ul class="staff-cards">${shown
+      ? `<ul class="review-items">${shown
           .map(
             (a) => `
-          <li class="staff-card">
-            <p><strong>${escapeHtml(a.nickname)}</strong> · ${escapeHtml(gameName(a.game_id))} · ${formatDate(a.submitted_at)}</p>
-            <p>Punti: <strong>${a.raw_score ?? '—'}</strong>${a.client_score !== null && a.client_score !== a.raw_score && a.game_id !== 'quiz' ? ` (il telefono diceva ${a.client_score})` : ''}</p>
-            <p class="staff-warn">${a.notes.map((n) => escapeHtml(noteLabel(n))).join(' · ') || '—'}</p>
+          <li class="review-item">
+            <dl class="review-card">
+              <dt>Giocatore</dt><dd><strong>${escapeHtml(a.nickname)}</strong></dd>
+              <dt>Gioco</dt><dd>${escapeHtml(gameName(a.game_id))}</dd>
+              <dt>Quando</dt><dd>${formatDate(a.submitted_at)}</dd>
+              <dt>Punti</dt><dd><strong>${a.raw_score ?? '—'}</strong>${a.client_score !== null && a.client_score !== a.raw_score && a.game_id !== 'quiz' ? ` (il telefono diceva ${a.client_score})` : ''}</dd>
+              <dt>Motivo</dt><dd class="staff-warn">${a.notes.map((n) => escapeHtml(noteLabel(n))).join('<br>') || '—'}</dd>
+            </dl>
             <button type="button" class="button" data-replay="${a.id}">▶ Rivedi partita</button>
           </li>`,
           )
@@ -86,8 +90,8 @@ export async function renderSuspiciousSection(root, ctx) {
   const res = await staffCall(ctx, 'suspicious_devices', {}, root.querySelector('.form-error'));
   if (!res) return;
   root.querySelector('.staff-suspicious').innerHTML = res.groups.length
-    ? `<ul class="staff-cards">${res.groups
-        .map((g) => `<li class="staff-card"><p><strong>${g.count} account</strong> · impronta ${escapeHtml(g.fingerprint)}</p><p>${g.nicknames.map(escapeHtml).join(', ')}</p></li>`)
+    ? `<ul class="review-items">${res.groups
+        .map((g) => `<li class="review-item"><p><strong>${g.count} account</strong> · impronta ${escapeHtml(g.fingerprint)}</p><p>${g.nicknames.map(escapeHtml).join(', ')}</p></li>`)
         .join('')}</ul>`
     : '<p class="leaderboard-note">Nessun gruppo sospetto. 👍</p>';
 }
