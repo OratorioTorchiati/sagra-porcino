@@ -92,6 +92,12 @@ const profile = await rpc('get_my_profile', { p_token: token });
 check('profilo con la chiave di sessione', profile.body?.ok === true && profile.body.player.nickname === nick && profile.body.player.avatar === 'riccio');
 check('chiave falsa → non collegato', (await rpc('get_my_profile', { p_token: 'f'.repeat(64) })).body?.error === 'NOT_LOGGED_IN');
 
+// ---------- Cambio del personaggio dal profilo (020) ----------
+const newAvatar = await rpc('set_avatar', { p_token: token, p_avatar: 'ovolaccio' });
+check('cambio del personaggio (anche un velenoso)', newAvatar.body?.ok === true && newAvatar.body.player.avatar === 'ovolaccio', JSON.stringify(newAvatar.body));
+check('personaggio che non esiste → rifiutato', (await rpc('set_avatar', { p_token: token, p_avatar: 'drago' })).body?.error === 'AVATAR_INVALID');
+check('cambio del personaggio senza sessione → rifiutato', (await rpc('set_avatar', { p_token: null, p_avatar: 'riccio' })).body?.error === 'NOT_LOGGED_IN');
+
 // ---------- Accesso da un altro telefono ----------
 const login2 = await rpc('login', { p_nickname: nick.toUpperCase(), p_secret: '24680', p_device_id: device3 });
 check('stesso account da un altro telefono con il PIN → consentito', login2.body?.ok === true);

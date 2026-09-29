@@ -4,7 +4,7 @@
 
 import { html, escapeHtml, openDialog, closeDialog } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
-import { CHARACTERS } from '../characters/characters.js';
+import { charPickerMarkup, bindCharPicker } from '../components/char-picker.js';
 import { NetworkError, serverConfigured } from '../lib/api.js';
 import { currentPlayer, register, checkNickname } from '../lib/account.js';
 import { authErrorMessage, OFFLINE_MESSAGE, NOT_CONFIGURED_MESSAGE, takeAfterLogin } from './auth-messages.js';
@@ -32,7 +32,6 @@ export function renderRegister() {
     return { title: 'Registrati', element };
   }
 
-  let selected = Math.floor(Math.random() * CHARACTERS.length); // uno a caso, già scelto
   let checkTimer = null;
   let checkSeq = 0;
 
@@ -43,17 +42,7 @@ export function renderRegister() {
       <form class="auth-form" novalidate>
         <div class="form-section" role="group" aria-labelledby="sezione-1">
           <h2 class="form-section__title" id="sezione-1">1. Scegli il tuo personaggio</h2>
-          <div class="char-picker">
-            <button type="button" class="char-picker__arrow" data-step="-1" aria-label="Personaggio precedente">‹</button>
-            <div class="char-picker__current">
-              <span class="char-picker__image" aria-hidden="true"></span>
-              <span class="char-picker__name" aria-live="polite"></span>
-            </div>
-            <button type="button" class="char-picker__arrow" data-step="1" aria-label="Personaggio successivo">›</button>
-          </div>
-          <div class="char-grid" role="radiogroup" aria-label="Personaggi">
-            ${CHARACTERS.map((c, i) => `<button type="button" class="char-grid__item" role="radio" data-index="${i}" aria-label="${escapeHtml(c.name)}">${c.svg}</button>`).join('')}
-          </div>
+          ${charPickerMarkup()}
         </div>
 
         <div class="form-section" role="group" aria-labelledby="sezione-2">
@@ -104,36 +93,11 @@ export function renderRegister() {
   bindTopBar(element);
 
   const form = element.querySelector('.auth-form');
-  const picker = element.querySelector('.char-picker');
-  const gridItems = [...element.querySelectorAll('.char-grid__item')];
+  const charPicker = bindCharPicker(element); // uno a caso, già scelto
   const nickInput = form.elements.nickname;
   const nickStatus = element.querySelector('.form-field__status');
   const errorBox = element.querySelector('.form-error');
   const submit = form.querySelector('[type="submit"]');
-
-  function showCharacter() {
-    const c = CHARACTERS[selected];
-    picker.querySelector('.char-picker__image').innerHTML = c.svg;
-    picker.querySelector('.char-picker__name').textContent = c.name;
-    gridItems.forEach((item, i) => {
-      item.classList.toggle('is-selected', i === selected);
-      item.setAttribute('aria-checked', String(i === selected));
-    });
-  }
-  showCharacter();
-
-  picker.addEventListener('click', (event) => {
-    const step = Number(event.target.closest('[data-step]')?.dataset.step);
-    if (!step) return;
-    selected = (selected + step + CHARACTERS.length) % CHARACTERS.length;
-    showCharacter();
-  });
-  element.querySelector('.char-grid').addEventListener('click', (event) => {
-    const item = event.target.closest('.char-grid__item');
-    if (!item) return;
-    selected = Number(item.dataset.index);
-    showCharacter();
-  });
 
   // Controllo del nickname mentre si scrive (solo informativo, non prenota niente)
   function setNickStatus(text, kind) {
@@ -196,7 +160,7 @@ export function renderRegister() {
     submit.disabled = true;
     submit.textContent = 'Un attimo…';
     try {
-      const result = await register({ nickname, avatar: CHARACTERS[selected].id, pin });
+      const result = await register({ nickname, avatar: charPicker.selectedId(), pin });
       if (result.ok) {
         location.replace(`#${takeAfterLogin()}`);
         return;

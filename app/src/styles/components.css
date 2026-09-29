@@ -1190,6 +1190,36 @@ img.memory-card__image {
   height: 100%;
 }
 
+/* Matita in alto a destra del personaggio: apre la scelta del personaggio (D85) */
+.profile-card__avatar-wrap {
+  position: relative;
+}
+
+.avatar-edit {
+  position: absolute;
+  top: -10px;
+  right: -20px;
+  width: var(--tap-min); /* area toccabile piena, ma si vede solo la matita */
+  height: var(--tap-min);
+  padding: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.avatar-edit svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Nella finestra c'è meno spazio: 4 colonne (16 personaggi = 4 × 4) */
+.dialog--avatar .char-grid {
+  grid-template-columns: repeat(4, minmax(48px, 58px));
+  justify-content: center;
+  margin: 0.75rem 0 1rem;
+}
+
 .profile-card__nickname {
   margin: 0;
   font-family: var(--font-title);

@@ -27,6 +27,35 @@ function porcinoBody(cap, capDark, highlight, extra = '') {
     ${face(50, 67, 0.95)}`;
 }
 
+/** Fungo velenoso: gambo SOTTILE con anello (come nel gioco), faccina sul cappello */
+function poisonousBody({ stem, stemDark, cap, capDark, capPath, extra = '', wavyStem = false }) {
+  const stemPath = wavyStem
+    ? 'M44 58 C38 68 56 74 46 88 L58 88 C66 74 50 68 56 58 Z'
+    : 'M43 58 C42 70 41 80 41 88 L59 88 C59 80 58 70 57 58 Z';
+  return `
+    <ellipse cx="50" cy="89" rx="15" ry="6" fill="${stem}" stroke="${stemDark}" stroke-width="2"/>
+    <path d="${stemPath}" fill="${stem}" stroke="${stemDark}" stroke-width="2.5"/>
+    <path d="M37 68 C42 64 58 64 63 68 L64 73 C56 76 44 76 36 73 Z" fill="${stem}" stroke="${stemDark}" stroke-width="2"/>
+    <path d="${capPath}" fill="${cap}" stroke="${capDark}" stroke-width="2.5"/>
+    ${extra}
+    ${face(50, 40, 0.9)}`;
+}
+
+/** Riccio di castagna: palla verde con spine tutto intorno */
+function burrBody() {
+  const spikes = Array.from({ length: 18 }, (_, i) => {
+    const a = (i / 18) * Math.PI * 2;
+    const b = a + Math.PI / 18;
+    const p = (r, t) => `${(50 + r * Math.cos(t)).toFixed(1)} ${(52 + r * Math.sin(t)).toFixed(1)}`;
+    return `${i ? 'L' : 'M'}${p(30, a)} L${p(43, b - Math.PI / 36)} L${p(43, b)}`;
+  }).join(' ');
+  return `
+    <path d="${spikes} Z" fill="#8bc34a" stroke="#33691e" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="50" cy="52" r="30" fill="#9ccc65" stroke="#33691e" stroke-width="2.5"/>
+    <ellipse cx="40" cy="34" rx="9" ry="4" transform="rotate(-30 40 34)" fill="#c5e1a5" opacity="0.8"/>
+    ${face(50, 50, 1)}`;
+}
+
 export const CHARACTERS = [
   {
     id: 'porcino',
@@ -138,6 +167,46 @@ export const CHARACTERS = [
       <circle cx="60" cy="48" r="26" fill="#d4913f" stroke="${INK}" stroke-width="2.5"/>
       <path d="M60 48 C60 44 66 44 66 49 C66 55 56 56 54 49 C52 41 62 36 69 41 C77 47 73 60 62 62 C50 64 42 54 45 44" fill="none" stroke="#7a4d18" stroke-width="3" stroke-linecap="round"/>
       <path d="M17 78 Q22 82 27 78" fill="none" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/>`),
+  },
+  // ---------- Velenosi (come nel gioco Acchiappa, D85) ----------
+  {
+    id: 'ovolaccio',
+    name: 'Ovolaccio',
+    svg: svg('#f9dcd6', poisonousBody({
+      stem: '#fbf8f1', stemDark: '#6d6658', cap: '#d7261e', capDark: '#6d1410',
+      capPath: 'M8 56 C8 28 28 10 50 10 C72 10 92 28 92 56 C78 62 22 62 8 56 Z',
+      extra: `<g fill="#ffffff" stroke="#e9d9d0" stroke-width="0.8">
+        <circle cx="28" cy="24" r="5"/><circle cx="50" cy="17" r="4.5"/><circle cx="72" cy="24" r="5"/>
+        <circle cx="16" cy="43" r="4"/><circle cx="84" cy="43" r="4"/></g>`,
+    })),
+  },
+  {
+    id: 'fungo_giallo',
+    name: 'Fungo giallo',
+    svg: svg('#eef3c9', poisonousBody({
+      stem: '#f2f5dc', stemDark: '#5f6420', cap: '#c3cf3f', capDark: '#4d5412',
+      capPath: 'M12 58 C10 36 27 12 50 8 C73 12 90 36 88 58 C72 64 28 64 12 58 Z',
+      extra: `<path d="M50 10 L50 22 M36 16 C30 24 24 34 20 46 M64 16 C70 24 76 34 80 46" fill="none" stroke="#7d8a1e" stroke-width="1.8" stroke-linecap="round"/>
+        <ellipse cx="37" cy="22" rx="6" ry="3" transform="rotate(-50 37 22)" fill="#e2ea8a" opacity="0.8"/>`,
+    })),
+  },
+  {
+    id: 'fungo_stregato',
+    name: 'Fungo stregato',
+    svg: svg('#ecdcf5', poisonousBody({
+      stem: '#eadcf3', stemDark: '#4b1f63', cap: '#8e3fb0', capDark: '#3d1452', wavyStem: true,
+      capPath: 'M8 56 C10 30 28 12 50 12 C72 12 90 30 92 56 C86 53 80 61 72 57 C66 63 58 56 50 61 C42 56 34 63 28 57 C20 61 14 53 8 56 Z',
+      extra: `<g fill="#f0c8ff"><circle cx="30" cy="25" r="4"/><circle cx="52" cy="18" r="4.5"/><circle cx="72" cy="27" r="3.5"/></g>
+        <g fill="#ffe24a" stroke="#b58a00" stroke-width="0.8">
+          <path d="M12 12 L14 18 L20 20 L14 22 L12 28 L10 22 L4 20 L10 18 Z"/>
+          <path d="M88 70 L89.5 75 L94 76.5 L89.5 78 L88 83 L86.5 78 L82 76.5 L86.5 75 Z"/>
+        </g>`,
+    })),
+  },
+  {
+    id: 'riccio_castagna',
+    name: 'Riccio di castagna',
+    svg: svg('#e3f1d4', burrBody()),
   },
 ];
 

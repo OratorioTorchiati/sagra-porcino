@@ -35,6 +35,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/017_blocco_per_ip.sql` | 8 | blocco dei tentativi per nickname + IP, tetto per IP e per nickname |
 | `supabase/migrations/018_ip_affidabile.sql` | 8 | IP del telefono solo da fonti affidabili (non falsificabile) |
 | `supabase/migrations/019_acchiappa_livelli_a_timer.sql` | 8 | Acchiappa: livelli a timer (sforamento → livello successivo) |
+| `supabase/migrations/020_personaggi_velenosi.sql` | 8 | 4 personaggi velenosi, cambio del personaggio dal profilo |
 
 Impostazioni dei giochi (SQL Editor):
 

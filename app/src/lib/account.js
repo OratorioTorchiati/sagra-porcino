@@ -87,6 +87,15 @@ export async function refreshProfile() {
   return null;
 }
 
+/** Cambia il personaggio (dal profilo). Errori: NOT_LOGGED_IN, AVATAR_INVALID; NetworkError senza rete. */
+export async function changeAvatar(avatar) {
+  const token = sessionToken();
+  const result = await rpc('set_avatar', { p_token: token, p_avatar: avatar });
+  if (result.ok) save({ token, player: result.player });
+  else if (result.error === 'NOT_LOGGED_IN') save(null);
+  return result;
+}
+
 /** Controllo del nickname mentre lo si scrive (solo informativo). */
 export function checkNickname(nickname) {
   return rpc('check_nickname', { p_nickname: nickname });
