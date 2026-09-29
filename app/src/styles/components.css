@@ -1708,15 +1708,6 @@ dialog:not([open]) {
   vertical-align: middle;
 }
 
-.rank-divider {
-  margin: 0.3rem 0;
-  padding-top: 0.5rem;
-  border-top: 2px dashed #e2ad3b;
-  text-align: center;
-  font-weight: 700;
-  color: var(--color-primary);
-}
-
 .rank-gap {
   text-align: center;
   font-size: var(--text-lg);

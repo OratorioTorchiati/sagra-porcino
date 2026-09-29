@@ -47,9 +47,6 @@ function boardMarkup(data) {
     return '<p class="leaderboard-empty">Nessuno ha ancora fatto punti: gioca e sarai il primo! 🍄</p>';
   }
   const { podium, rows, meOutside } = leaderboardView(data.top, data.me);
-  const prizeRows = rows.filter((r) => r.prize);
-  const otherRows = rows.filter((r) => !r.prize);
-  const endOfPrizes = otherRows.length ? `<li class="rank-divider" aria-hidden="true">🎁 Fin qui si vince un premio</li>` : '';
   let mine = '';
   if (meOutside) {
     mine = `<ul class="rank-list rank-list--me"><li class="rank-gap" aria-hidden="true">⋯</li>${rowMarkup(meOutside)}</ul>`;
@@ -61,7 +58,7 @@ function boardMarkup(data) {
   return `
     <p class="leaderboard-prize">🎁 I primi ${PRIZE_POSITIONS} vincono un premio!</p>
     <div class="podium">${podiumStep(podium[2], 2)}${podiumStep(podium[1], 1)}${podiumStep(podium[3], 3)}</div>
-    <ul class="rank-list">${prizeRows.map(rowMarkup).join('')}${endOfPrizes}${otherRows.map(rowMarkup).join('')}</ul>
+    <ul class="rank-list">${rows.map(rowMarkup).join('')}</ul>
     ${mine}`;
 }
 
