@@ -25,7 +25,9 @@ export function authErrorMessage(result) {
       return `Troppi tentativi sbagliati. Riprova tra ${minutes} ${minutes === 1 ? 'minuto' : 'minuti'}.`;
     }
     case 'DISABLED':
-      return 'Questo account è stato disattivato. Rivolgiti allo stand della sagra.';
+      return 'Questo account è stato bloccato dagli organizzatori. Rivolgiti allo stand della sagra.';
+    case 'DEVICE_BANNED':
+      return 'Questo telefono è stato bloccato dagli organizzatori. Rivolgiti allo stand della sagra.';
     default:
       return 'Qualcosa non ha funzionato. Riprova tra poco.';
   }

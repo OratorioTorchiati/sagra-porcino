@@ -26,6 +26,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/008_staff.sql` | 8 | pannello staff: giocatori, reset PIN, disattiva/cancella, punti extra, partite da controllare, impostazioni, registro |
 | `supabase/migrations/009_staff_ricerca_replay.sql` | 8 | ricerca, classifica e registro del pannello a pagine (con filtri), dati per "Rivedi partita" |
 | `supabase/migrations/010_revisione_staff.sql` | 8 | revisione staff delle partite segnalate ed escluse (Approva / Conferma esclusione / Ban), tentativi contati a parte, segnale "tocchi al centro" |
+| `supabase/migrations/011_ban_telefono.sql` | 8 | ban del telefono (da lì non si entra con nessun account), elenco telefoni bloccati |
 
 Impostazioni dei giochi (SQL Editor):
 

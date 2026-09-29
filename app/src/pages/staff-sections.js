@@ -3,6 +3,7 @@
 import { escapeHtml } from '../lib/dom.js';
 import { formatPoints } from '../lib/leaderboard.js';
 import { GAMES } from '../games/registry.js';
+import { deviceCode } from '../lib/device.js';
 import { noteLabel, isoToRomeLocal, romeLocalToIso, toCsv, downloadText } from '../lib/staff.js';
 import { staffCall, formatDate, askDialog, pagerMarkup } from './staff-ui.js';
 import { openReplay } from './staff-replay.js';
@@ -83,10 +84,34 @@ export function renderReviewSection(root, ctx) {
 
 export async function renderSuspiciousSection(root, ctx) {
   root.innerHTML = `
+    <h3 class="staff-h3">📵 Telefoni bloccati</h3>
+    <div class="staff-banned"><p class="leaderboard-note">Caricamento…</p></div>
+    <h3 class="staff-h3">🔎 Telefoni sospetti</h3>
     <p class="staff-muted">Account registrati da telefoni con la <strong>stessa impronta tecnica</strong>. È solo un indizio: telefoni dello stesso modello
       con lo stesso browser possono avere la stessa impronta anche se sono di persone diverse.</p>
     <div class="form-error" role="alert" hidden></div>
     <div class="staff-suspicious"><p class="leaderboard-note">Caricamento…</p></div>`;
+  const banned = root.querySelector('.staff-banned');
+  async function loadBanned() {
+    const list = await staffCall(ctx, 'banned_devices', {}, root.querySelector('.form-error'));
+    if (!list) return;
+    banned.innerHTML = list.devices.length
+      ? `<ul class="staff-list">${list.devices
+          .map(
+            (d) => `<li><strong class="device-code">${deviceCode(d.device_id)}</strong>${d.nickname ? ` (di ${escapeHtml(d.nickname)})` : ''} · bloccato da ${escapeHtml(d.staff)} ${formatDate(d.banned_at)}
+              <button type="button" class="staff-link" data-unban="${d.device_id}">🔓 Sblocca</button></li>`,
+          )
+          .join('')}</ul>`
+      : '<p class="staff-muted">Nessun telefono bloccato. Si bloccano dalla scheda di un giocatore (Giocatori).</p>';
+  }
+  banned.addEventListener('click', async (event) => {
+    const id = event.target.closest('[data-unban]')?.dataset.unban;
+    if (!id) return;
+    const ok = await askDialog({ title: `Sbloccare il telefono ${deviceCode(id)}?`, body: '<p>Da questo telefono si potrà di nuovo entrare e giocare.</p>', confirmLabel: 'Sblocca' });
+    if (ok && (await staffCall(ctx, 'ban_device', { p_device_id: id, p_ban: false }, root.querySelector('.form-error')))) loadBanned();
+  });
+  loadBanned();
+
   const res = await staffCall(ctx, 'suspicious_devices', {}, root.querySelector('.form-error'));
   if (!res) return;
   root.querySelector('.staff-suspicious').innerHTML = res.groups.length
@@ -203,8 +228,10 @@ export function renderLeaderboardSection(root, ctx) {
 
 const ACTIONS = {
   reset_pin: 'ha reimpostato il PIN di',
-  disable: 'ha disattivato',
-  enable: 'ha riattivato',
+  disable: 'ha bannato l\'account di',
+  enable: 'ha tolto il ban a',
+  device_ban: 'ha bloccato il telefono di',
+  device_unban: 'ha sbloccato il telefono di',
   delete: 'ha cancellato',
   extra_points: 'ha dato punti extra a',
   extra_points_removed: 'ha tolto punti extra a',
@@ -221,7 +248,8 @@ const ACTION_FILTERS = [
   ['reset_pin', 'Reset PIN'],
   ['ban', 'Ban di giocatori'],
   ['exclusion', 'Esclusioni confermate'],
-  ['account', 'Account (disattiva, riattiva, cancella)'],
+  ['account', 'Account (ban, togli ban, cancella)'],
+  ['device_ban', 'Telefoni bloccati'],
   ['extra', 'Punti extra'],
   ['attempt', 'Partite approvate'],
   ['settings', 'Impostazioni'],

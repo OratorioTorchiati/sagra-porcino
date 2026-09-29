@@ -12,7 +12,7 @@ import { renderReviewSection, renderSuspiciousSection, renderSettingsSection, re
 const SECTIONS = [
   { id: 'giocatori', label: '👤 Giocatori', render: renderPlayersSection },
   { id: 'controlli', label: '🚩 Da controllare', render: renderReviewSection },
-  { id: 'sospetti', label: '📱 Telefoni sospetti', render: renderSuspiciousSection },
+  { id: 'sospetti', label: '📱 Telefoni', render: renderSuspiciousSection },
   { id: 'impostazioni', label: '⚙️ Impostazioni', render: renderSettingsSection },
   { id: 'classifica', label: '🏆 Classifica', render: renderLeaderboardSection },
   { id: 'registro', label: '📜 Registro', render: renderLogSection },
@@ -21,7 +21,8 @@ const SECTIONS = [
 const LOGIN_ERRORS = {
   WRONG_CREDENTIALS: 'Nickname o password sbagliati.',
   LOCKED: 'Troppi tentativi sbagliati: riprova tra qualche minuto.',
-  DISABLED: 'Questo account è disattivato.',
+  DISABLED: 'Questo account è bloccato.',
+  DEVICE_BANNED: 'Questo telefono è bloccato.',
 };
 
 function loginMarkup(message = '') {

@@ -244,6 +244,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
     ['staff_set_attempt_status', { p_attempt_id: crypto.randomUUID(), p_status: 'valid' }], ['staff_suspicious_devices', {}],
     ['staff_get_settings', {}], ['staff_update_settings', { p_values: { attempts_per_day: 99 } }], ['staff_leaderboard', {}], ['staff_log_list', {}],
     ['staff_attempt_replay', { p_attempt_id: crypto.randomUUID() }], ['staff_ban_player', { p_attempt_id: crypto.randomUUID() }], ['staff_confirm_exclusion', { p_attempt_id: crypto.randomUUID() }],
+    ['staff_ban_device', { p_device_id: crypto.randomUUID(), p_ban: true }], ['staff_banned_devices', {}],
   ];
   const denied = [];
   for (const [name, params] of calls) {
@@ -252,7 +253,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
       if (res?.error !== 'NOT_STAFF') denied.push(`${name}(${token ? 'giocatore' : 'senza sessione'}): ${JSON.stringify(res)}`);
     }
   }
-  check('pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le 17 funzioni', denied.length === 0, denied.join(' | '));
+  check('pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le 19 funzioni', denied.length === 0, denied.join(' | '));
   const stillThere = (await rpc('login', { p_nickname: t5Nick, p_secret: '5555' })).body;
   check('...e i tentativi del giocatore non hanno cambiato nulla (PIN e account intatti)', stillThere?.ok === true);
 }
@@ -346,6 +347,27 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('staff: ban → non entra più, il telefono non può creare un altro account, la partita sparisce',
     xRes?.status === 'flagged' && excluded?.ok && xLogin?.error === 'DISABLED' && xAgain?.error === 'DEVICE_ALREADY_USED' && !xList.attempts.some((a) => a.id === xStart.attempt_id),
     JSON.stringify({ xRes: xRes?.status, excluded, xLogin: xLogin?.error, xAgain: xAgain?.error }));
+  // Ban del telefono: da quel telefono non si entra con nessun account e non ci si registra
+  const dNick = `zzd${suffix}`;
+  const dDevice = crypto.randomUUID();
+  const dOther = crypto.randomUUID();
+  const d = (await rpc('register', { p_nickname: dNick, p_avatar: 'riccio', p_pin: '3333', p_device_id: dDevice })).body;
+  const dBan = await staff('ban_device', { p_device_id: dDevice, p_ban: true });
+  const dSession = (await rpc('get_my_profile', { p_token: d.token })).body;
+  const dLogin = (await rpc('login', { p_nickname: dNick, p_secret: '3333', p_device_id: dDevice })).body;
+  const friendLogin = (await rpc('login', { p_nickname: t5Nick, p_secret: '5555', p_device_id: dDevice })).body;
+  const dRegister = (await rpc('register', { p_nickname: `zze${suffix}`, p_avatar: 'riccio', p_pin: '3333', p_device_id: dDevice })).body;
+  const dElsewhere = (await rpc('login', { p_nickname: dNick, p_secret: '3333', p_device_id: dOther })).body;
+  check('staff: ban telefono → da lì non si entra con nessun account (nemmeno di altri), non ci si registra, le sessioni si chiudono',
+    dBan?.ok && dSession?.ok === false && dLogin?.error === 'DEVICE_BANNED' && friendLogin?.error === 'DEVICE_BANNED' && dRegister?.error === 'DEVICE_BANNED',
+    JSON.stringify({ dSession: dSession?.error, dLogin: dLogin?.error, friendLogin: friendLogin?.error, dRegister: dRegister?.error }));
+  check('staff: ...ma lo stesso account da un altro telefono entra (il ban è del telefono, non dell\'account)', dElsewhere?.ok === true);
+  const dList = await staff('banned_devices');
+  const dDetail = await staff('player_detail', { p_nickname: dNick });
+  check('staff: il telefono bloccato è nell\'elenco e segnato nella scheda del giocatore', dList?.devices?.some((x) => x.device_id === dDevice && x.nickname === dNick) && dDetail?.player?.devices?.[0]?.banned === true);
+  await staff('ban_device', { p_device_id: dDevice, p_ban: false });
+  check('staff: sbloccato → da quel telefono si entra di nuovo', (await rpc('login', { p_nickname: dNick, p_secret: '3333', p_device_id: dDevice })).body?.ok === true);
+
   check('staff: il giocatore bannato sparisce dalla classifica', (await rpc('get_player_card', { p_nickname: xNick })).body?.error === 'NOT_FOUND');
 
   const settings = await staff('get_settings');

@@ -17,7 +17,7 @@ function resultsMarkup({ players, total, page, page_size: size }) {
       <li>
         <button type="button" class="rank-row staff-player-row${p.disabled ? ' is-disabled' : ''}" data-nickname="${escapeHtml(p.nickname)}">
           <span class="rank-row__avatar" aria-hidden="true">${avatarSvg(p.avatar)}</span>
-          <span class="rank-row__name">${escapeHtml(p.nickname)}${p.role === 'staff' ? ' <span class="me-tag">staff</span>' : ''}${p.disabled ? ' <span class="staff-tag staff-tag--off">disattivato</span>' : ''}</span>
+          <span class="rank-row__name">${escapeHtml(p.nickname)}${p.role === 'staff' ? ' <span class="me-tag">staff</span>' : ''}${p.disabled ? ' <span class="staff-tag staff-tag--off">bannato</span>' : ''}</span>
           <span class="rank-row__points">${formatPoints(p.total)}</span>
         </button>
       </li>`,
@@ -27,17 +27,21 @@ function resultsMarkup({ players, total, page, page_size: size }) {
 
 function detailMarkup(p) {
   const codes = p.devices.map((d) => deviceCode(d.device_id));
+  // Codice del telefono con il bottone per bloccarlo / sbloccarlo (D78)
+  const deviceMarkup = (id, banned) =>
+    `<strong class="device-code">${deviceCode(id)}</strong>${banned ? ' <span class="staff-tag staff-tag--off">📵 bloccato</span>' : ''}
+     <button type="button" class="staff-link" data-action="${banned ? 'device-unban' : 'device-ban'}" data-device="${id}">${banned ? '🔓 Sblocca' : '📵 Ban telefono'}</button>`;
   const devices = p.devices.length
     ? p.devices
         .map(
-          (d) => `<li><strong class="device-code">${deviceCode(d.device_id)}</strong> · registrato ${formatDate(d.created_at)}${
+          (d) => `<li>${deviceMarkup(d.device_id, d.banned)} · registrato ${formatDate(d.created_at)}${
             d.same_fingerprint ? ` · <span class="staff-warn">stessa impronta di altri ${d.same_fingerprint} account</span>` : ''
           }</li>`,
         )
         .join('')
     : '<li>Nessuno (account creato a mano)</li>';
   const sessions = p.sessions.length
-    ? p.sessions.map((s) => `<li>${s.device_id ? `<strong class="device-code">${deviceCode(s.device_id)}</strong>` : 'telefono sconosciuto'} · ultimo uso ${formatDate(s.last_seen_at)}</li>`).join('')
+    ? p.sessions.map((s) => `<li>${s.device_id ? deviceMarkup(s.device_id, s.banned) : 'telefono sconosciuto'} · ultimo uso ${formatDate(s.last_seen_at)}</li>`).join('')
     : '<li>Nessun accesso attivo</li>';
   const games = p.games
     .map(
@@ -59,7 +63,7 @@ function detailMarkup(p) {
       <span class="profile-card__avatar" aria-hidden="true">${avatarSvg(p.avatar)}</span>
       <p class="profile-card__nickname">${escapeHtml(p.nickname)}</p>
       <p class="profile-card__character">${p.role === 'staff' ? 'Staff' : 'Giocatore'} · registrato ${formatDate(p.created_at)}${
-        p.disabled ? ' · <span class="staff-tag staff-tag--off">disattivato</span>' : ''
+        p.disabled ? ' · <span class="staff-tag staff-tag--off">bannato</span>' : ''
       }</p>
     </div>
     ${playerStatsMarkup(p.card)}
@@ -85,7 +89,7 @@ function detailMarkup(p) {
         ? `<div class="staff-actions">
             <button type="button" class="button" data-action="pin">🔑 Reimposta PIN</button>
             <button type="button" class="button button--secondary" data-action="extra">⭐ Dai punti extra</button>
-            <button type="button" class="button button--secondary" data-action="toggle">${p.disabled ? '✅ Riattiva account' : '⛔ Disattiva account'}</button>
+            <button type="button" class="button button--secondary" data-action="toggle">${p.disabled ? '✅ Togli ban' : '⛔ Ban account'}</button>
             <button type="button" class="button button--danger" data-action="delete">🗑️ Cancella account</button>
           </div>`
         : '<p class="staff-muted">Gli account staff si gestiscono dal database.</p>'
@@ -222,15 +226,29 @@ export function renderPlayersSection(root, ctx) {
     } else if (action === 'toggle') {
       const disable = !current.disabled;
       const ok = await askDialog({
-        title: disable ? `Disattivare ${escapeHtml(nick)}?` : `Riattivare ${escapeHtml(nick)}?`,
+        title: disable ? `Ban dell'account ${escapeHtml(nick)}?` : `Togliere il ban a ${escapeHtml(nick)}?`,
         body: disable
-          ? '<p>Non potrà più entrare né giocare e sparirà dalla classifica. Il telefono resta legato: non potrà creare un altro account. Si può riattivare.</p>'
-          : '<p>Potrà di nuovo entrare e tornerà in classifica.</p>',
-        confirmLabel: disable ? 'Disattiva' : 'Riattiva',
+          ? '<p>Non potrà più entrare né giocare e sparirà dalla classifica (i punteggi restano salvati). Il suo telefono resta legato a questo account: non potrà crearne un altro. Si può togliere il ban.</p>'
+          : '<p>Potrà di nuovo entrare e tornerà in classifica con i suoi punteggi.</p>',
+        confirmLabel: disable ? 'Ban' : 'Togli ban',
         danger: disable,
       });
       if (ok && (await staffCall(ctx, 'set_disabled', { p_nickname: nick, p_disabled: disable }, detailError))) {
-        showDetail(nick, disable ? '✅ Account disattivato.' : '✅ Account riattivato.');
+        showDetail(nick, disable ? '✅ Account bannato.' : '✅ Ban tolto.');
+      }
+    } else if (action === 'device-ban' || action === 'device-unban') {
+      const ban = action === 'device-ban';
+      const deviceId = event.target.closest('[data-device]').dataset.device;
+      const ok = await askDialog({
+        title: ban ? `Bloccare il telefono ${deviceCode(deviceId)}?` : `Sbloccare il telefono ${deviceCode(deviceId)}?`,
+        body: ban
+          ? '<p>Da questo telefono <strong>non si potrà più entrare con nessun account</strong> (nemmeno quello di un amico) né registrarsene uno nuovo. Chi è dentro da lì viene fatto uscire. Si può sbloccare.</p>'
+          : '<p>Da questo telefono si potrà di nuovo entrare e giocare.</p>',
+        confirmLabel: ban ? 'Blocca telefono' : 'Sblocca',
+        danger: ban,
+      });
+      if (ok && (await staffCall(ctx, 'ban_device', { p_device_id: deviceId, p_ban: ban }, detailError))) {
+        showDetail(nick, ban ? '✅ Telefono bloccato.' : '✅ Telefono sbloccato.');
       }
     } else if (action === 'delete') {
       const values = await askDialog({
