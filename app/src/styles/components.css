@@ -2339,3 +2339,12 @@ dialog:not([open]) {
   overflow-y: auto;
   padding-left: 1.1rem;
 }
+
+.access-list li {
+  padding: 0.3rem 0;
+  font-size: 1rem;
+}
+
+.access-list .device-code {
+  font-size: 1rem;
+}
