@@ -11,7 +11,9 @@ import { playerStatsMarkup } from '../components/player-card.js';
 import { cachedMyCard, fetchPlayerCard } from '../lib/leaderboard.js';
 
 function statsMarkup(player, card) {
-  if (player.role === 'staff') return '<p class="notice">🛠️ Sei dello <strong>staff</strong>: i tuoi punti non vanno in classifica.</p>';
+  if (player.role === 'staff') {
+    return '<p class="notice">🛠️ Sei dello <strong>staff</strong>: i tuoi punti non vanno in classifica.</p><a class="button button--leaderboard" href="#/staff">🛠️ Pannello staff</a>';
+  }
   if (!card) return '<p class="leaderboard-note">Caricamento dei punti…</p>';
   return `${playerStatsMarkup(card)}<a class="button button--leaderboard" href="#/giochi/classifica">🏆 Vai alla classifica</a>`;
 }

@@ -23,6 +23,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/005_acchiappa_moltiplicatore_a_tempo.sql` | 5 | Acchiappa: 5 punti a porcino e moltiplicatore a tempo |
 | `supabase/migrations/006_acchiappa_tempi_piu_lunghi.sql` | 5 | Acchiappa: moltiplicatori 7/6/5 secondi |
 | `supabase/migrations/007_classifica.sql` | 6 | classifica (somma dei migliori + punti extra), aggiornata dai trigger, scheda giocatore |
+| `supabase/migrations/008_staff.sql` | 8 | pannello staff: giocatori, reset PIN, disattiva/cancella, punti extra, partite da controllare, impostazioni, registro |
 
 Impostazioni dei giochi (SQL Editor):
 
@@ -43,6 +44,31 @@ insert into allowed_words (word) values ('parolainnocua');
 
 I file si possono rieseguire senza danni (`create ... if not exists`, `create or replace`).
 
+## 2b. Account staff (pannello `#/staff`)
+
+Gli account staff si creano a mano nel SQL Editor. **La password la scrivi tu** al posto di `SCRIVI-QUI-LA-PASSWORD`
+(lunga, almeno 12 caratteri; non va mai nel repository né in chat). Il nickname è quello con cui si entra.
+
+```sql
+insert into players (nickname, avatar, pin_hash, role)
+values ('Staff-Nome', 'gufetto', extensions.crypt('SCRIVI-QUI-LA-PASSWORD', extensions.gen_salt('bf', 10)), 'staff');
+```
+
+Cambiare la password di uno staff:
+
+```sql
+update players set pin_hash = extensions.crypt('NUOVA-PASSWORD', extensions.gen_salt('bf', 10))
+where nickname = 'Staff-Nome' and role = 'staff';
+```
+
+Togliere un account staff: `delete from players where nickname = 'Staff-Nome' and role = 'staff';`
+
+⚠️ Il SQL Editor salva le query: dopo aver creato l'account (o cambiato la password) cancella quella query
+dall'elenco delle query salvate/recenti, così la password non resta scritta da nessuna parte.
+
+Si entra da `https://oratoriotorchiati.github.io/sagra-porcino/#/staff` (o dal Profilo → "🛠️ Pannello staff").
+Gli account staff hanno tentativi illimitati e non compaiono in classifica.
+
 ## 3. Collegare l'app
 
 - **In locale**: copiare `app/.env.example` in `app/.env.local` e inserire URL e chiave (il file non va su git).
@@ -61,6 +87,7 @@ delete from players where nickname like 'zz%';   -- giocatori di prova (sessioni
 delete from login_failures;
 delete from attempts;                              -- TUTTI i tentativi (classifica azzerata): solo prima della sagra!
 delete from quiz_questions;                        -- domande di esempio, prima di caricare quelle vere
+delete from staff_log;                             -- registro delle azioni dello staff fatte durante le prove
 ```
 
 ## 6. Attenzione: pausa dopo 7 giorni

@@ -227,6 +227,98 @@ if (starts[1]?.attempt_id && perDay >= 2) {
   check('avviare una partita non cambia la classifica (nessun ricaricamento per chi la guarda)', quiz2?.ok && afterStart?.unchanged === true, JSON.stringify(quiz2));
 }
 
+// Pannello staff (008): un giocatore normale (o senza sessione) non può usare nessuna funzione staff
+{
+  const calls = [
+    ['staff_search_players', { p_query: '' }], ['staff_player_detail', { p_nickname: t5Nick }],
+    ['staff_reset_pin', { p_nickname: t5Nick, p_new_pin: '0000' }], ['staff_set_disabled', { p_nickname: t5Nick, p_disabled: true }],
+    ['staff_delete_player', { p_nickname: t5Nick, p_confirm: t5Nick }], ['staff_add_extra_points', { p_nickname: t5Nick, p_points: 999, p_reason: 'furbo' }],
+    ['staff_delete_extra_points', { p_id: 1 }], ['staff_review_list', { p_status: 'flagged' }],
+    ['staff_set_attempt_status', { p_attempt_id: crypto.randomUUID(), p_status: 'valid' }], ['staff_suspicious_devices', {}],
+    ['staff_get_settings', {}], ['staff_update_settings', { p_values: { attempts_per_day: 99 } }], ['staff_leaderboard', {}], ['staff_log_list', {}],
+  ];
+  const denied = [];
+  for (const [name, params] of calls) {
+    for (const token of [t5Token, null]) {
+      const res = (await rpc(name, { p_token: token, ...params })).body;
+      if (res?.error !== 'NOT_STAFF') denied.push(`${name}(${token ? 'giocatore' : 'senza sessione'}): ${JSON.stringify(res)}`);
+    }
+  }
+  check('pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le 14 funzioni', denied.length === 0, denied.join(' | '));
+  const stillThere = (await rpc('login', { p_nickname: t5Nick, p_secret: '5555' })).body;
+  check('...e i tentativi del giocatore non hanno cambiato nulla (PIN e account intatti)', stillThere?.ok === true);
+}
+
+// Pannello staff con un account staff di prova (facoltativo): TEST_STAFF_NICKNAME e TEST_STAFF_PASSWORD in app/.env.local
+if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
+  const staffLogin = (await rpc('login', { p_nickname: env.TEST_STAFF_NICKNAME, p_secret: env.TEST_STAFF_PASSWORD })).body;
+  check('staff: accesso con nickname + password', staffLogin?.ok && staffLogin.player.role === 'staff', staffLogin?.error);
+  const S = staffLogin?.token;
+  const staff = async (name, params = {}) => (await rpc(`staff_${name}`, { p_token: S, ...params })).body;
+
+  const found = await staff('search_players', { p_query: t5Nick });
+  check('staff: ricerca per nickname', found?.players?.[0]?.nickname === t5Nick);
+  const detail = await staff('player_detail', { p_nickname: t5Nick });
+  check('staff: scheda con telefono, partite e punti', detail?.ok && detail.player.devices.length === 1 && detail.player.games.length === 4 && detail.player.card.total > 0);
+
+  // Giocatore usa e getta per le azioni pesanti
+  const vNick = `zzv${suffix}`;
+  const vDevice = crypto.randomUUID();
+  const v = (await rpc('register', { p_nickname: vNick, p_avatar: 'riccio', p_pin: '1111', p_device_id: vDevice })).body;
+  const vStart = (await rpc('start_attempt', { p_token: v.token, p_game_id: 'memory' })).body;
+  await sleep(6500);
+  await rpc('submit_score', { p_attempt_id: vStart.attempt_id, p_raw_score: 942, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) });
+  const reset = await staff('reset_pin', { p_nickname: vNick, p_new_pin: '4321' });
+  const oldSession = (await rpc('get_my_profile', { p_token: v.token })).body;
+  const newLogin = (await rpc('login', { p_nickname: vNick, p_secret: '4321' })).body;
+  check('staff: reset PIN → il vecchio accesso si chiude, si entra col nuovo PIN', reset?.ok && oldSession?.ok === false && newLogin?.ok, JSON.stringify(reset));
+  check('staff: PIN non di 4 cifre → rifiutato', (await staff('reset_pin', { p_nickname: vNick, p_new_pin: '12' }))?.error === 'PIN_INVALID');
+
+  const cardBefore = (await rpc('get_player_card', { p_nickname: vNick })).body.player;
+  await staff('add_extra_points', { p_nickname: vNick, p_points: 100, p_reason: 'prova' });
+  const cardAfter = (await rpc('get_player_card', { p_nickname: vNick })).body.player;
+  check('staff: punti extra +100 → totale in classifica +100', cardAfter.total === cardBefore.total + 100 && cardAfter.extra_total === 100, `${cardBefore.total} → ${cardAfter.total}`);
+  const extraId = (await staff('player_detail', { p_nickname: vNick })).player.extra_points[0].id;
+  await staff('delete_extra_points', { p_id: extraId });
+  check('staff: togliere i punti extra → totale di prima', (await rpc('get_player_card', { p_nickname: vNick })).body.player.total === cardBefore.total);
+  check('staff: punti extra senza motivo → rifiutati', (await staff('add_extra_points', { p_nickname: vNick, p_points: 5, p_reason: ' ' }))?.error === 'REASON_REQUIRED');
+
+  await staff('set_disabled', { p_nickname: vNick, p_disabled: true });
+  const disabledLogin = (await rpc('login', { p_nickname: vNick, p_secret: '4321' })).body;
+  const boardDisabled = (await rpc('get_player_card', { p_nickname: vNick })).body;
+  check('staff: disattivato → non entra e sparisce dalla classifica', disabledLogin?.error === 'DISABLED' && boardDisabled?.error === 'NOT_FOUND');
+  await staff('set_disabled', { p_nickname: vNick, p_disabled: false });
+  check('staff: riattivato → entra di nuovo', (await rpc('login', { p_nickname: vNick, p_secret: '4321' })).body?.ok === true);
+
+  check('staff: cancellazione con nickname sbagliato → rifiutata', (await staff('delete_player', { p_nickname: vNick, p_confirm: 'altro' }))?.error === 'CONFIRM_MISMATCH');
+  const del = await staff('delete_player', { p_nickname: vNick, p_confirm: vNick });
+  const reRegister = (await rpc('register', { p_nickname: `zzw${suffix}`, p_avatar: 'riccio', p_pin: '1111', p_device_id: vDevice })).body;
+  check('staff: cancellato → account sparito e il telefono può registrarsi di nuovo', del?.ok && (await staff('search_players', { p_query: vNick })).players.length === 0 && reRegister?.ok, JSON.stringify(reRegister));
+
+  const flagged = await staff('review_list', { p_status: 'flagged' });
+  const mine = flagged?.attempts?.find((a) => a.nickname === t5Nick);
+  check('staff: la partita segnalata (Memory perfetto) è nella lista da controllare', Boolean(mine), JSON.stringify(flagged?.attempts?.slice(0, 2)));
+  if (mine) {
+    await staff('set_attempt_status', { p_attempt_id: mine.id, p_status: 'rejected' });
+    const t5Card = (await rpc('get_player_card', { p_nickname: t5Nick })).body.player;
+    check('staff: partita scartata → non conta più (Memory torna a 942)', t5Card.best.memory === 942, JSON.stringify(t5Card.best));
+  }
+
+  const settings = await staff('get_settings');
+  check('staff: impostazioni leggibili', settings?.ok && settings.games.length === 4 && Number.isInteger(settings.attempts_per_day));
+  const same = await staff('update_settings', { p_values: { attempts_per_day: settings.attempts_per_day, attempts_reset_hour: settings.attempts_reset_hour } });
+  check('staff: salvare le impostazioni (stessi valori)', same?.ok === true, JSON.stringify(same));
+  const badDate = await staff('update_settings', { p_values: { attempts_per_day: 7, games_open_until: 'domani' } });
+  check('staff: data non valida → rifiutata senza cambiare nulla', badDate?.error === 'DATE_INVALID' && (await staff('get_settings')).attempts_per_day === settings.attempts_per_day, JSON.stringify(badDate));
+  const board = await staff('leaderboard');
+  check('staff: classifica completa (tutte le posizioni)', board?.ok && board.rows.length >= 1);
+  const log = await staff('log_list');
+  check('staff: le azioni finiscono nel registro', log?.entries?.some((e) => e.action === 'delete' && e.target === vNick));
+  await rpc('logout', { p_token: S });
+} else {
+  console.log('(controlli con un account staff saltati: mancano TEST_STAFF_NICKNAME / TEST_STAFF_PASSWORD in app/.env.local)');
+}
+
 const failed = results.filter((ok) => !ok).length;
 console.log(`\n${results.length - failed}/${results.length} controlli superati. Giocatori di prova: ${nick}, ${lockNick}, ${t5Nick} (da cancellare prima della sagra).`);
 process.exit(failed ? 1 : 0);

@@ -11,6 +11,7 @@ import { renderMenu } from './pages/menu.js';
 import { renderGames } from './pages/games.js';
 import { renderGame } from './pages/game.js';
 import { renderLeaderboard } from './pages/leaderboard.js';
+import { renderStaff } from './pages/staff.js';
 import { renderProfile } from './pages/profile.js';
 import { renderRegister } from './pages/register.js';
 import { renderLogin } from './pages/login.js';
@@ -28,6 +29,7 @@ startRouter(document.getElementById('app'), {
     '/registrati': renderRegister,
     '/accedi': renderLogin,
     '/privacy': renderPrivacy,
+    '/staff': renderStaff,
   },
   notFound: renderNotFound,
 });

@@ -1805,3 +1805,202 @@ dialog:not([open]) {
 .player-dialog .dialog__actions {
   margin-top: 0;
 }
+
+/* ---------- Pannello staff (Tappa 8) ---------- */
+
+.button--danger {
+  width: 100%;
+  background: #b3261e;
+  color: #fff;
+}
+
+.button--danger:active {
+  background: #8c1d17;
+}
+
+.staff-who {
+  margin: 0 0 0.75rem;
+}
+
+.staff-tabs,
+.staff-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.staff-tab {
+  min-height: 48px;
+  padding: 0.4rem 0.8rem;
+  border: 2px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.staff-tab.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.staff-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.staff-h3 {
+  margin: 0.75rem 0 0.25rem;
+  font-size: var(--text-lg);
+}
+
+.staff-muted {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.staff-warn {
+  color: #9a4b00;
+  font-weight: 700;
+}
+
+.staff-ok {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #e7f3e9;
+  color: var(--color-forest);
+  font-weight: 700;
+}
+
+.staff-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.5;
+}
+
+.staff-link {
+  min-height: 48px;
+  padding: 0 0.25rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.staff-tag {
+  display: inline-block;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+
+.staff-tag--off {
+  background: #b3261e;
+  color: #fff;
+}
+
+.staff-player-row.is-disabled {
+  opacity: 0.7;
+}
+
+.staff-player-row {
+  grid-template-columns: 40px 1fr auto;
+}
+
+.device-code {
+  font-family: ui-monospace, 'Cascadia Mono', Menlo, monospace;
+  letter-spacing: 0.05em;
+}
+
+.device-code--big {
+  font-size: var(--text-xl);
+  font-weight: 800;
+  text-align: center;
+  color: var(--color-primary);
+}
+
+.staff-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.staff-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.staff-card {
+  padding: 0.8rem 1rem;
+  border: 2px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.staff-card p {
+  margin: 0 0 0.3rem;
+}
+
+.staff-card__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.staff-card__actions .button {
+  width: 100%;
+}
+
+.staff-table-wrap {
+  overflow-x: auto;
+  border: 2px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+.staff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.staff-table th,
+.staff-table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.staff-table tr.is-prize td {
+  background: #fff4dc;
+}
+
+.staff-games {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.staff-dialog .form-field {
+  margin: 0.75rem 0;
+}
