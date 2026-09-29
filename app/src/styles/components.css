@@ -2216,3 +2216,54 @@ dialog:not([open]) {
   font-size: 1.05rem;
   white-space: nowrap;
 }
+
+/* Da controllare: interruttore Segnalate / Escluse, diverso dai bottoni tondi delle sezioni */
+.review-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 0.25rem;
+  border: 2px solid var(--color-primary);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.review-switch__option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  min-height: 64px;
+  padding: 0.4rem;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.review-switch__option + .review-switch__option {
+  border-left: 2px solid var(--color-primary);
+}
+
+.review-switch__count {
+  font-size: var(--text-xl);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.review-switch__option--flagged.is-active {
+  background: #ffd166;
+}
+
+.review-switch__option--rejected.is-active {
+  background: #b3261e;
+  color: #fff;
+}
+
+.staff-card > .button {
+  width: 100%;
+  margin-top: 0.4rem;
+}

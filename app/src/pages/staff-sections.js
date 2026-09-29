@@ -11,26 +11,39 @@ const gameName = (id) => GAMES[id]?.name ?? id;
 
 // ---------- Da controllare ----------
 
+const REVIEW_KINDS = {
+  flagged: { label: '🚩 Segnalate', help: 'Partite strane (possibili bot): <strong>contano già</strong> in classifica finché non decidete.', empty: 'Nessuna partita segnalata. 👍' },
+  rejected: { label: '⛔ Escluse', help: 'Partite scartate dal server (dati impossibili): <strong>non contano</strong> finché non decidete.', empty: 'Nessuna partita esclusa. 👍' },
+};
+
 export function renderReviewSection(root, ctx) {
+  let kind = 'flagged';
+  let attempts = [];
   root.innerHTML = `
-    <p class="staff-muted">Partite in attesa della vostra decisione: le <strong>segnalate</strong> (strane, possibili bot)
-      contano già in classifica, le <strong>escluse</strong> dal server (dati impossibili) non contano.
-      Rivedile e scegli: Approva, Conferma esclusione oppure Ban del giocatore.</p>
+    <div class="review-switch" role="tablist" aria-label="Tipo di partite"></div>
+    <p class="staff-muted review-help"></p>
     <div class="form-error" role="alert" hidden></div>
-    <div class="staff-review-list"></div>`;
+    <div class="staff-review-list"><p class="leaderboard-note">Caricamento…</p></div>`;
+  const switchEl = root.querySelector('.review-switch');
+  const help = root.querySelector('.review-help');
   const error = root.querySelector('.form-error');
   const list = root.querySelector('.staff-review-list');
 
-  async function load() {
-    list.innerHTML = '<p class="leaderboard-note">Caricamento…</p>';
-    const res = await staffCall(ctx, 'review_list', {}, error);
-    if (!res) return;
-    list.innerHTML = res.attempts.length
-      ? `<ul class="staff-cards">${res.attempts
+  function render() {
+    const count = (k) => attempts.filter((x) => x.status === k).length;
+    switchEl.innerHTML = Object.entries(REVIEW_KINDS)
+      .map(
+        ([k, v]) => `<button type="button" role="tab" class="review-switch__option review-switch__option--${k}${k === kind ? ' is-active' : ''}"
+          aria-selected="${k === kind}" data-kind="${k}">${v.label}<span class="review-switch__count">${count(k)}</span></button>`,
+      )
+      .join('');
+    help.innerHTML = `${REVIEW_KINDS[kind].help} Rivedile e scegli: Approva, Conferma esclusione oppure Ban del giocatore.`;
+    const shown = attempts.filter((x) => x.status === kind);
+    list.innerHTML = shown.length
+      ? `<ul class="staff-cards">${shown
           .map(
             (a) => `
           <li class="staff-card">
-            <p>${a.status === 'rejected' ? '<span class="staff-tag staff-tag--off">⛔ Esclusa · non conta</span>' : '<span class="staff-tag staff-tag--flag">🚩 Segnalata · conta</span>'}</p>
             <p><strong>${escapeHtml(a.nickname)}</strong> · ${escapeHtml(gameName(a.game_id))} · ${formatDate(a.submitted_at)}</p>
             <p>Punti: <strong>${a.raw_score ?? '—'}</strong>${a.client_score !== null && a.client_score !== a.raw_score && a.game_id !== 'quiz' ? ` (il telefono diceva ${a.client_score})` : ''}</p>
             <p class="staff-warn">${a.notes.map((n) => escapeHtml(noteLabel(n))).join(' · ') || '—'}</p>
@@ -38,10 +51,23 @@ export function renderReviewSection(root, ctx) {
           </li>`,
           )
           .join('')}</ul>`
-      : '<p class="leaderboard-note">Nessuna partita da controllare. 👍</p>';
+      : `<p class="leaderboard-note">${REVIEW_KINDS[kind].empty}</p>`;
+  }
+
+  async function load() {
+    const res = await staffCall(ctx, 'review_list', {}, error);
+    if (!res) return;
+    attempts = res.attempts;
+    render();
   }
 
   root.addEventListener('click', (event) => {
+    const option = event.target.closest('[data-kind]');
+    if (option) {
+      kind = option.dataset.kind;
+      render();
+      return;
+    }
     const replay = event.target.closest('[data-replay]');
     if (replay) openReplay(replay.dataset.replay, ctx, error, (changed) => changed && load());
   });
