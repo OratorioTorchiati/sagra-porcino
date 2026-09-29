@@ -156,7 +156,7 @@ Bottoni: **GIOCA** · **Indietro**. I testi delle regole per ogni gioco sono in 
 - Codice già usato da quell'account: "L'avevi già trovato 😉". Codice non valido: "Questo QR non è un oggetto segreto".
 - I codici veri sono stringhe casuali salvate **solo nel database**.
 
-## 8. Selfie (funzione attivabile/disattivabile)
+## 8. ~~Selfie~~ — tolto per privacy e GDPR (D69): quanto segue non si fa
 
 - Impostazione staff `selfie_enabled`, **default OFF**. Da valutare più avanti.
 - Se ON:

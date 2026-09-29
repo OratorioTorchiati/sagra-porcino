@@ -73,6 +73,8 @@ Questo file **ha la precedenza** sugli altri documenti. Aggiornarlo a ogni nuova
 | D66 | Nella registrazione, sotto "Ripeti il PIN" (al posto di "Ricordalo: ti serve per ritirare il premio"), riquadro giallo: **"⚠️ ATTENZIONE! Puoi creare un solo account per telefono, tieni bene a mente il tuo PIN"** (il limite c'era già, D-account: un telefono = un account). | |
 | D67 | **Acchiappa il porcino ribilanciato** (medie oltre 2000): **5 punti a porcino** (non 10); soglie del moltiplicatore invariate (5/10/20 di fila) ma **a tempo**: ×2 dura 6 s, ×3 5 s, ×4 4 s, poi scende di un livello (col suo tempo pieno) e la serie riparte dalla soglia di quel livello. Errore = subito ×1. HUD "×3 · 4s". Stima su partite simulate: giocatore molto bravo da ~2700 a ~900. Server: migrazione 005 (tetto 8100). | |
 | D68 | Moltiplicatori di Acchiappa **+1 s**: ×2 7 s, ×3 6 s, ×4 5 s (arrivare a ×4 era troppo difficile). Nell'HUD niente più secondi scritti: il moltiplicatore come prima, dentro un **anello che si consuma come un orologio**; a ogni cambio di livello (su o giù) piccola animazione e anello di nuovo pieno. Server: migrazione 006. | |
+| D69 | **Niente selfie**, per privacy e GDPR: la Tappa 9 è cancellata (supera D12, D28; Q6 chiusa). Al ritiro del premio basta il QR personale / il login davanti allo staff. | |
+| D70 | **Ordine delle tappe rimanenti**: Tappa 6 (classifica) → Tappa 8 (pannello staff) → Tappa 10 (contenuti veri e prova generale). La **Tappa 7 (oggetti segreti) è rimandata**: finché non si fa, il totale in classifica è solo la somma dei 4 giochi (max 4.000). | |
 | D35 | Il repository e il sito appartengono all'**organizzazione GitHub `OratorioTorchiati`** (gratuita), così l'indirizzo non mostra l'account personale: **https://oratoriotorchiati.github.io/sagra-porcino/**. | La radice `oratoriotorchiati.github.io` resta libera per futuri progetti dell'oratorio. |
 
 ## Questioni aperte
@@ -86,7 +88,7 @@ Valori di default già scelti, in modo che il lavoro non si blocchi. Da conferma
 | Q3 | Durata di "Acchiappa il porcino": 60 o 90 secondi? | 60 s. Da tarare nei test. |
 | Q4 | Quiz: mostrare le soluzioni a fine partita? | No (evita il passaparola delle risposte). |
 | Q5 | Allergeni nel menù? | Campo facoltativo previsto, da compilare se forniti. |
-| Q6 | Se il selfie viene attivato a sagra iniziata, è obbligatorio per ritirare il premio? | Da decidere. Default: no, basta il login davanti allo staff. |
+| Q6 | ~~Se il selfie viene attivato a sagra iniziata, è obbligatorio per ritirare il premio?~~ | **Chiusa**: niente selfie (D69). |
 | Q7 | Nome e ruolo del **titolare del trattamento** per l'informativa privacy; dopo quanti giorni si cancellano i dati? | Segnaposto "Associazione organizzatrice"; cancellazione entro 30 giorni. |
 | Q8 | Nome ufficiale della sagra e del paese (per titoli e grafica)? | "Sagra del Porcino". |
 | Q9 | Il personaggio si può cambiare dopo la registrazione? | No. |

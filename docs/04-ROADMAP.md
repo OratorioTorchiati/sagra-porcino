@@ -147,7 +147,7 @@ Legenda: 🎯 obiettivo · 🔨 da fare · ✅ criteri di accettazione · 🚫 d
 
 ---
 
-## Tappa 7 — Oggetti segreti
+## Tappa 7 — Oggetti segreti (rimandata, D70)
 
 🎯 5 adesivi da trovare, +100 punti l'uno.
 
@@ -174,7 +174,7 @@ Legenda: 🎯 obiettivo · 🔨 da fare · ✅ criteri di accettazione · 🚫 d
 🔨
 - Rotta `#/staff`, accesso solo `role = 'staff'`.
 - Ritiro premi (scansione QR personale, "Premio consegnato").
-- Impostazioni (finestre dei giochi, `selfie_enabled`).
+- Impostazioni (tentativi al giorno, ora del reset, chiusura dei giochi, giochi accesi/spenti).
 - Giocatori: ricerca, reset PIN (Edge Function), disattiva account, vista impronte sospette, approvazione/scarto dei punteggi `flagged`.
 - Oggetti segreti: pagina stampabile degli adesivi con QR, conteggio ritrovamenti.
 - Classifica completa ed export CSV.
@@ -185,7 +185,7 @@ Legenda: 🎯 obiettivo · 🔨 da fare · ✅ criteri di accettazione · 🚫 d
 
 ---
 
-## Tappa 9 — Selfie (attivabile)
+## ~~Tappa 9 — Selfie~~ (cancellata per privacy e GDPR, D69)
 
 🎯 Funzione pronta, spenta di default.
 
