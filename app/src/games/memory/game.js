@@ -16,7 +16,10 @@ export function createMemory({ rng, config, hud, log, dom, isRunning }) {
 
   const frontMarkup = (id) => {
     const card = byId[id];
-    const image = card.src ? `<img class="memory-card__image" src="${card.src}" alt="">` : `<span class="memory-card__image">${card.svg}</span>`;
+    // Foto (sfondo trasparente) sul colore della carta; altrimenti il disegno
+    const image = card.src
+      ? `<span class="memory-card__image memory-card__image--photo" style="background:${card.bg ?? '#f3e7d3'}"><img src="${card.src}" alt=""></span>`
+      : `<span class="memory-card__image">${card.svg}</span>`;
     return `${image}<span class="memory-card__caption">${escapeHtml(card.caption)}</span>`;
   };
 

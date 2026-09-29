@@ -776,7 +776,7 @@ html.is-playing body {
 .memory-card__front {
   transform: rotateY(180deg);
   background: var(--color-surface);
-  border: 3px solid var(--color-border);
+  border: 2px solid var(--color-border);
 }
 
 .memory-card__image {
@@ -790,6 +790,14 @@ img.memory-card__image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* Foto con sfondo trasparente: riempie il riquadro colorato senza tagliare il soggetto */
+.memory-card__image--photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .memory-card__caption {

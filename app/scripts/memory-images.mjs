@@ -23,14 +23,14 @@ const SRC = new URL('contenuti/memory/', ROOT);
 const OUT = new URL('app/src/games/memory/photos/', ROOT);
 
 const SIZE = 480;
-const MARGIN = 0.04; // margine intorno al soggetto, in proporzione al lato
+const MARGIN = 0.01; // margine intorno al soggetto, in proporzione al lato (quasi nulla: il soggetto riempie la carta)
 const QUALITY = 80;
 
 /** Ritagli per singola immagine, in frazioni del soggetto già ritagliato: { top, bottom, left, right } (0–1) */
 const CROPS = {
   // bottom = dove finisce il ritaglio, in frazione dell'altezza del soggetto (0.5 = tiene la metà alta)
   salvatore: { bottom: 0.5 }, // mezzo busto: testa con aureola, mano e globo (D72)
-  monumento: { bottom: 2 / 3 }, // tolto 1/3 da sotto (D72)
+  monumento: { bottom: 0.82 }, // tolta la base sotto la ringhiera (D72)
 };
 
 /** Distanza di colore al quadrato */
