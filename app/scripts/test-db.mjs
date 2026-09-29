@@ -136,7 +136,9 @@ check('lo stato mostra i tentativi usati oggi', stateAfter?.games?.find((g) => g
 const fake = (await rpc('submit_score', { p_attempt_id: starts[0].attempt_id, p_raw_score: 5000, p_stats: { durationMs: 60000 }, p_actions: [] })).body;
 check('punteggio inventato (5000 senza azioni) → escluso', fake?.status === 'rejected' && fake.raw_score === 0, JSON.stringify(fake));
 const resubmit = (await rpc('submit_score', { p_attempt_id: starts[0].attempt_id, p_raw_score: 10, p_stats: { durationMs: 60000 }, p_actions: [] })).body;
-check('reinvio dello stesso tentativo → nessun doppione (resta il primo esito)', resubmit?.status === 'rejected' && resubmit.raw_score === 0);
+check('partita esclusa → cancellata dal database (un reinvio non la trova più)', resubmit?.error === 'ATTEMPT_UNKNOWN', JSON.stringify(resubmit));
+const stateAfterFake = (await rpc('get_games_state', { p_token: t5Token })).body;
+check('...ma il tentativo resta usato (non viene restituito)', stateAfterFake?.games?.find((g) => g.id === 'acchiappa')?.attempts_used_today === perDay);
 check('tentativo inesistente → rifiutato', (await rpc('submit_score', { p_attempt_id: crypto.randomUUID(), p_raw_score: 0, p_stats: {}, p_actions: [] })).body?.error === 'ATTEMPT_UNKNOWN');
 
 // Memory: partita coerente (valida) e partita "perfetta" in 8 mosse (segnalata)
@@ -204,6 +206,11 @@ if (starts[1]?.attempt_id && perDay >= 2) {
   }
   const acc = (await rpc('submit_score', { p_attempt_id: starts[1].attempt_id, p_raw_score: state.score, p_stats: { durationMs: 60000 }, p_actions: actions })).body;
   check(`Acchiappa col moltiplicatore a tempo → valida, stesso punteggio dell'app (${state.score})`, acc?.status === 'valid' && acc.raw_score === state.score, JSON.stringify(acc));
+  if (starts[2]?.attempt_id) {
+    const centered = actions.map((a) => (a[1] === 'tap' ? [...a.slice(0, 8), 0] : a)); // distanza dal centro 0 px
+    const bot = (await rpc('submit_score', { p_attempt_id: starts[2].attempt_id, p_raw_score: state.score, p_stats: { durationMs: 60000 }, p_actions: centered })).body;
+    check('Acchiappa con tocchi sempre al centro esatto → segnalata (possibile bot)', bot?.status === 'flagged', JSON.stringify(bot));
+  }
 }
 
 // Classifica (007): totale = somma dei migliori per gioco, live con la versione, scheda di un giocatore
@@ -236,7 +243,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
     ['staff_delete_extra_points', { p_id: 1 }], ['staff_review_list', { p_status: 'flagged' }],
     ['staff_set_attempt_status', { p_attempt_id: crypto.randomUUID(), p_status: 'valid' }], ['staff_suspicious_devices', {}],
     ['staff_get_settings', {}], ['staff_update_settings', { p_values: { attempts_per_day: 99 } }], ['staff_leaderboard', {}], ['staff_log_list', {}],
-    ['staff_attempt_replay', { p_attempt_id: crypto.randomUUID() }],
+    ['staff_attempt_replay', { p_attempt_id: crypto.randomUUID() }], ['staff_exclude_player', { p_attempt_id: crypto.randomUUID() }],
   ];
   const denied = [];
   for (const [name, params] of calls) {
@@ -245,7 +252,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
       if (res?.error !== 'NOT_STAFF') denied.push(`${name}(${token ? 'giocatore' : 'senza sessione'}): ${JSON.stringify(res)}`);
     }
   }
-  check('pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le 15 funzioni', denied.length === 0, denied.join(' | '));
+  check('pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le 16 funzioni', denied.length === 0, denied.join(' | '));
   const stillThere = (await rpc('login', { p_nickname: t5Nick, p_secret: '5555' })).body;
   check('...e i tentativi del giocatore non hanno cambiato nulla (PIN e account intatti)', stillThere?.ok === true);
 }
@@ -307,10 +314,28 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const mine = flagged?.attempts?.find((a) => a.nickname === t5Nick);
   check('staff: la partita segnalata (Memory perfetto) è nella lista da controllare', Boolean(mine), JSON.stringify(flagged?.attempts?.slice(0, 2)));
   if (mine) {
-    await staff('set_attempt_status', { p_attempt_id: mine.id, p_status: 'rejected' });
+    const approved = await staff('set_attempt_status', { p_attempt_id: mine.id, p_status: 'valid' });
+    const after = await staff('review_list', {});
     const t5Card = (await rpc('get_player_card', { p_nickname: t5Nick })).body.player;
-    check('staff: partita scartata → non conta più (Memory torna a 942)', t5Card.best.memory === 942, JSON.stringify(t5Card.best));
+    check('staff: partita approvata → esce dall\'elenco e resta valida (Memory 982)', approved?.ok && !after.attempts.some((a) => a.id === mine.id) && t5Card.best.memory === 982, JSON.stringify(t5Card.best));
+    check('staff: "scartare" una partita non si può più (si esclude il giocatore)', (await staff('set_attempt_status', { p_attempt_id: mine.id, p_status: 'rejected' }))?.error === 'STATUS_INVALID');
   }
+
+  // Escludi giocatore: account e telefono bloccati, partita sospetta cancellata
+  const xNick = `zzx${suffix}`;
+  const xDevice = crypto.randomUUID();
+  const x = (await rpc('register', { p_nickname: xNick, p_avatar: 'riccio', p_pin: '2222', p_device_id: xDevice })).body;
+  const xStart = (await rpc('start_attempt', { p_token: x.token, p_game_id: 'memory' })).body;
+  await sleep(6500);
+  const xRes = (await rpc('submit_score', { p_attempt_id: xStart.attempt_id, p_raw_score: 982, p_stats: { durationMs: 6000 }, p_actions: memoryActions(8, 6000) })).body;
+  const excluded = await staff('exclude_player', { p_attempt_id: xStart.attempt_id });
+  const xLogin = (await rpc('login', { p_nickname: xNick, p_secret: '2222' })).body;
+  const xAgain = (await rpc('register', { p_nickname: `zzy${suffix}`, p_avatar: 'riccio', p_pin: '2222', p_device_id: xDevice })).body;
+  const xList = await staff('review_list', {});
+  check('staff: escludi giocatore → non entra più, il telefono non può creare un altro account, la partita sparisce',
+    xRes?.status === 'flagged' && excluded?.ok && xLogin?.error === 'DISABLED' && xAgain?.error === 'DEVICE_ALREADY_USED' && !xList.attempts.some((a) => a.id === xStart.attempt_id),
+    JSON.stringify({ xRes: xRes?.status, excluded, xLogin: xLogin?.error, xAgain: xAgain?.error }));
+  check('staff: il giocatore escluso sparisce dalla classifica', (await rpc('get_player_card', { p_nickname: xNick })).body?.error === 'NOT_FOUND');
 
   const settings = await staff('get_settings');
   check('staff: impostazioni leggibili', settings?.ok && settings.games.length === 4 && Number.isInteger(settings.attempts_per_day));

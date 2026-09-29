@@ -1,6 +1,6 @@
 // Pannello staff → "Rivedi partita" (D75): la partita registrata rigiocata dal suo seme e dalle sue azioni,
 // a schermo intero, con il tempo che scorre in alto e un'"onda" dove il giocatore ha toccato.
-// In basso "Approva" / "Scarta" (partite segnalate) oppure "Rimetti" (partite escluse); in alto "Indietro".
+// In basso "Approva" oppure "Escludi giocatore" (account e telefono bloccati, D76); in alto "Indietro".
 
 import { escapeHtml } from '../lib/dom.js';
 import { GAMES } from '../games/registry.js';
@@ -9,7 +9,7 @@ import { noteLabel } from '../lib/staff.js';
 import { staffCall, askDialog } from './staff-ui.js';
 
 /**
- * Apre il replay di una partita. `onDone(changed)` quando si torna all'elenco (changed = approvata/scartata).
+ * Apre il replay di una partita. `onDone(changed)` quando si torna all'elenco (changed = approvata/giocatore escluso).
  */
 export async function openReplay(attemptId, ctx, errorEl, onDone) {
   const res = await staffCall(ctx, 'attempt_replay', { p_attempt_id: attemptId }, errorEl);
@@ -71,28 +71,30 @@ export async function openReplay(attemptId, ctx, errorEl, onDone) {
       <p class="replay-top__info"><strong>${escapeHtml(attempt.nickname)}</strong> · ${escapeHtml(game.name)} · ${attempt.raw_score ?? '—'} punti</p>
       ${notes ? `<p class="replay-top__notes">🚩 ${notes}</p>` : ''}
       ${approximate ? '<p class="replay-top__notes">⚠️ Partita registrata prima del replay: quello che vedi è solo indicativo.</p>' : ''}`;
-    bottom.innerHTML =
-      attempt.status === 'rejected'
-        ? `<button type="button" class="button" data-set="valid">↩️ Rimetti</button>`
-        : `<button type="button" class="button" data-set="valid">✅ Approva</button>
-           <button type="button" class="button button--danger" data-set="rejected">❌ Scarta</button>`;
-    bottom.classList.toggle('replay-bottom--single', attempt.status === 'rejected');
+    bottom.innerHTML = `
+      <button type="button" class="button" data-decision="approve">✅ Approva</button>
+      <button type="button" class="button button--danger" data-decision="exclude">⛔ Escludi giocatore</button>`;
   }
 
   container.addEventListener('click', async (event) => {
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (action === 'back') return close(false);
     if (action === 'again') return start();
-    const button = event.target.closest('[data-set]');
-    if (!button) return;
-    const target = button.dataset.set;
-    const ok = await askDialog({
-      title: target === 'rejected' ? 'Scartare questa partita?' : attempt.status === 'rejected' ? 'Rimettere questa partita?' : 'Approvare questa partita?',
-      body: target === 'rejected' ? '<p>Non conterà più in classifica.</p>' : '<p>Conterà in classifica.</p>',
-      confirmLabel: target === 'rejected' ? 'Scarta' : 'Conferma',
-      danger: target === 'rejected',
-    });
-    if (ok && (await staffCall(ctx, 'set_attempt_status', { p_attempt_id: attempt.id, p_status: target }, errorEl))) close(true);
+    const decision = event.target.closest('[data-decision]')?.dataset.decision;
+    if (decision === 'approve') {
+      const ok = await askDialog({ title: 'Approvare questa partita?', body: '<p>Resta valida in classifica e sparisce da questo elenco.</p>', confirmLabel: 'Approva' });
+      if (ok && (await staffCall(ctx, 'set_attempt_status', { p_attempt_id: attempt.id, p_status: 'valid' }, errorEl))) close(true);
+    } else if (decision === 'exclude') {
+      const ok = await askDialog({
+        title: `Escludere ${escapeHtml(attempt.nickname)}?`,
+        body: `<p>L'account viene <strong>bloccato</strong>: non potrà più entrare né giocare e sparisce dalla classifica.
+          Anche il suo <strong>telefono resta bloccato</strong>: non potrà creare un altro account.</p>
+          <p>Questa partita viene cancellata. Si può riattivare l'account da Giocatori.</p>`,
+        confirmLabel: 'Escludi',
+        danger: true,
+      });
+      if (ok && (await staffCall(ctx, 'exclude_player', { p_attempt_id: attempt.id }, errorEl))) close(true);
+    }
   });
 
   start();

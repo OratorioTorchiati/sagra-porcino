@@ -41,7 +41,7 @@ function detailMarkup(p) {
     : '<li>Nessun accesso attivo</li>';
   const games = p.games
     .map(
-      (g) => `<tr><td>${escapeHtml(g.name)}</td><td>${g.best ?? '—'}</td><td>${g.valid}</td><td>${g.flagged ? `<span class="staff-warn">${g.flagged}</span>` : 0}</td><td>${g.rejected}</td></tr>`,
+      (g) => `<tr><td>${escapeHtml(g.name)}</td><td>${g.best ?? '—'}</td><td>${g.valid}</td><td>${g.flagged ? `<span class="staff-warn">${g.flagged}</span>` : 0}</td></tr>`,
     )
     .join('');
   const extra = p.extra_points.length
@@ -73,7 +73,7 @@ function detailMarkup(p) {
 
     <h3 class="staff-h3">Partite</h3>
     <div class="staff-table-wrap"><table class="staff-table">
-      <thead><tr><th>Gioco</th><th>Migliore</th><th>Valide</th><th>Segnalate</th><th>Escluse</th></tr></thead>
+      <thead><tr><th>Gioco</th><th>Migliore</th><th>Valide</th><th>Segnalate</th></tr></thead>
       <tbody>${games}</tbody>
     </table></div>
 

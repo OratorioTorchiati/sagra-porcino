@@ -12,27 +12,18 @@ const gameName = (id) => GAMES[id]?.name ?? id;
 // ---------- Da controllare ----------
 
 export function renderReviewSection(root, ctx) {
-  let status = 'flagged';
   root.innerHTML = `
-    <div class="staff-switch">
-      <button type="button" class="staff-tab" data-status="flagged">Segnalate</button>
-      <button type="button" class="staff-tab" data-status="rejected">Escluse</button>
-    </div>
-    <p class="staff-muted staff-review-help"></p>
+    <p class="staff-muted">Partite strane (possibili bot): CONTANO già in classifica. Rivedile: se sono regolari
+      <strong>approvale</strong>, altrimenti <strong>escludi il giocatore</strong> (account e telefono bloccati).
+      Le partite con dati impossibili il server le cancella da solo.</p>
     <div class="form-error" role="alert" hidden></div>
     <div class="staff-review-list"></div>`;
-  const help = root.querySelector('.staff-review-help');
   const error = root.querySelector('.form-error');
   const list = root.querySelector('.staff-review-list');
 
   async function load() {
-    root.querySelectorAll('[data-status]').forEach((b) => b.classList.toggle('is-active', b.dataset.status === status));
-    help.textContent =
-      status === 'flagged'
-        ? 'Partite strane (possibili bot): CONTANO già in classifica. Rivedile e decidi se approvarle o scartarle.'
-        : 'Partite escluse in automatico (dati impossibili): NON contano. Rivedile e, se sono regolari, rimettile.';
     list.innerHTML = '<p class="leaderboard-note">Caricamento…</p>';
-    const res = await staffCall(ctx, 'review_list', { p_status: status }, error);
+    const res = await staffCall(ctx, 'review_list', {}, error);
     if (!res) return;
     list.innerHTML = res.attempts.length
       ? `<ul class="staff-cards">${res.attempts
@@ -46,16 +37,10 @@ export function renderReviewSection(root, ctx) {
           </li>`,
           )
           .join('')}</ul>`
-      : `<p class="leaderboard-note">${status === 'flagged' ? 'Nessuna partita segnalata. 👍' : 'Nessuna partita esclusa.'}</p>`;
+      : '<p class="leaderboard-note">Nessuna partita da controllare. 👍</p>';
   }
 
   root.addEventListener('click', (event) => {
-    const tab = event.target.closest('[data-status]');
-    if (tab) {
-      status = tab.dataset.status;
-      load();
-      return;
-    }
     const replay = event.target.closest('[data-replay]');
     if (replay) openReplay(replay.dataset.replay, ctx, error, (changed) => changed && load());
   });
@@ -192,8 +177,9 @@ const ACTIONS = {
   delete: 'ha cancellato',
   extra_points: 'ha dato punti extra a',
   extra_points_removed: 'ha tolto punti extra a',
-  attempt_valid: 'ha approvato/rimesso una partita di',
+  attempt_valid: 'ha approvato una partita di',
   attempt_rejected: 'ha scartato una partita di',
+  exclude: 'ha escluso (partita sospetta)',
   settings: 'ha cambiato le impostazioni',
 };
 
@@ -201,9 +187,10 @@ const ACTIONS = {
 const ACTION_FILTERS = [
   ['', 'Tutte le azioni'],
   ['reset_pin', 'Reset PIN'],
+  ['exclude', 'Giocatori esclusi (partite sospette)'],
   ['account', 'Account (disattiva, riattiva, cancella)'],
   ['extra', 'Punti extra'],
-  ['attempt', 'Partite (approva, scarta, rimetti)'],
+  ['attempt', 'Partite approvate'],
   ['settings', 'Impostazioni'],
 ];
 
