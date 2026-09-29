@@ -85,6 +85,16 @@ export function renderGame({ gameId }) {
     return game.load().then(async (def) => {
       gameDef = def;
       assets = await def.loadAssets();
+      // Partita di prova invisibile, subito dopo aver mostrato le regole (vedi warmUp nel modulo del gioco)
+      if (def.warmUp) {
+        setTimeout(() => {
+          try {
+            def.warmUp(assets);
+          } catch {
+            // solo un'ottimizzazione: se non riesce si gioca lo stesso
+          }
+        }, 50);
+      }
     });
   }
 

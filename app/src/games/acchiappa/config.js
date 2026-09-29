@@ -43,8 +43,8 @@ export default {
   maxOnScreen: [5, 10],
   /** Secondi tra una comparsa e l'altra: inizio → fine (con ±30% di variazione) */
   spawnInterval: [0.6, 0.33],
-  /** Probabilità che l'elemento sia un porcino: inizio → fine. 29/09: un po' di più (era 0.62 → 0.55, D86) */
-  goodChance: [0.7, 0.64],
+  /** Probabilità che l'elemento sia un porcino: inizio → fine. 29/09: più porcini (0.62 → 0.55, poi 0.70 → 0.64, D86) */
+  goodChance: [0.78, 0.72],
   /** Tra i cattivi: probabilità che sia un fungo velenoso (altrimenti un oggetto) */
   poisonousChance: 0.5,
 
