@@ -29,8 +29,21 @@ export async function rasterizeSprites(svgMap, sizePx) {
       canvas.width = size;
       canvas.height = size;
       canvas.getContext('2d').drawImage(img, 0, 0, size, size);
-      return [name, canvas];
+      // ImageBitmap: già pronta per la scheda grafica, si disegna senza scatti (dove il browser la supporta)
+      const bitmap = typeof createImageBitmap === 'function' ? await createImageBitmap(canvas).catch(() => null) : null;
+      return [name, bitmap ?? canvas];
     }),
   );
   return Object.fromEntries(entries);
+}
+
+/**
+ * Disegna ogni sprite una volta, invisibile: il browser lo passa alla scheda grafica già durante il
+ * conto alla rovescia invece che alla sua prima comparsa in partita (che darebbe uno scatto nei primi secondi).
+ */
+export function warmUpSprites(ctx, sprites) {
+  ctx.save();
+  ctx.globalAlpha = 0.01;
+  for (const sprite of Object.values(sprites)) ctx.drawImage(sprite, 0, 0, 2, 2);
+  ctx.restore();
 }

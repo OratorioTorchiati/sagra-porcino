@@ -1,21 +1,16 @@
 // Calcolo dei punti di "Acchiappa il porcino" (funzioni pure, con test).
 // Il server rifà lo stesso calcolo dalla sequenza dei tocchi (supabase/migrations/005_acchiappa_moltiplicatore_a_tempo.sql).
 //
-// Moltiplicatore a tempo (D67, D80): con `minStreak` porcini di fila si sale di livello e il tempo del nuovo
-// moltiplicatore parte pieno (`durationS` secondi). Ogni porcino preso aggiunge `boostS` secondi, senza superare
-// il pieno: il tempo serve solo contro l'inattività. Scaduto, si scende di un livello (che riparte col suo tempo
-// pieno) e la serie riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano.
+// Moltiplicatore a timer (D84):
+// - da ×1 a ×2 con `firstLevelStreak` porcini di fila; il timer del ×2 parte al 25% del tempo pieno;
+// - da ×2 in su ogni porcino aggiunge `boostS` secondi al timer; quando il timer supera il tempo pieno del livello
+//   (`durationS`) si sale al livello successivo, col timer al 25%. A ×4 il timer si ferma al pieno;
+// - timer a zero: si scende di un livello col timer al 50%; tornati a ×1 servono di nuovo 5 porcini di fila.
 // Un oggetto non tocca il moltiplicatore ma toglie `objectPenaltyS` secondi alla partita (gameEndMs, D81);
 // un fungo velenoso riporta subito a ×1. I tempi sono in millisecondi di gioco (gli stessi del registro azioni).
 
-/** Livello (indice in config.multipliers) raggiunto con una serie di `streak` porcini di fila */
-function levelFor(streak, config) {
-  let level = 0;
-  config.multipliers.forEach((step, i) => {
-    if (streak >= step.minStreak) level = i;
-  });
-  return level;
-}
+/** Tempo pieno del livello, in ms */
+const fullMs = (level, config) => config.multipliers[level].durationS * 1000;
 
 export function initialScoreState() {
   return { score: 0, streak: 0, level: 0, levelEndsMs: null, run: 0, maxStreak: 0, caught: 0, errors: 0 };
@@ -37,13 +32,22 @@ export function timeLeftFraction(state, nowMs, config) {
   return Math.max(0, (state.levelEndsMs - nowMs) / (config.multipliers[state.level].durationS * 1000));
 }
 
+/**
+ * Anello del moltiplicatore nell'HUD, da 0 a 1: a ×1 (fisso, non scende) la serie verso il ×2
+ * (20% a porcino con 5 di fila), dal ×2 in su il timer che si consuma.
+ */
+export function ringFraction(state, nowMs, config) {
+  if (state.level === 0) return Math.min(1, state.streak / config.firstLevelStreak);
+  return timeLeftFraction(state, nowMs, config);
+}
+
 /** Fa scadere i moltiplicatori fino a `nowMs` (si può chiamare quando si vuole: il risultato non cambia). */
 export function expire(state, nowMs, config) {
   let { level, levelEndsMs, streak } = state;
   while (level > 0 && nowMs >= levelEndsMs) {
     level -= 1;
-    streak = config.multipliers[level].minStreak;
-    levelEndsMs = level > 0 ? levelEndsMs + config.multipliers[level].durationS * 1000 : null;
+    levelEndsMs = level > 0 ? levelEndsMs + fullMs(level, config) * config.levelDownStartFraction : null;
+    if (level === 0) streak = 0;
   }
   return level === state.level ? state : { ...state, level, levelEndsMs, streak };
 }
@@ -58,16 +62,26 @@ export function applyHit(state, hit, nowMs, config) {
   state = expire(state, nowMs, config);
   if (hit === 'good') {
     const points = config.pointsPerPorcino * currentMultiplier(state, config);
-    const streak = state.streak + 1;
     const run = state.run + 1;
-    let { level, levelEndsMs } = state;
-    const reached = levelFor(streak, config);
-    if (reached > level) {
-      level = reached;
-      levelEndsMs = nowMs + config.multipliers[level].durationS * 1000;
-    } else if (level > 0) {
-      const step = config.multipliers[level];
-      levelEndsMs = Math.min(levelEndsMs + step.boostS * 1000, nowMs + step.durationS * 1000);
+    let { level, levelEndsMs, streak } = state;
+    const top = config.multipliers.length - 1;
+    if (level === 0) {
+      streak += 1;
+      if (streak >= config.firstLevelStreak) {
+        level = 1;
+        levelEndsMs = nowMs + fullMs(1, config) * config.levelUpStartFraction;
+      }
+    } else {
+      levelEndsMs += config.multipliers[level].boostS * 1000;
+      if (levelEndsMs - nowMs > fullMs(level, config)) {
+        // il timer sfora il tempo pieno: livello successivo col timer al 25% (a ×4 si ferma al pieno)
+        if (level < top) {
+          level += 1;
+          levelEndsMs = nowMs + fullMs(level, config) * config.levelUpStartFraction;
+        } else {
+          levelEndsMs = nowMs + fullMs(level, config);
+        }
+      }
     }
     return {
       points,

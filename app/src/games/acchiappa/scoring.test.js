@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import config from './config.js';
-import { applyHit, currentMultiplier, expire, gameEndMs, initialScoreState, maxRawScore, secondsLeft, timeLeftFraction } from './scoring.js';
+import { applyHit, currentMultiplier, expire, gameEndMs, initialScoreState, maxRawScore, ringFraction, secondsLeft, timeLeftFraction } from './scoring.js';
 
 /** Gioca una sequenza di [ms, 'good'|'poison'|'object'] */
 function play(hits) {
@@ -23,11 +23,13 @@ describe('punti e moltiplicatore', () => {
     expect(points).toEqual([5, 5, 5, 5, 5, 10, 10]);
   });
 
-  it('serie veloce: ×3 dall\'11° porcino e ×4 dal 16°', () => {
+  it('serie veloce: ×2 dal 6° porcino, ×3 dal 10°, ×4 dal 16° (il timer sfora il tempo pieno)', () => {
     const { points, state } = play(goods(17));
-    expect(points[10]).toBe(15);
-    expect(points[15]).toBe(20);
-    expect(state.score).toBe(5 * 5 + 5 * 10 + 5 * 15 + 2 * 20);
+    expect(points.slice(0, 5)).toEqual([5, 5, 5, 5, 5]);
+    expect(points.slice(5, 9)).toEqual([10, 10, 10, 10]);
+    expect(points.slice(9, 15)).toEqual([15, 15, 15, 15, 15, 15]);
+    expect(points.slice(15)).toEqual([20, 20]);
+    expect(state.score).toBe(5 * 5 + 4 * 10 + 6 * 15 + 2 * 20);
     expect(state.maxStreak).toBe(17);
   });
 
@@ -42,65 +44,79 @@ describe('punti e moltiplicatore', () => {
   });
 });
 
-describe('moltiplicatore a tempo', () => {
-  it('×2 dura 7 secondi senza porcini, poi si torna a ×1', () => {
-    // 5° porcino a 400 ms → ×2 fino a 7400 ms
-    const { state } = play(goods(5));
+describe('moltiplicatore a timer (D84)', () => {
+  it('×2 con 5 porcini di fila, timer al 25% (1,75 s); a zero si torna a ×1', () => {
+    const { state } = play(goods(5)); // 5° porcino a 400 ms
     expect(currentMultiplier(state, config)).toBe(2);
-    expect(secondsLeft(state, 400)).toBe(7);
-    expect(timeLeftFraction(state, 400, config)).toBe(1);
-    expect(timeLeftFraction(state, 3900, config)).toBe(0.5); // anello a metà
-    expect(currentMultiplier(expire(state, 7399, config), config)).toBe(2);
-    const after = expire(state, 7400, config);
+    expect(state.levelEndsMs).toBe(2150);
+    expect(timeLeftFraction(state, 400, config)).toBe(0.25);
+    expect(secondsLeft(state, 400)).toBe(2);
+    expect(currentMultiplier(expire(state, 2149, config), config)).toBe(2);
+    const after = expire(state, 2150, config);
     expect(currentMultiplier(after, config)).toBe(1);
-    expect(secondsLeft(after, 7400)).toBe(null);
-    expect(timeLeftFraction(after, 7400, config)).toBe(null);
-    expect(play([...goods(5), [7400, 'good']]).points.at(-1)).toBe(5);
+    expect(after.streak).toBe(0);
+    expect(timeLeftFraction(after, 2150, config)).toBe(null);
   });
 
-  it('×4 dura 5 s, poi ×3 per 6 s, poi ×2 per 7 s, poi ×1', () => {
-    const { state } = play(goods(15)); // 15° porcino a 1400 ms → ×4
+  it('anello: a ×1 si riempie con la serie (20% a porcino), dal ×2 è il timer', () => {
+    expect(ringFraction(initialScoreState(), 0, config)).toBe(0);
+    expect(ringFraction(play(goods(1)).state, 0, config)).toBe(0.2);
+    expect(ringFraction(play(goods(4)).state, 300, config)).toBe(0.8);
+    expect(ringFraction(play(goods(5)).state, 400, config)).toBe(0.25); // ×2, timer al 25%
+    expect(ringFraction(play([...goods(3), [300, 'poison']]).state, 300, config)).toBe(0);
+  });
+
+  it('tornati a ×1 servono di nuovo 5 porcini di fila', () => {
+    const { points, state } = play([...goods(5), ...goods(5, 3000)]);
+    expect(points.slice(5)).toEqual([5, 5, 5, 5, 5]);
+    expect(currentMultiplier(state, config)).toBe(2);
+  });
+
+  it('ogni porcino ricarica il timer: +1,5 s a ×2, +1 s a ×3, +0,5 s a ×4', () => {
+    expect(play([...goods(5), [1000, 'good']]).state.levelEndsMs).toBe(2150 + 1500);
+    // ×3 dal 9° porcino (800 ms, timer al 25% di 6 s → 2300); il 10° a 1000 ms: +1 s
+    expect(play([...goods(9), [1000, 'good']]).state.levelEndsMs).toBe(2300 + 1000);
+    // ×4 dal 15° porcino (1400 ms, timer al 25% di 5 s → 2650); il 16° a 1600 ms: +0,5 s
+    expect(play([...goods(15), [1600, 'good']]).state.levelEndsMs).toBe(2650 + 500);
+  });
+
+  it('quando il timer sfora il tempo pieno si sale, col timer al 25%', () => {
+    // a ×2 il 9° porcino (800 ms) porta il timer a 7,35 s > 7 s → ×3 con 1,5 s
+    const { state } = play(goods(9));
+    expect(currentMultiplier(state, config)).toBe(3);
+    expect(state.levelEndsMs).toBe(800 + 1500);
+    expect(timeLeftFraction(state, 800, config)).toBe(0.25);
+    expect(currentMultiplier(play(goods(8)).state, config)).toBe(2); // all'8° non ancora
+  });
+
+  it('a ×4 il timer si ferma al pieno', () => {
+    const { state } = play([...goods(15), ...goods(20, 1500)]);
     expect(currentMultiplier(state, config)).toBe(4);
-    const at = (ms) => currentMultiplier(expire(state, ms, config), config);
-    expect(at(6399)).toBe(4);
-    expect(at(6400)).toBe(3);
-    expect(at(12399)).toBe(3);
-    expect(at(12400)).toBe(2);
-    expect(at(19399)).toBe(2);
-    expect(at(19400)).toBe(1);
-    expect(timeLeftFraction(expire(state, 6400, config), 6400, config)).toBe(1); // l'anello torna pieno
+    expect(state.levelEndsMs - 3400).toBe(5000);
   });
 
-  it('ogni porcino ricarica il tempo: +2 s a ×2, +1,5 s a ×3, +1 s a ×4, mai oltre il pieno', () => {
-    // ×2 al 5° porcino (400 ms, scade a 7400); il 6° a 5400 ms ricarica di 2 s → scade a 9400
-    let { state } = play([...goods(5), [5400, 'good']]);
-    expect(state.levelEndsMs).toBe(9400);
-    state = applyHit(state, 'good', 5500, config).state; // +2 s → 11400
-    expect(state.levelEndsMs).toBe(11400);
-    // porcino subito dopo la salita: +2 s supererebbe il pieno (7 s da 500 ms) → si ferma a 7500
-    ({ state } = play([...goods(5), [500, 'good']]));
-    expect(state.levelEndsMs).toBe(7500);
-    expect(timeLeftFraction(state, 500, config)).toBe(1);
-    // ×3 (dal 10° porcino): +1,5 s
-    ({ state } = play([...goods(10), [4900, 'good']])); // ×3 a 900 ms, scade a 6900
-    expect(state.levelEndsMs).toBe(8400);
-    // ×4 (dal 15° porcino): +1 s
-    ({ state } = play([...goods(15), [4400, 'good']])); // ×4 a 1400 ms, scade a 6400
-    expect(state.levelEndsMs).toBe(7400);
+  it('timer a zero: giù di un livello col timer al 50%', () => {
+    const { state } = play(goods(15)); // ×4 a 1400 ms, timer fino a 2650
+    const at = (ms) => expire(state, ms, config);
+    expect(currentMultiplier(at(2649), config)).toBe(4);
+    expect(currentMultiplier(at(2650), config)).toBe(3);
+    expect(timeLeftFraction(at(2650), 2650, config)).toBe(0.5);
+    expect(currentMultiplier(at(5649), config)).toBe(3);
+    expect(currentMultiplier(at(5650), config)).toBe(2); // +3 s (50% di 6)
+    expect(currentMultiplier(at(9149), config)).toBe(2);
+    expect(currentMultiplier(at(9150), config)).toBe(1); // +3,5 s (50% di 7)
   });
 
-  it('prendendo porcini con calma il moltiplicatore non scade mai', () => {
-    // un porcino ogni 1,9 s: a ×2 ogni porcino dà 2 s, quindi il tempo non finisce
-    const slow = Array.from({ length: 4 }, (_, i) => [400 + (i + 1) * 1900, 'good']);
+  it('a ×2 un porcino ogni 1,4 s tiene il moltiplicatore (ne ricarica 1,5)', () => {
+    const slow = Array.from({ length: 4 }, (_, i) => [400 + (i + 1) * 1400, 'good']);
     const { state } = play([...goods(5), ...slow]);
     expect(currentMultiplier(expire(state, 8000, config), config)).toBe(2);
   });
 
   it('un oggetto non tocca il moltiplicatore né la serie: conta solo come errore', () => {
-    // ×2 al 5° porcino (400 ms, scade a 7400)
     const { state } = play([...goods(5), [1000, 'object']]);
     expect(currentMultiplier(state, config)).toBe(2);
-    expect(state.levelEndsMs).toBe(7400);
+    expect(state.levelEndsMs).toBe(2150);
     expect(state.errors).toBe(1);
     expect(state.run).toBe(5);
   });
@@ -116,17 +132,6 @@ describe('moltiplicatore a tempo', () => {
     expect(state.score).toBe(15);
     expect(state.streak).toBe(3);
     expect(state.errors).toBe(1);
-  });
-
-  it('quando scende, per risalire servono di nuovo i porcini fino alla soglia successiva', () => {
-    // ×3 al 10° porcino (900 ms), scade a 6900 → ×2 con serie ripartita da 5
-    const base = goods(10);
-    const again = goods(5, 7000); // 5 porcini dopo la scadenza: serie 6..10 → al 10 si torna ×3
-    const { points, state } = play([...base, ...again]);
-    expect(points.slice(10)).toEqual([10, 10, 10, 10, 10]);
-    expect(currentMultiplier(state, config)).toBe(3);
-    expect(secondsLeft(state, 7400)).toBe(6); // tempo pieno dal nuovo livello
-    expect(state.maxStreak).toBe(15); // la serie di porcini di fila non si interrompe
   });
 
   it('far scadere prima o dopo non cambia il risultato', () => {

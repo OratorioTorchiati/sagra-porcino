@@ -34,6 +34,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/016_pin_sicurezza.sql` | 8 | PIN di 5 cifre non troppo semplice, 5 tentativi di accesso e blocco che cresce |
 | `supabase/migrations/017_blocco_per_ip.sql` | 8 | blocco dei tentativi per nickname + IP, tetto per IP e per nickname |
 | `supabase/migrations/018_ip_affidabile.sql` | 8 | IP del telefono solo da fonti affidabili (non falsificabile) |
+| `supabase/migrations/019_acchiappa_livelli_a_timer.sql` | 8 | Acchiappa: livelli a timer (sforamento → livello successivo) |
 
 Impostazioni dei giochi (SQL Editor):
 

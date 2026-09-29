@@ -38,17 +38,12 @@ Regole comuni a tutti i giochi:
   - fungo velenoso toccato: **la serie si azzera** (moltiplicatore torna ×1), con feedback visivo e vibrazione breve (se disponibile). Nessun punto tolto;
   - oggetto toccato (castagna, pigna, foglia, lumaca): **-2 s al tempo della partita** (D81), con la scritta "-2 s"; il moltiplicatore e la serie non cambiano. Stesso feedback, nessun punto tolto;
   - tocco a vuoto: nessun effetto.
-- **Moltiplicatore** in base alla serie di porcini consecutivi:
-
-  | Serie | Moltiplicatore |
-  |---|---|
-  | 0–4 | ×1 |
-  | 5–9 | ×2 |
-  | 10–14 | ×3 |
-  | 15+ | ×4 |
-
-  **Il moltiplicatore ha un tempo** (D67, D68, D80): salendo di livello parte pieno (×2 7 s, ×3 6 s, ×4 5 s) e **ogni porcino preso lo ricarica** (×2 +2 s, ×3 +1,5 s, ×4 +1 s), mai oltre il pieno: serve solo contro l'inattività. Scaduto, scende di un livello (che riparte col suo tempo pieno) e la serie riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano alla soglia successiva. Un fungo velenoso riporta subito a ×1; un oggetto non tocca il moltiplicatore.
-  Mostrato nell'HUD dentro un **anello che si consuma come un orologio**; a ogni cambio di livello piccola animazione e anello di nuovo pieno; effetto 🔥 quando sale.
+- **Moltiplicatore a timer** (D84):
+  - **×1** è fisso (non scende): con **5 porcini di fila** si passa a ×2. L'anello nell'HUD si riempie con la serie (20% a porcino);
+  - da **×2** in su l'anello è un **timer** che si consuma: ogni porcino lo ricarica (**×2 +1,5 s, ×3 +1 s, ×4 +0,5 s**). Quando il timer **supera il tempo pieno** del livello (×2 7 s, ×3 6 s, ×4 5 s) si sale al livello successivo, col timer al **25%**. A ×4 il timer si ferma al pieno;
+  - **timer a zero**: si scende di un livello col timer al **50%**; tornati a ×1 servono di nuovo 5 porcini di fila;
+  - fungo velenoso: subito ×1; oggetto: il moltiplicatore non cambia (-2 s alla partita).
+  A ogni cambio di livello piccola animazione; effetto 🔥 quando sale.
 - **Sfondo**: poco invasivo, a tema (sottobosco/prato di montagna sfocato, toni tenui), per non disturbare la lettura dei funghi.
 
 ### Punteggio grezzo

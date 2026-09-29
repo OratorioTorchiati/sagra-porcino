@@ -10,16 +10,21 @@ export default {
   pointsPerPorcino: 5,
 
   /**
-   * Moltiplicatore: con `minStreak` porcini di fila si sale e il tempo parte pieno (`durationS` secondi);
-   * ogni porcino preso aggiunge `boostS` secondi (mai oltre il pieno); scaduto, scende di uno
-   * (D67, D68, D80). Vedi scoring.js.
+   * Moltiplicatore a timer (D84, vedi scoring.js): da ×1 a ×2 con `firstLevelStreak` porcini di fila; poi ogni
+   * porcino aggiunge `boostS` secondi al timer e quando il timer supera il tempo pieno (`durationS`) si sale di un
+   * livello. Timer a zero: si scende di uno.
    */
   multipliers: [
-    { minStreak: 0, multiplier: 1 },
-    { minStreak: 5, multiplier: 2, durationS: 7, boostS: 2 },
-    { minStreak: 10, multiplier: 3, durationS: 6, boostS: 1.5 },
-    { minStreak: 15, multiplier: 4, durationS: 5, boostS: 1 },
+    { multiplier: 1 },
+    { multiplier: 2, durationS: 7, boostS: 1.5 },
+    { multiplier: 3, durationS: 6, boostS: 1 },
+    { multiplier: 4, durationS: 5, boostS: 0.5 },
   ],
+  firstLevelStreak: 5,
+  /** Salendo di livello il timer parte da questa parte del tempo pieno (25%) */
+  levelUpStartFraction: 0.25,
+  /** Scendendo di livello il timer riparte da questa parte del tempo pieno (50%) */
+  levelDownStartFraction: 0.5,
   /** Un oggetto toccato toglie questi secondi al tempo della partita (un fungo velenoso invece riporta a ×1) (D81) */
   objectPenaltyS: 2,
 

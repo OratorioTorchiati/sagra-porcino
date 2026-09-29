@@ -2,8 +2,9 @@
 // si toccano i porcini e si evitano funghi velenosi e oggetti. Regole in docs/03-GIOCHI.md.
 
 import { GOOD, BAD_POISONOUS, BAD_OBJECTS } from './sprites.js';
-import { applyHit, currentMultiplier, expire, gameEndMs, initialScoreState, timeLeftFraction } from './scoring.js';
+import { applyHit, currentMultiplier, expire, gameEndMs, initialScoreState, ringFraction } from './scoring.js';
 import { softBackground } from '../engine/background.js';
+import { warmUpSprites } from '../engine/sprites.js';
 
 const GOOD_KINDS = Object.keys(GOOD);
 const POISONOUS_KINDS = Object.keys(BAD_POISONOUS);
@@ -21,6 +22,7 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
   let width = 0;
   let height = 0;
   let background = null;
+  let warmedUp = false;
   let entities = [];
   let effects = [];
   let nextId = 1;
@@ -36,7 +38,8 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
   function refreshHud() {
     hud.set('score', score.score);
     hud.set('multiplier', `×${currentMultiplier(score, config)}`);
-    hud.ring?.('multiplier', timeLeftFraction(score, nowMs, config)); // l'anello si consuma come un orologio
+    // a ×1 l'anello si riempie con la serie, dal ×2 si consuma come un orologio
+    hud.ring?.('multiplier', ringFraction(score, nowMs, config));
   }
   refreshHud();
 
@@ -176,6 +179,10 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
 
     draw(ctx) {
       if (!background) background = softBackground(width, height);
+      if (!warmedUp) {
+        warmUpSprites(ctx, assets.sprites); // primo frame, durante il conto alla rovescia
+        warmedUp = true;
+      }
       ctx.drawImage(background, 0, 0, width, height);
 
       for (const e of entities) {
