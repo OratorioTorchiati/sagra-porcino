@@ -116,9 +116,10 @@ check('5° PIN sbagliato → bloccato per 1 minuto', fifth?.error === 'LOCKED' &
 const locked = await rpc('login', { p_nickname: lockNick, p_secret: '27182' });
 check('bloccato anche con il PIN giusto', locked.body?.error === 'LOCKED', JSON.stringify(locked.body));
 const lockedAt = Date.now();
-const ghost = [];
-for (let i = 0; i < 5; i++) ghost.push((await rpc('login', { p_nickname: `zzq${suffix}`, p_secret: '00000' })).body?.error);
-check('nickname che non esiste: stessi tentativi e stesso blocco', ghost.join() === 'WRONG_CREDENTIALS,WRONG_CREDENTIALS,WRONG_CREDENTIALS,WRONG_CREDENTIALS,LOCKED', ghost.join());
+// Pochi PIN sbagliati apposta (circa 11 a prova): il tetto di 50 errori in un'ora per IP (017) scatterebbe
+// anche per chi lancia la prova, se la si ripete molte volte di fila.
+const ghost = (await rpc('login', { p_nickname: `zzq${suffix}`, p_secret: '00000' })).body;
+check('nickname che non esiste: stessa risposta di un PIN sbagliato', ghost?.error === 'WRONG_CREDENTIALS' && ghost.attempts_left === 4, JSON.stringify(ghost));
 
 // ---------- Uscita ----------
 await rpc('logout', { p_token: token });
