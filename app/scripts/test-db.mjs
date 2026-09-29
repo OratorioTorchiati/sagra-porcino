@@ -371,6 +371,8 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
     dAccess?.accesses?.length >= 2 && dAccess.accesses.length <= 20 && dAccess.accesses.some((a) => a.device_id === dOther && !a.registration) &&
     dAccess.accesses.some((a) => a.device_id === dDevice && a.registration) &&
     dAccess.accesses.every((a, i, all) => i === 0 || all[i - 1].created_at >= a.created_at), JSON.stringify(dAccess?.accesses?.length));
+  const dOnlyOther = await staff('player_accesses', { p_nickname: dNick, p_device_id: dOther });
+  check('staff: ultimi accessi di un solo telefono', dOnlyOther?.accesses?.length >= 1 && dOnlyOther.accesses.every((a) => a.device_id === dOther));
   await staff('ban_device', { p_device_id: dDevice, p_ban: false });
   check('staff: sbloccato → da quel telefono si entra di nuovo', (await rpc('login', { p_nickname: dNick, p_secret: '3333', p_device_id: dDevice })).body?.ok === true);
 

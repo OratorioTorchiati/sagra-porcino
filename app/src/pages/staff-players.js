@@ -51,12 +51,21 @@ function detailMarkup(p) {
     ? phones
         .map(
           (d) => `<li class="phone-row">
-            <span class="phone-row__code"><strong class="device-code">${deviceCode(d.id)}</strong>
-              ${d.registration ? '<span class="phone-tag" title="Telefono della registrazione">📝 Registrazione</span>' : ''}
-              ${d.active ? '<span class="phone-tag phone-tag--active" title="Accesso attivo">🟢 Attivo</span>' : ''}
-              ${d.banned ? '<span class="staff-tag staff-tag--off">📵 bloccato</span>' : ''}</span>
-            ${d.sameFingerprint ? `<span class="staff-warn">stessa impronta di altri ${d.sameFingerprint} account</span>` : ''}
-            <button type="button" class="staff-link" data-action="${d.banned ? 'device-unban' : 'device-ban'}" data-device="${d.id}">${d.banned ? '🔓 Sblocca' : '📵 Ban telefono'}</button>
+            <div class="phone-row__info">
+              <strong class="device-code">${deviceCode(d.id)}</strong>
+              <div class="phone-row__tags">
+                ${d.registration ? '<span class="phone-tag" title="Telefono della registrazione" aria-label="Telefono della registrazione">📝</span>' : ''}
+                ${d.active ? '<span class="phone-tag phone-tag--active" title="Accesso attivo">🟢 Attivo</span>' : ''}
+                ${d.banned ? '<span class="staff-tag staff-tag--off">📵 bloccato</span>' : ''}
+              </div>
+              ${d.sameFingerprint ? `<span class="staff-warn">stessa impronta di altri ${d.sameFingerprint} account</span>` : ''}
+            </div>
+            <div class="phone-row__actions">
+              <button type="button" class="icon-button${d.banned ? '' : ' icon-button--danger'}" data-action="${d.banned ? 'device-unban' : 'device-ban'}" data-device="${d.id}"
+                title="${d.banned ? 'Sblocca telefono' : 'Ban telefono'}" aria-label="${d.banned ? 'Sblocca telefono' : 'Ban telefono'} ${deviceCode(d.id)}">${d.banned ? '🔓' : '📵'}</button>
+              <button type="button" class="icon-button" data-action="accesses" data-device="${d.id}"
+                title="Ultimi accessi da questo telefono" aria-label="Ultimi accessi dal telefono ${deviceCode(d.id)}">🕒</button>
+            </div>
           </li>`,
         )
         .join('')
@@ -88,8 +97,8 @@ function detailMarkup(p) {
 
     <h3 class="staff-h3">📱 Codice del telefono</h3>
     <p class="staff-muted">Per il reset del PIN il codice mostrato dal giocatore deve essere uno di questi.</p>
+    <p class="staff-muted phone-legend">📝 telefono della registrazione · 📵 ban telefono · 🕒 ultimi accessi da quel telefono</p>
     <ul class="phone-list">${devices}</ul>
-    <button type="button" class="button button--secondary" data-action="accesses">🕒 Ultimi accessi</button>
     ${p.login_failures ? `<p class="staff-warn">PIN sbagliato ${p.login_failures} volte negli ultimi 15 minuti.</p>` : ''}
 
     <h3 class="staff-h3">Partite</h3>
@@ -254,14 +263,18 @@ export function renderPlayersSection(root, ctx) {
         showDetail(nick, disable ? '✅ Account bannato.' : '✅ Ban tolto.');
       }
     } else if (action === 'accesses') {
-      const res = await staffCall(ctx, 'player_accesses', { p_nickname: nick }, detailError);
+      const deviceId = event.target.closest('[data-device]').dataset.device;
+      const res = await staffCall(ctx, 'player_accesses', { p_nickname: nick, p_device_id: deviceId }, detailError);
       if (!res) return;
       const rows = res.accesses.length
-        ? `<ul class="staff-list access-list">${res.accesses
-            .map((a) => `<li>${formatDate(a.created_at)} · ${a.device_id ? `<strong class="device-code">${deviceCode(a.device_id)}</strong>` : 'telefono sconosciuto'}${a.registration ? ' 📝' : ''} · ${escapeHtml(browserName(a.user_agent))}</li>`)
-            .join('')}</ul>`
-        : '<p>Nessun accesso registrato.</p>';
-      await askDialog({ title: `Ultimi accessi di ${escapeHtml(nick)}`, body: `<p class="staff-muted">Gli ultimi 20, dal più recente. 📝 = telefono della registrazione.</p>${rows}`, confirmLabel: 'Chiudi', infoOnly: true });
+        ? `<ul class="staff-list access-list">${res.accesses.map((a) => `<li>${formatDate(a.created_at)} · ${escapeHtml(browserName(a.user_agent))}</li>`).join('')}</ul>`
+        : '<p>Nessun accesso registrato da questo telefono.</p>';
+      await askDialog({
+        title: `Ultimi accessi da <span class="device-code">${deviceCode(deviceId)}</span>`,
+        body: `<p class="staff-muted">Accessi di ${escapeHtml(nick)} da questo telefono: gli ultimi 20, dal più recente.</p>${rows}`,
+        confirmLabel: 'Chiudi',
+        infoOnly: true,
+      });
     } else if (action === 'device-ban' || action === 'device-unban') {
       const ban = action === 'device-ban';
       const deviceId = event.target.closest('[data-device]').dataset.device;
