@@ -39,7 +39,6 @@ export function renderRegister() {
     <main class="page auth-page">
       ${topBarMarkup()}
       <h1 class="page-title">Crea il tuo account</h1>
-      <p class="attempt-notice attempt-notice--warning">⚠️ <strong>ATTENZIONE!</strong> Puoi creare un solo account per telefono</p>
       <form class="auth-form" novalidate>
         <div class="form-section" role="group" aria-labelledby="sezione-1">
           <h2 class="form-section__title" id="sezione-1">1. Scegli il tuo personaggio</h2>
@@ -76,7 +75,7 @@ export function renderRegister() {
             <span class="form-field__label">Ripeti il PIN</span>
             <input class="form-field__input form-field__input--pin" name="pin2" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="new-password" required>
           </label>
-          <p class="form-note">🔑 <strong>Ricordalo:</strong> ti serve per ritirare il premio.</p>
+          <p class="attempt-notice attempt-notice--warning">⚠️ <strong>ATTENZIONE!</strong> Puoi creare un solo account per telefono, tieni bene a mente il tuo PIN</p>
         </div>
 
         <label class="form-check">
