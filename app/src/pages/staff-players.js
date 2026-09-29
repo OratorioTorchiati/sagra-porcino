@@ -6,7 +6,7 @@ import { escapeHtml } from '../lib/dom.js';
 import { deviceCode } from '../lib/device.js';
 import { formatPoints } from '../lib/leaderboard.js';
 import { avatarSvg, playerStatsMarkup } from '../components/player-card.js';
-import { staffCall, formatDate, askDialog, pagerMarkup, browserName } from './staff-ui.js';
+import { staffCall, formatDate, askDialog, pagerMarkup } from './staff-ui.js';
 
 function resultsMarkup({ players, total, page, page_size: size }) {
   if (!players.length) return '<p class="leaderboard-note">Nessun giocatore trovato.</p>';
@@ -62,7 +62,7 @@ function detailMarkup(p) {
             </div>
             <div class="phone-row__actions">
               <button type="button" class="icon-button${d.banned ? '' : ' icon-button--danger'}" data-action="${d.banned ? 'device-unban' : 'device-ban'}" data-device="${d.id}"
-                title="${d.banned ? 'Sblocca telefono' : 'Ban telefono'}" aria-label="${d.banned ? 'Sblocca telefono' : 'Ban telefono'} ${deviceCode(d.id)}">${d.banned ? '🔓' : '📵'}</button>
+                title="${d.banned ? 'Sblocca device' : 'Ban device'}" aria-label="${d.banned ? 'Sblocca device' : 'Ban device'} ${deviceCode(d.id)}">${d.banned ? '🔓' : '📵'}</button>
               <button type="button" class="icon-button" data-action="accesses" data-device="${d.id}"
                 title="Ultimi accessi da questo telefono" aria-label="Ultimi accessi dal telefono ${deviceCode(d.id)}">🕒</button>
             </div>
@@ -96,8 +96,7 @@ function detailMarkup(p) {
     ${playerStatsMarkup(p.card)}
 
     <h3 class="staff-h3">📱 Codice del telefono</h3>
-    <p class="staff-muted">Per il reset del PIN il codice mostrato dal giocatore deve essere uno di questi.</p>
-    <p class="staff-muted phone-legend">📝 telefono della registrazione · 📵 ban telefono · 🕒 ultimi accessi da quel telefono</p>
+    <p class="staff-muted phone-legend">📝 Registrazione · 📵 Ban device · 🕒 Ultimi accessi</p>
     <ul class="phone-list">${devices}</ul>
     ${p.login_failures ? `<p class="staff-warn">PIN sbagliato ${p.login_failures} volte negli ultimi 15 minuti.</p>` : ''}
 
@@ -267,11 +266,11 @@ export function renderPlayersSection(root, ctx) {
       const res = await staffCall(ctx, 'player_accesses', { p_nickname: nick, p_device_id: deviceId }, detailError);
       if (!res) return;
       const rows = res.accesses.length
-        ? `<ul class="staff-list access-list">${res.accesses.map((a) => `<li>${formatDate(a.created_at)} · ${escapeHtml(browserName(a.user_agent))}</li>`).join('')}</ul>`
-        : '<p>Nessun accesso registrato da questo telefono.</p>';
+        ? `<ul class="staff-list access-list">${res.accesses.map((a) => `<li>${formatDate(a.created_at)}</li>`).join('')}</ul>`
+        : '<p>Nessun accesso.</p>';
       await askDialog({
-        title: `Ultimi accessi da <span class="device-code">${deviceCode(deviceId)}</span>`,
-        body: `<p class="staff-muted">Accessi di ${escapeHtml(nick)} da questo telefono: gli ultimi 20, dal più recente.</p>${rows}`,
+        title: 'Ultimi 20 accessi',
+        body: rows,
         confirmLabel: 'Chiudi',
         infoOnly: true,
       });
