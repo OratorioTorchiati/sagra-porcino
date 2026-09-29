@@ -1,46 +1,20 @@
-// Carte del Memory. SEGNAPOSTO: 8 illustrazioni originali generiche finché non arrivano le foto vere
-// dei luoghi del paese (contenuti/memory/, Tappa 10). Ogni carta: id, didascalia breve e disegno.
-// Oltre al disegno, ogni carta ha un colore di sfondo diverso (ma si distinguono anche senza colori).
+// Carte del Memory: foto vere dei luoghi del paese (contenuti/memory/, Tappa 10) e, finché non arrivano tutte,
+// illustrazioni segnaposto. Ogni carta: id, didascalia breve (10–12 lettere al massimo), foto (src, su uno sfondo
+// colorato `bg`) oppure disegno (svg). Ogni carta ha un colore di sfondo diverso (ma si distinguono anche senza).
+
+import comuneUrl from './photos/comune.webp';
+import monumentoUrl from './photos/monumento.webp';
+import salvatoreUrl from './photos/salvatore.webp';
 
 const card = (bg, body) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><rect width="100" height="100" rx="8" fill="${bg}"/>${body}</svg>`;
 
 export const CARDS = [
-  {
-    id: 'campanile',
-    caption: 'Il campanile',
-    svg: card('#dcebf5', `
-      <path d="M50 6 L50 14 M46 9 L54 9" stroke="#5a3a1a" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M36 32 L50 14 L64 32 Z" fill="#8a3b22" stroke="#4d1f10" stroke-width="2"/>
-      <rect x="38" y="32" width="24" height="60" fill="#c98f5a" stroke="#6b4217" stroke-width="2"/>
-      <path d="M44 52 L44 42 C44 37 56 37 56 42 L56 52 Z" fill="#3b2a1e"/>
-      <path d="M47 50 C47 44 53 44 53 50 Z" fill="#e8b10c"/>
-      <path d="M38 60 L62 60 M38 74 L62 74" stroke="#a8703f" stroke-width="2"/>
-      <rect x="46" y="80" width="8" height="12" fill="#6b4217"/>
-      <path d="M8 92 L92 92" stroke="#7a9a5a" stroke-width="4"/>`),
-  },
-  {
-    id: 'fontana',
-    caption: 'La fontana',
-    svg: card('#e3f0e8', `
-      <path d="M50 30 C42 20 34 22 30 34 M50 30 C58 20 66 22 70 34 M50 30 L50 18" fill="none" stroke="#3d9ad6" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="30" cy="40" r="2.5" fill="#3d9ad6"/><circle cx="70" cy="40" r="2.5" fill="#3d9ad6"/>
-      <rect x="45" y="30" width="10" height="40" fill="#b8b1a4" stroke="#6d6658" stroke-width="2"/>
-      <ellipse cx="50" cy="30" rx="10" ry="3" fill="#cfc8bb" stroke="#6d6658" stroke-width="2"/>
-      <path d="M14 70 L86 70 L80 88 L20 88 Z" fill="#b8b1a4" stroke="#6d6658" stroke-width="2"/>
-      <ellipse cx="50" cy="70" rx="36" ry="6" fill="#7cc3ec" stroke="#6d6658" stroke-width="2"/>`),
-  },
-  {
-    id: 'chiesa',
-    caption: 'La chiesa',
-    svg: card('#f3e7d3', `
-      <path d="M18 44 L50 16 L82 44 Z" fill="#b5553a" stroke="#6b2a18" stroke-width="2"/>
-      <rect x="22" y="44" width="56" height="46" fill="#efe6d6" stroke="#8a7a60" stroke-width="2"/>
-      <circle cx="50" cy="34" r="6" fill="#7cc3ec" stroke="#6b2a18" stroke-width="2"/>
-      <path d="M41 90 L41 70 C41 60 59 60 59 70 L59 90 Z" fill="#7a4a1e" stroke="#4d2c0e" stroke-width="2"/>
-      <rect x="28" y="54" width="8" height="12" rx="4" fill="#7cc3ec"/><rect x="64" y="54" width="8" height="12" rx="4" fill="#7cc3ec"/>
-      <path d="M50 8 L50 16 M46 11 L54 11" stroke="#5a3a1a" stroke-width="2.5" stroke-linecap="round"/>`),
-  },
+  // ---------- Foto vere del paese (contenuti/memory/ → npm run memory-images, D72) ----------
+  { id: 'comune', caption: 'Comune', src: comuneUrl, bg: '#fde3dc' },
+  { id: 'monumento', caption: 'Monumento', src: monumentoUrl, bg: '#e2e8f0' },
+  { id: 'salvatore', caption: 'Salvatore', src: salvatoreUrl, bg: '#f9e0a8' },
+  // ---------- Disegni segnaposto, finché non arrivano le altre foto ----------
   {
     id: 'castagno',
     caption: 'Il castagno',

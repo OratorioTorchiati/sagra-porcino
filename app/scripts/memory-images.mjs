@@ -31,6 +31,7 @@ const CROPS = {
   // bottom = dove finisce il ritaglio, in frazione dell'altezza del soggetto (0.5 = tiene la metà alta)
   salvatore: { bottom: 0.5 }, // mezzo busto: testa con aureola, mano e globo (D72)
   monumento: { bottom: 0.82 }, // tolta la base sotto la ringhiera (D72)
+  comune: { left: 0.15, right: 0.85, bottom: 0.74 }, // Municipio e aiuola, un po' di zoom: senza lampioni e gran parte della piazza
 };
 
 /** Distanza di colore al quadrato */
@@ -68,6 +69,50 @@ function removeBackground(data, width, height) {
   }
 }
 
+/** Pixel della "scacchiera finta": bianco o grigio chiarissimo, senza colore */
+function isCheckerPixel(data, p) {
+  const [r, g, b] = [data[p * 4], data[p * 4 + 1], data[p * 4 + 2]];
+  return Math.min(r, g, b) >= 226 && Math.max(r, g, b) - Math.min(r, g, b) <= 8;
+}
+
+/**
+ * Alcuni PNG "senza sfondo" hanno la scacchiera grigia e bianca DISEGNATA nell'immagine (non è trasparenza vera).
+ * La si riconosce dal bordo in alto quasi tutto bianco/grigio chiaro con due toni alternati.
+ */
+function hasFakeChecker(data, width) {
+  let checker = 0;
+  const tones = new Set();
+  for (let x = 0; x < width; x++) {
+    if (isCheckerPixel(data, x)) {
+      checker++;
+      tones.add(Math.round(data[x * 4] / 8));
+    }
+  }
+  return checker > width * 0.9 && tones.size >= 2;
+}
+
+/**
+ * Toglie la scacchiera finta collegata al bordo in alto (il cielo). Solo dall'alto: in basso, per esempio,
+ * le righe bianche di una piazza toccano il bordo e non vanno cancellate.
+ */
+function removeFakeChecker(data, width, height) {
+  const seen = new Uint8Array(width * height);
+  const stack = [];
+  for (let x = 0; x < width; x++) if (isCheckerPixel(data, x)) stack.push(x);
+  stack.forEach((p) => (seen[p] = 1));
+  while (stack.length) {
+    const p = stack.pop();
+    data[p * 4 + 3] = 0;
+    const x = p % width;
+    const y = (p - x) / width;
+    for (const q of [x > 0 ? p - 1 : -1, x < width - 1 ? p + 1 : -1, y > 0 ? p - width : -1, y < height - 1 ? p + width : -1]) {
+      if (q < 0 || seen[q]) continue;
+      seen[q] = 1;
+      if (isCheckerPixel(data, q)) stack.push(q);
+    }
+  }
+}
+
 /** Riquadro del soggetto (pixel abbastanza opachi) */
 function subjectBox(data, width, height) {
   let x0 = width, y0 = height, x1 = 0, y1 = 0;
@@ -90,7 +135,9 @@ async function prepare(file) {
   const { width, height } = info;
 
   const hasTransparency = data.some((v, i) => i % 4 === 3 && v < 250);
-  if (!hasTransparency) removeBackground(data, width, height);
+  const fakeChecker = !hasTransparency && hasFakeChecker(data, width);
+  if (fakeChecker) removeFakeChecker(data, width, height);
+  else if (!hasTransparency) removeBackground(data, width, height);
 
   let box = subjectBox(data, width, height);
   const crop = CROPS[name];
@@ -111,7 +158,7 @@ async function prepare(file) {
   const target = new URL(`${name}.webp`, OUT);
   await sharp(output).resize(SIZE, SIZE).webp({ quality: QUALITY, alphaQuality: 90, effort: 6 }).toFile(fileURLToPath(target));
   const kb = Math.round(fs.statSync(target).size / 1024);
-  console.log(`${file} → photos/${name}.webp  ${kb} KB${hasTransparency ? '' : '  (sfondo tolto dai bordi)'}${crop ? '  (ritaglio speciale)' : ''}`);
+  console.log(`${file} → photos/${name}.webp  ${kb} KB${fakeChecker ? '  (scacchiera finta tolta)' : hasTransparency ? '' : '  (sfondo tolto dai bordi)'}${crop ? '  (ritaglio speciale)' : ''}`);
 }
 
 fs.mkdirSync(fileURLToPath(OUT), { recursive: true });

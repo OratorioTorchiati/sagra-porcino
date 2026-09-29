@@ -35,7 +35,8 @@ export default defineConfig(({ command, isPreview }) => ({
       },
       workbox: {
         // Tutto il sito in cache al primo accesso: poi si apre anche in modalità aereo
-        globPatterns: ['**/*.{js,css,html,svg,woff2,webmanifest}'],
+        // webp: le foto del Memory, per giocare anche offline
+        globPatterns: ['**/*.{js,css,html,svg,woff2,webmanifest,webp}'],
         cleanupOutdatedCaches: true,
       },
     }),
