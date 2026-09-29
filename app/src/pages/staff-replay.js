@@ -55,6 +55,8 @@ export async function openReplay(attemptId, ctx, errorEl, onDone) {
       },
     });
     fillBars();
+    // Solo in sviluppo (rimosso dalla build): permette ai test automatici di far avanzare il replay
+    if (import.meta.env.DEV) window.__replaySession = session;
   }
 
   function fillBars() {

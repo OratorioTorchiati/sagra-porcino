@@ -255,7 +255,20 @@ export class GameSession {
         this.ctx.save();
         this.ctx.translate((Math.random() - 0.5) * 12, (Math.random() - 0.5) * 12);
       }
+      if (this.replay) {
+        // Nel replay si vede solo l'area del telefono del giocatore (niente elementi disegnati fuori)
+        const [w, h] = this.virtualSize;
+        this.ctx.save();
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.restore();
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(0, 0, w, h);
+        this.ctx.clip();
+      }
       this.game.draw(this.ctx);
+      if (this.replay) this.ctx.restore();
       if (shaking) this.ctx.restore();
     }
   }

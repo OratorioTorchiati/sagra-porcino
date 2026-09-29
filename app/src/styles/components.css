@@ -2119,7 +2119,7 @@ dialog:not([open]) {
   background: #2b1d12;
 }
 
-.replay-bottom--single {
+.game-screen--replay .replay-bottom--single {
   grid-template-columns: 1fr;
 }
 
