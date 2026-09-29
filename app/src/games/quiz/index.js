@@ -23,6 +23,8 @@ export default {
   },
 
   create(ctx) {
+    // Nel replay (pannello staff) le domande sono esattamente quelle della partita: niente "domande recenti"
+    if (ctx.replay) return createQuiz(ctx);
     const game = createQuiz({ ...ctx, assets: { ...ctx.assets, recentIds: readJson(RECENT_KEY, []) } });
     writeJson(RECENT_KEY, game.questionIds);
     return game;

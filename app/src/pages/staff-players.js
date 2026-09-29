@@ -1,15 +1,17 @@
-// Pannello staff → Giocatori: ricerca per nickname e scheda con le azioni
+// Pannello staff → Giocatori: ricerca per nickname (niente elenco senza ricerca, risultati a pagine da 20, D74)
+// e scheda con le azioni
 // (reset PIN col codice del telefono, disattiva/riattiva, punti extra, cancella).
 
 import { escapeHtml } from '../lib/dom.js';
 import { deviceCode } from '../lib/device.js';
 import { formatPoints } from '../lib/leaderboard.js';
 import { avatarSvg, playerStatsMarkup } from '../components/player-card.js';
-import { staffCall, formatDate, askDialog } from './staff-ui.js';
+import { staffCall, formatDate, askDialog, pagerMarkup } from './staff-ui.js';
 
-function resultsMarkup(players) {
+function resultsMarkup({ players, total, page, page_size: size }) {
   if (!players.length) return '<p class="leaderboard-note">Nessun giocatore trovato.</p>';
-  return `<ul class="rank-list">${players
+  return `<p class="staff-muted">${total === 1 ? '1 giocatore trovato' : `${total} giocatori trovati`}</p>
+    <ul class="rank-list">${players
     .map(
       (p) => `
       <li>
@@ -20,7 +22,7 @@ function resultsMarkup(players) {
         </button>
       </li>`,
     )
-    .join('')}</ul>`;
+    .join('')}</ul>${pagerMarkup(page, total, size)}`;
 }
 
 function detailMarkup(p) {
@@ -94,31 +96,44 @@ function detailMarkup(p) {
 
 export function renderPlayersSection(root, ctx) {
   root.innerHTML = `
-    <label class="form-field">
-      <span class="form-field__label">Cerca nickname</span>
-      <input class="form-field__input" type="search" name="q" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="es. mario">
-    </label>
+    <form class="staff-search" role="search" novalidate>
+      <label class="visually-hidden" for="staff-q">Cerca nickname</label>
+      <input class="form-field__input" id="staff-q" type="search" name="q" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Cerca nickname (anche una parte)">
+      <button type="submit" class="button">Cerca</button>
+    </form>
     <div class="form-error" role="alert" hidden></div>
-    <div class="staff-results"></div>
+    <div class="staff-results"><p class="leaderboard-note">Scrivi un nickname, o una parte, e premi Cerca.</p></div>
     <div class="staff-detail" hidden></div>`;
+  const form = root.querySelector('.staff-search');
   const input = root.querySelector('input');
   const error = root.querySelector('.form-error');
   const results = root.querySelector('.staff-results');
   const detail = root.querySelector('.staff-detail');
-  let timer = null;
   let request = 0;
   let current = null;
+  let lastQuery = '';
+  let lastPage = 0;
 
-  async function search() {
+  async function search(query = lastQuery, page = 0) {
+    lastQuery = query.trim();
+    lastPage = page;
+    if (!lastQuery) {
+      results.innerHTML = '<p class="leaderboard-note">Scrivi un nickname, o una parte, e premi Cerca.</p>';
+      return;
+    }
     const mine = ++request;
-    const res = await staffCall(ctx, 'search_players', { p_query: input.value }, error);
-    if (res && mine === request) results.innerHTML = resultsMarkup(res.players);
+    results.innerHTML = '<p class="leaderboard-note">Ricerca…</p>';
+    const res = await staffCall(ctx, 'search_players', { p_query: lastQuery, p_page: page }, error);
+    if (res && mine === request) results.innerHTML = resultsMarkup(res);
   }
+
+  // Appena si inizia a scrivere, la barra di ricerca va in cima allo schermo (e lì resta, fissa)
+  const pinSearch = () => form.scrollIntoView({ block: 'start', behavior: 'smooth' });
 
   function showList() {
     detail.hidden = true;
     results.hidden = false;
-    input.closest('.form-field').style.display = '';
+    form.style.display = '';
     current = null;
   }
 
@@ -129,7 +144,7 @@ export function renderPlayersSection(root, ctx) {
     detail.innerHTML = detailMarkup(current);
     detail.hidden = false;
     results.hidden = true;
-    input.closest('.form-field').style.display = 'none';
+    form.style.display = 'none';
     if (okMessage) {
       const ok = detail.querySelector('.staff-ok');
       ok.textContent = okMessage;
@@ -138,11 +153,20 @@ export function renderPlayersSection(root, ctx) {
     window.scrollTo(0, 0);
   }
 
-  input.addEventListener('input', () => {
-    clearTimeout(timer);
-    timer = setTimeout(search, 300);
+  input.addEventListener('focus', pinSearch);
+  input.addEventListener('input', pinSearch, { once: true });
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    input.blur(); // chiude la tastiera per vedere i risultati
+    search(input.value, 0);
   });
   results.addEventListener('click', (event) => {
+    const page = event.target.closest('[data-page]');
+    if (page) {
+      search(lastQuery, Number(page.dataset.page));
+      pinSearch();
+      return;
+    }
     const nickname = event.target.closest('[data-nickname]')?.dataset.nickname;
     if (nickname) showDetail(nickname);
   });
@@ -156,7 +180,7 @@ export function renderPlayersSection(root, ctx) {
 
     if (action === 'back') {
       showList();
-      search();
+      search(lastQuery, lastPage);
     } else if (action === 'pin') {
       const values = await askDialog({
         title: `Nuovo PIN per ${escapeHtml(nick)}`,
@@ -221,13 +245,11 @@ export function renderPlayersSection(root, ctx) {
       });
       if (values && (await staffCall(ctx, 'delete_player', { p_nickname: nick, p_confirm: values.confirm }, detailError))) {
         showList();
-        await search();
+        await search(lastQuery, lastPage);
         const ok = root.querySelector('.staff-results');
         ok.insertAdjacentHTML('afterbegin', `<p class="staff-ok">✅ ${escapeHtml(nick)} cancellato.</p>`);
       }
     }
   });
 
-  search();
-  return () => clearTimeout(timer);
 }

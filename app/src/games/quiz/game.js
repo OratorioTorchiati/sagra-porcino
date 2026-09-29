@@ -23,7 +23,7 @@ export function pickQuestions(pool, count, rng, avoidIds = []) {
  * @param {object} ctx
  * @param {{pool: object[], recentIds?: number[]}} ctx.assets  domande (in prova: esempi con la risposta giusta)
  */
-export function createQuiz({ rng, config, assets, hud, log, dom, isRunning, clock = nowMs }) {
+export function createQuiz({ rng, config, assets, hud, log, dom, isRunning, clock = nowMs, replay = false }) {
   const questions = pickQuestions(assets.pool, config.questionsPerGame, rng, assets.recentIds).map((q) => {
     // Ordine delle risposte mescolato; si ricorda l'indice originale di ciascuna
     const order = [0, 1, 2, 3];
@@ -59,6 +59,8 @@ export function createQuiz({ rng, config, assets, hud, log, dom, isRunning, cloc
     optionsEl.innerHTML = q.order
       .map((original) => `<button type="button" class="quiz-option" data-choice="${original}">${escapeHtml(q.options[original])}</button>`)
       .join('');
+    // Replay (pannello staff): la risposta giusta è evidenziata
+    if (replay && q.correct !== undefined) optionsEl.querySelector(`[data-choice="${q.correct}"]`)?.classList.add('is-correct');
     hud.set('question', `${index + 1}/${questions.length}`);
     questionStart = clock();
     waitingUntil = null;
@@ -84,6 +86,15 @@ export function createQuiz({ rng, config, assets, hud, log, dom, isRunning, cloc
     start() {
       show(0);
     },
+
+    /** Replay (pannello staff): la stessa risposta alla stessa domanda */
+    replayAction(type, data) {
+      if (type !== 'answer' || data[1] === null || current < 0 || questions[current]?.id !== data[0]) return null;
+      const button = optionsEl.querySelector(`[data-choice="${data[1]}"]`);
+      button?.click();
+      return button ?? null;
+    },
+
 
     update() {
       if (current < 0 || done) return;

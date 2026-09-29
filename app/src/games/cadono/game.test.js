@@ -88,10 +88,12 @@ describe('Porcini che cadono (simulazione)', () => {
     expect(first30.filter((t) => t === 'bomb').length).toBe(Math.round(config.bombShare[0] * 30));
   });
 
-  it('registra posizioni del cestino, prese e porcini persi', () => {
+  it('registra il dito (solo quando si sposta), prese e porcini persi', () => {
     const { actions } = simulate(5, good);
     const types = new Set(actions.map((a) => a[1]));
-    expect(types.has('pos')).toBe(true);
+    expect(types.has('move')).toBe(true);
+    const moves = actions.filter((a) => a[1] === 'move');
+    expect(moves.every((m, i) => i === 0 || m[2] !== moves[i - 1][2])).toBe(true); // niente doppioni
     expect(types.has('catch')).toBe(true);
     const catchRow = actions.find((a) => a[1] === 'catch');
     expect(catchRow).toHaveLength(5); // [ms, 'catch', tipo, x elemento, x cestino]

@@ -8,7 +8,6 @@ import { softBackground } from '../engine/background.js';
 
 const PORCINO_KINDS = Object.keys(PORCINI);
 const EFFECT_S = 0.8;
-const POS_LOG_EVERY_S = 0.25;
 const TEXT_FONT = '"Atkinson Hyperlegible Next", system-ui, sans-serif';
 const WARM = {
   top: '#f6eedc',
@@ -30,8 +29,6 @@ export function createCadono({ rng, config, assets, hud, log, flash, shake }) {
   let state = initialState(config);
   let reachedEnd = false;
   const basket = { x: 0, targetX: null, width: config.basketWidth, height: config.basketWidth / BASKET_ASPECT };
-  let lastPosLog = -1;
-  let lastLoggedX = null;
 
   const basketTop = () => height - config.basketBottomMargin - basket.height;
   const rimY = () => basketTop() + basket.height * BASKET_RIM;
@@ -93,14 +90,6 @@ export function createCadono({ rng, config, assets, hud, log, flash, shake }) {
       if (basket.targetX !== null) {
         const target = Math.min(Math.max(basket.targetX, basket.width / 2), width - basket.width / 2);
         basket.x += (target - basket.x) * Math.min(1, dt * config.basketFollow);
-      }
-      if (t - lastPosLog >= POS_LOG_EVERY_S) {
-        const x = Math.round(basket.x);
-        if (x !== lastLoggedX) {
-          log('pos', x);
-          lastLoggedX = x;
-        }
-        lastPosLog = t;
       }
 
       spawnTimer -= dt;
@@ -190,11 +179,28 @@ export function createCadono({ rng, config, assets, hud, log, flash, shake }) {
     },
 
     // Trascinamento ovunque sullo schermo: il cestino segue la posizione orizzontale del dito
-    onPointerDown(x) {
-      basket.targetX = x;
+    // Il dito si registra (arrotondato al pixel, solo quando cambia): il replay muove il cestino identico
+    onPointerDown(x, y) {
+      basket.targetX = Math.round(x);
+      log('touch', basket.targetX, Math.round(y));
     },
     onPointerMove(x) {
-      basket.targetX = x;
+      const rounded = Math.round(x);
+      if (rounded === basket.targetX) return;
+      basket.targetX = rounded;
+      log('move', rounded);
+    },
+
+    /** Replay (pannello staff) */
+    replayAction(type, data) {
+      if (type === 'touch') {
+        basket.targetX = data[0];
+        return { x: data[0], y: data[1] };
+      }
+      if (type === 'move') basket.targetX = data[0];
+      // Partite registrate prima del replay: solo la posizione del cestino ogni tanto (replay approssimato)
+      if (type === 'pos') basket.x = basket.targetX = data[0];
+      return null;
     },
 
     isOver(t) {

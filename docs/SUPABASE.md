@@ -24,6 +24,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/006_acchiappa_tempi_piu_lunghi.sql` | 5 | Acchiappa: moltiplicatori 7/6/5 secondi |
 | `supabase/migrations/007_classifica.sql` | 6 | classifica (somma dei migliori + punti extra), aggiornata dai trigger, scheda giocatore |
 | `supabase/migrations/008_staff.sql` | 8 | pannello staff: giocatori, reset PIN, disattiva/cancella, punti extra, partite da controllare, impostazioni, registro |
+| `supabase/migrations/009_staff_ricerca_replay.sql` | 8 | ricerca, classifica e registro del pannello a pagine (con filtri), dati per "Rivedi partita" |
 
 Impostazioni dei giochi (SQL Editor):
 

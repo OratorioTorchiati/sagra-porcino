@@ -236,6 +236,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
     ['staff_delete_extra_points', { p_id: 1 }], ['staff_review_list', { p_status: 'flagged' }],
     ['staff_set_attempt_status', { p_attempt_id: crypto.randomUUID(), p_status: 'valid' }], ['staff_suspicious_devices', {}],
     ['staff_get_settings', {}], ['staff_update_settings', { p_values: { attempts_per_day: 99 } }], ['staff_leaderboard', {}], ['staff_log_list', {}],
+    ['staff_attempt_replay', { p_attempt_id: crypto.randomUUID() }],
   ];
   const denied = [];
   for (const [name, params] of calls) {
@@ -244,7 +245,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
       if (res?.error !== 'NOT_STAFF') denied.push(`${name}(${token ? 'giocatore' : 'senza sessione'}): ${JSON.stringify(res)}`);
     }
   }
-  check('pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le 14 funzioni', denied.length === 0, denied.join(' | '));
+  check('pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le 15 funzioni', denied.length === 0, denied.join(' | '));
   const stillThere = (await rpc('login', { p_nickname: t5Nick, p_secret: '5555' })).body;
   check('...e i tentativi del giocatore non hanno cambiato nulla (PIN e account intatti)', stillThere?.ok === true);
 }
@@ -257,7 +258,14 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const staff = async (name, params = {}) => (await rpc(`staff_${name}`, { p_token: S, ...params })).body;
 
   const found = await staff('search_players', { p_query: t5Nick });
-  check('staff: ricerca per nickname', found?.players?.[0]?.nickname === t5Nick);
+  check('staff: ricerca per nickname', found?.players?.[0]?.nickname === t5Nick && found.total >= 1);
+  const empty = await staff('search_players', { p_query: '' });
+  check('staff: senza ricerca nessun elenco', empty?.ok && empty.players.length === 0);
+  const zz = await staff('search_players', { p_query: 'zz' });
+  const zz2 = await staff('search_players', { p_query: 'zz', p_page: 1 });
+  check('staff: risultati a pagine da 20', zz?.players.length === Math.min(20, zz.total) && zz.page_size === 20 &&
+    (zz.total <= 20 || (zz2.players.length > 0 && !zz2.players.some((a) => zz.players.some((b) => b.nickname === a.nickname)))),
+    `totale ${zz?.total}`);
   const detail = await staff('player_detail', { p_nickname: t5Nick });
   check('staff: scheda con telefono, partite e punti', detail?.ok && detail.player.devices.length === 1 && detail.player.games.length === 4 && detail.player.card.total > 0);
 
@@ -311,9 +319,24 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const badDate = await staff('update_settings', { p_values: { attempts_per_day: 7, games_open_until: 'domani' } });
   check('staff: data non valida → rifiutata senza cambiare nulla', badDate?.error === 'DATE_INVALID' && (await staff('get_settings')).attempts_per_day === settings.attempts_per_day, JSON.stringify(badDate));
   const board = await staff('leaderboard');
-  check('staff: classifica completa (tutte le posizioni)', board?.ok && board.rows.length >= 1);
+  const boardAll = await staff('leaderboard', { p_all: true });
+  check('staff: classifica a pagine da 50, e tutta per il CSV', board?.ok && board.rows.length === Math.min(50, board.total) && boardAll.rows.length === board.total);
   const log = await staff('log_list');
   check('staff: le azioni finiscono nel registro', log?.entries?.some((e) => e.action === 'delete' && e.target === vNick));
+  const logAccount = await staff('log_list', { p_action: 'account', p_staff: env.TEST_STAFF_NICKNAME });
+  const logSettings = await staff('log_list', { p_action: 'settings' });
+  check('staff: registro filtrato per tipo di azione e operatore', logAccount?.entries.length > 0 &&
+    logAccount.entries.every((e) => ['disable', 'enable', 'delete'].includes(e.action) && e.staff === env.TEST_STAFF_NICKNAME) &&
+    logSettings.entries.every((e) => e.action === 'settings'));
+  const tomorrow = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
+  check('staff: registro filtrato per giorno', (await staff('log_list', { p_day: tomorrow }))?.total === 0);
+  if (mine) {
+    const rep = await staff('attempt_replay', { p_attempt_id: mine.id });
+    check('staff: "Rivedi partita" riceve seme, azioni e durata', rep?.ok && rep.attempt.seed !== null && Array.isArray(rep.attempt.actions) && rep.attempt.actions.length > 5 && rep.attempt.stats.durationMs > 0);
+  }
+  const quizRep = await staff('attempt_replay', { p_attempt_id: quiz.attempt_id });
+  check('staff: replay del quiz con le domande della partita (e la risposta giusta)', quizRep?.attempt?.questions?.length === 5 &&
+    quizRep.attempt.questions.every((q, i) => q.id === quiz.questions[i].id && Number.isInteger(q.correct)));
   await rpc('logout', { p_token: S });
 } else {
   console.log('(controlli con un account staff saltati: mancano TEST_STAFF_NICKNAME / TEST_STAFF_PASSWORD in app/.env.local)');

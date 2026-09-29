@@ -133,6 +133,14 @@ export function createMemory({ rng, config, hud, log, dom, isRunning }) {
   });
 
   return {
+    /** Replay (pannello staff): rigira la stessa carta, nello stesso momento */
+    replayAction(type, data) {
+      if (type !== 'flip') return null;
+      const button = buttons[data[0]];
+      button?.click();
+      return button ?? null;
+    },
+
     destroy() {
       window.removeEventListener('resize', fitCaptions);
     },

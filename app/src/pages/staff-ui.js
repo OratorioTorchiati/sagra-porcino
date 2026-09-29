@@ -95,3 +95,14 @@ export function askDialog({ title, body = '', confirmLabel = 'Conferma', danger 
     dialog.querySelector('input')?.focus();
   });
 }
+
+/** "← Prima · Pagina 2 di 5 · Dopo →" (bottoni con data-page); niente se c'è una pagina sola */
+export function pagerMarkup(page, total, size) {
+  const pages = Math.ceil(total / size);
+  if (pages <= 1) return '';
+  return `<div class="staff-pager">
+      <button type="button" class="button button--secondary" data-page="${page - 1}" ${page === 0 ? 'disabled' : ''}>← Prima</button>
+      <span>Pagina ${page + 1} di ${pages}</span>
+      <button type="button" class="button button--secondary" data-page="${page + 1}" ${page + 1 >= pages ? 'disabled' : ''}>Dopo →</button>
+    </div>`;
+}

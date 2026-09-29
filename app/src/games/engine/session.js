@@ -19,13 +19,23 @@
 // Il tempo di gioco avanza solo mentre si gioca: in pausa il timer si ferma
 // (ma, dalla Tappa 5, il tentativo resta consumato). Con `gameDef.pauseOnHide = false`
 // (quiz) la partita NON va in pausa quando si cambia app, per non dare tempo di cercare le risposte.
+//
+// Passi fissi (D75): il gioco avanza sempre a scatti di 1/60 di secondo, qualunque sia la velocità del telefono.
+// Così la stessa partita (seme + azioni registrate con il loro tempo) si può rigiocare IDENTICA:
+// è il "Rivedi partita" del pannello staff (opzione `replay`). Ogni gioco può avere
+//   replayAction(tipo, dati, t)  rifà un'azione registrata; restituisce dove mostrare l'"onda" del tocco
+//                                ({ x, y } in coordinate di gioco, un elemento HTML, oppure niente).
+// Nelle partite vere si registra anche la grandezza dell'area di gioco ('size', larghezza, altezza).
 
 import { html } from '../../lib/dom.js';
 import { setUpdateBlocked } from '../../lib/app-update.js';
 import { createRng } from './rng.js';
+import { STEP_S } from './step.js';
 
 const COUNTDOWN_STEP_MS = 800;
 const MAX_FRAME_S = 0.05; // un frame lento (o una pausa del browser) non fa saltare il gioco
+const DEFAULT_SIZE = [390, 640]; // partite registrate prima che si salvasse la grandezza dell'area
+const REPLAY_EVENTS = new Set(['start', 'pause', 'resume', 'hidden', 'visible', 'size']);
 
 // Anello del HUD (es. moltiplicatore a tempo): circonferenza del cerchio di raggio 20
 const RING_LENGTH = 2 * Math.PI * 20;
@@ -39,8 +49,20 @@ export class GameSession {
    * @param {object} options.assets        risorse già caricate (sprite...)
    * @param {number} options.seed          seme della partita
    * @param {(result) => void} options.onFinish
+   * @param {{actions: any[], durationMs: number}} [options.replay] rivede una partita registrata (pannello staff)
    */
-  constructor({ root, gameDef, assets, seed, onFinish }) {
+  constructor({ root, gameDef, assets, seed, onFinish, replay = null }) {
+    this.replay = replay;
+    this.replayIndex = 0;
+    this.applyingReplay = false;
+    this.steps = 0;
+    this.accumulator = 0;
+    this.loggedSize = null;
+    this.view = { scale: 1, x: 0, y: 0 };
+    if (replay) {
+      const size = replay.actions.find((a) => a[1] === 'size');
+      this.virtualSize = size ? [size[2], size[3]] : DEFAULT_SIZE;
+    }
     this.gameDef = gameDef;
     this.config = gameDef.config;
     this.seed = seed;
@@ -55,14 +77,17 @@ export class GameSession {
     this.pauseOnHide = gameDef.pauseOnHide !== false;
 
     this.element = html(`
-      <div class="game-screen" role="application" aria-label="${gameDef.name}">
+      <div class="game-screen${replay ? ' game-screen--replay' : ''}" role="application" aria-label="${gameDef.name}">
+        ${replay ? '<div class="replay-top"></div><div class="replay-progress"><div class="replay-progress__bar"></div><span class="replay-progress__time"></span></div>' : ''}
         <div class="game-hud">
           ${gameDef.hud.map((item) => `<div class="game-hud__item game-hud__item--${item.key}" data-hud="${item.key}"><span class="game-hud__label">${item.label}</span>${item.ring ? RING_MARKUP : '<span class="game-hud__value"></span>'}</div>`).join('')}
         </div>
         <div class="game-stage">
           ${this.usesCanvas ? '<canvas class="game-canvas"></canvas>' : '<div class="game-dom"></div>'}
           <div class="game-overlay" hidden></div>
+          ${replay ? '<div class="replay-ripples" aria-hidden="true"></div>' : ''}
         </div>
+        ${replay ? '<div class="replay-bottom"></div>' : ''}
       </div>
     `);
     root.append(this.element);
@@ -74,6 +99,9 @@ export class GameSession {
     this.ctx = this.canvas?.getContext('2d') ?? null;
     this.dom = this.element.querySelector('.game-dom');
     this.overlay = this.element.querySelector('.game-overlay');
+    this.ripples = this.element.querySelector('.replay-ripples');
+    this.progressBar = this.element.querySelector('.replay-progress__bar');
+    this.progressTime = this.element.querySelector('.replay-progress__time');
     this.hudValues = Object.fromEntries(
       gameDef.hud.map((item) => [item.key, this.element.querySelector(`[data-hud="${item.key}"]`)]),
     );
@@ -87,14 +115,18 @@ export class GameSession {
       flash: (kind) => this.flash(kind),
       shake: () => this.shake(),
       dom: this.dom,
-      isRunning: () => this.state === 'running',
+      // Nel replay i tocchi veri non contano: si muove solo ciò che era registrato
+      isRunning: () => this.state === 'running' && (!this.replay || this.applyingReplay),
+      replay: Boolean(replay),
+      // Il quiz misura i tempi con l'orologio; nel replay usa il tempo di gioco
+      ...(replay ? { clock: () => this.gameTime * 1000 } : {}),
     });
 
     this.resize();
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.stage);
 
-    if (this.usesCanvas) {
+    if (this.usesCanvas && !replay) {
       this.onPointer = this.onPointer.bind(this);
       this.canvas.addEventListener('pointerdown', this.onPointer);
       this.canvas.addEventListener('pointermove', this.onPointer);
@@ -102,7 +134,7 @@ export class GameSession {
       this.canvas.addEventListener('pointercancel', this.onPointer);
     }
     this.onVisibility = () => {
-      if (this.state !== 'running' && this.state !== 'paused') return;
+      if (this.replay || (this.state !== 'running' && this.state !== 'paused')) return;
       if (this.pauseOnHide) {
         if (document.hidden && this.state === 'running') this.pause();
       } else {
@@ -116,7 +148,14 @@ export class GameSession {
     this.frame = this.frame.bind(this);
     this.raf = requestAnimationFrame(this.frame);
     this.updateTimeHud();
-    this.countdown();
+    if (replay) this.startReplay();
+    else this.countdown();
+  }
+
+  startReplay() {
+    this.game.start?.();
+    this.state = 'running';
+    this.updateReplayProgress();
   }
 
   // ---------- Stati ----------
@@ -132,6 +171,7 @@ export class GameSession {
       setTimeout(() => {
         this.hideOverlay();
         this.actions.push([0, 'start']);
+        this.logSize();
         this.game.start?.();
         if (document.hidden && this.pauseOnHide) this.pause();
         else this.state = 'running';
@@ -162,6 +202,12 @@ export class GameSession {
 
   finish() {
     this.state = 'over';
+    if (this.replay) {
+      this.updateReplayProgress();
+      this.showOverlay('<div class="game-countdown game-countdown--end">Fine replay</div>', false);
+      this.timers.push(setTimeout(() => this.onFinish?.(null), 400));
+      return;
+    }
     const { rawScore, stats } = this.game.result();
     const result = {
       rawScore,
@@ -195,10 +241,13 @@ export class GameSession {
       // Mai negativo (un timestamp fuori ordine non deve far tornare indietro il tempo), mai troppo grande
       const dt = this.lastFrame === null ? 0 : Math.min(Math.max((now - this.lastFrame) / 1000, 0), MAX_FRAME_S);
       this.lastFrame = now;
-      this.gameTime += dt;
-      this.game.update(dt, this.gameTime);
+      this.accumulator += dt;
+      while (this.accumulator >= STEP_S && this.state === 'running') {
+        this.accumulator -= STEP_S;
+        this.step();
+      }
       this.updateTimeHud();
-      if (this.game.isOver(this.gameTime)) this.finish();
+      if (this.replay) this.updateReplayProgress();
     }
     if (this.usesCanvas) {
       const shaking = this.shakeUntil && performance.now() < this.shakeUntil;
@@ -211,19 +260,103 @@ export class GameSession {
     }
   }
 
+  /** Un passo fisso del gioco (e, nel replay, le azioni registrate in quel momento) */
+  step() {
+    this.steps += 1;
+    this.gameTime = this.steps * STEP_S;
+    this.game.update(STEP_S, this.gameTime);
+    if (this.replay) this.applyReplayActions();
+    if (this.game.isOver(this.gameTime) || (this.replay && this.gameTime * 1000 >= this.replay.durationMs)) this.finish();
+  }
+
+  /** Rifà le azioni registrate fino al tempo attuale, nello stesso ordine */
+  applyReplayActions() {
+    const nowMs = Math.round(this.gameTime * 1000);
+    const { actions } = this.replay;
+    while (this.replayIndex < actions.length && actions[this.replayIndex][0] <= nowMs) {
+      const [, type, ...data] = actions[this.replayIndex++];
+      if (type === 'size') {
+        this.virtualSize = [data[0], data[1]];
+        this.resize();
+        continue;
+      }
+      if (REPLAY_EVENTS.has(type)) continue;
+      this.applyingReplay = true;
+      try {
+        const where = this.game.replayAction?.(type, data, this.gameTime);
+        if (where) this.showRipple(where);
+      } finally {
+        this.applyingReplay = false;
+      }
+    }
+  }
+
+  /** "Onda" dove il giocatore ha toccato: punto di gioco { x, y } o elemento HTML */
+  showRipple(where) {
+    if (!this.ripples) return;
+    let x;
+    let y;
+    if (where instanceof Element) {
+      const box = where.getBoundingClientRect();
+      const stage = this.stage.getBoundingClientRect();
+      x = box.left + box.width / 2 - stage.left;
+      y = box.top + box.height / 2 - stage.top;
+    } else {
+      x = this.view.x + where.x * this.view.scale;
+      y = this.view.y + where.y * this.view.scale;
+    }
+    const ripple = document.createElement('span');
+    ripple.className = 'replay-ripple';
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    this.ripples.append(ripple);
+    setTimeout(() => ripple.remove(), 700);
+  }
+
+  updateReplayProgress() {
+    const total = this.replay.durationMs;
+    const now = Math.min(this.gameTime * 1000, total);
+    const fmt = (ms) => {
+      const sec = Math.floor(ms / 1000);
+      return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+    };
+    this.progressBar.style.transform = `scaleX(${total ? now / total : 0})`;
+    const text = `▶ ${fmt(now)} / ${fmt(total)}`;
+    if (this.progressTime.textContent !== text) this.progressTime.textContent = text;
+  }
+
+  /** Nelle partite vere si registra la grandezza dell'area di gioco (per rivederla uguale) */
+  logSize() {
+    if (this.replay || !this.usesCanvas || this.state === 'over') return;
+    const size = [this.stage.clientWidth, this.stage.clientHeight];
+    if (!size[0] || !size[1] || (this.loggedSize && this.loggedSize[0] === size[0] && this.loggedSize[1] === size[1])) return;
+    this.loggedSize = size;
+    this.actions.push([Math.round(this.gameTime * 1000), 'size', ...size]);
+  }
+
   resize() {
     const width = this.stage.clientWidth;
     const height = this.stage.clientHeight;
     if (!width || !height) return;
+    // Nel replay il gioco ha la grandezza del telefono del giocatore, ridotta per stare nello schermo
+    let [gameW, gameH] = [width, height];
+    this.view = { scale: 1, x: 0, y: 0 };
+    if (this.replay && this.usesCanvas) {
+      [gameW, gameH] = this.virtualSize;
+      const scale = Math.min(width / gameW, height / gameH);
+      this.view = { scale, x: (width - gameW * scale) / 2, y: (height - gameH * scale) / 2 };
+    }
     if (this.usesCanvas) {
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
       this.canvas.width = Math.round(width * dpr);
       this.canvas.height = Math.round(height * dpr);
       this.canvas.style.width = `${width}px`;
       this.canvas.style.height = `${height}px`;
-      this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const k = dpr * this.view.scale;
+      this.ctx.setTransform(k, 0, 0, k, dpr * this.view.x, dpr * this.view.y);
     }
-    this.game.resize?.(width, height);
+    this.game.resize?.(gameW, gameH);
+    if (this.state === 'running' || this.state === 'paused') this.logSize();
   }
 
   /** Breve scossa dello schermo (es. bomba presa) */

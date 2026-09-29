@@ -4,7 +4,8 @@ import { escapeHtml } from '../lib/dom.js';
 import { formatPoints } from '../lib/leaderboard.js';
 import { GAMES } from '../games/registry.js';
 import { noteLabel, isoToRomeLocal, romeLocalToIso, toCsv, downloadText } from '../lib/staff.js';
-import { staffCall, formatDate, askDialog } from './staff-ui.js';
+import { staffCall, formatDate, askDialog, pagerMarkup } from './staff-ui.js';
+import { openReplay } from './staff-replay.js';
 
 const gameName = (id) => GAMES[id]?.name ?? id;
 
@@ -28,8 +29,8 @@ export function renderReviewSection(root, ctx) {
     root.querySelectorAll('[data-status]').forEach((b) => b.classList.toggle('is-active', b.dataset.status === status));
     help.textContent =
       status === 'flagged'
-        ? 'Partite strane (possibili bot): CONTANO già in classifica. "Approva" toglie la segnalazione, "Scarta" le toglie dalla classifica.'
-        : 'Partite escluse in automatico (dati impossibili): NON contano. "Rimetti" le fa contare con il punteggio ricalcolato dal server.';
+        ? 'Partite strane (possibili bot): CONTANO già in classifica. Rivedile e decidi se approvarle o scartarle.'
+        : 'Partite escluse in automatico (dati impossibili): NON contano. Rivedile e, se sono regolari, rimettile.';
     list.innerHTML = '<p class="leaderboard-note">Caricamento…</p>';
     const res = await staffCall(ctx, 'review_list', { p_status: status }, error);
     if (!res) return;
@@ -41,37 +42,22 @@ export function renderReviewSection(root, ctx) {
             <p><strong>${escapeHtml(a.nickname)}</strong> · ${escapeHtml(gameName(a.game_id))} · ${formatDate(a.submitted_at)}</p>
             <p>Punti: <strong>${a.raw_score ?? '—'}</strong>${a.client_score !== null && a.client_score !== a.raw_score && a.game_id !== 'quiz' ? ` (il telefono diceva ${a.client_score})` : ''}</p>
             <p class="staff-warn">${a.notes.map((n) => escapeHtml(noteLabel(n))).join(' · ') || '—'}</p>
-            <div class="staff-card__actions">
-              ${
-                status === 'flagged'
-                  ? `<button type="button" class="button" data-set="valid" data-id="${a.id}">✅ Approva</button>
-                     <button type="button" class="button button--danger" data-set="rejected" data-id="${a.id}">❌ Scarta</button>`
-                  : `<button type="button" class="button" data-set="valid" data-id="${a.id}">↩️ Rimetti</button>`
-              }
-            </div>
+            <button type="button" class="button" data-replay="${a.id}">▶ Rivedi partita</button>
           </li>`,
           )
           .join('')}</ul>`
       : `<p class="leaderboard-note">${status === 'flagged' ? 'Nessuna partita segnalata. 👍' : 'Nessuna partita esclusa.'}</p>`;
   }
 
-  root.addEventListener('click', async (event) => {
+  root.addEventListener('click', (event) => {
     const tab = event.target.closest('[data-status]');
     if (tab) {
       status = tab.dataset.status;
       load();
       return;
     }
-    const button = event.target.closest('[data-set]');
-    if (!button) return;
-    const target = button.dataset.set;
-    const ok = await askDialog({
-      title: target === 'rejected' ? 'Scartare questa partita?' : status === 'rejected' ? 'Rimettere questa partita?' : 'Approvare questa partita?',
-      body: target === 'rejected' ? '<p>Non conterà più in classifica.</p>' : '<p>Conterà in classifica.</p>',
-      confirmLabel: target === 'rejected' ? 'Scarta' : 'Conferma',
-      danger: target === 'rejected',
-    });
-    if (ok && (await staffCall(ctx, 'set_attempt_status', { p_attempt_id: button.dataset.id, p_status: target }, error))) load();
+    const replay = event.target.closest('[data-replay]');
+    if (replay) openReplay(replay.dataset.replay, ctx, error, (changed) => changed && load());
   });
 
   load();
@@ -150,35 +136,51 @@ export async function renderSettingsSection(root, ctx) {
   });
 }
 
-// ---------- Classifica completa ----------
+// ---------- Classifica completa (50 per pagina; il CSV scarica tutta la classifica) ----------
 
-export async function renderLeaderboardSection(root, ctx) {
+export function renderLeaderboardSection(root, ctx) {
   root.innerHTML = '<div class="form-error" role="alert" hidden></div><div class="staff-board"><p class="leaderboard-note">Caricamento…</p></div>';
-  const res = await staffCall(ctx, 'leaderboard', {}, root.querySelector('.form-error'));
-  if (!res) return;
-  const games = Object.values(GAMES);
+  const error = root.querySelector('.form-error');
   const board = root.querySelector('.staff-board');
-  board.innerHTML = `
-    <p>${res.rows.length} giocatori in classifica${res.window === 'closed' ? ' · <strong>Classifica finale</strong>' : ''}.</p>
-    <button type="button" class="button" data-action="csv">⬇️ Scarica CSV</button>
-    <div class="staff-table-wrap"><table class="staff-table">
-      <thead><tr><th>Pos.</th><th>Nickname</th><th>Totale</th>${games.map((g) => `<th>${escapeHtml(g.name)}</th>`).join('')}<th>Extra</th></tr></thead>
-      <tbody>${res.rows
-        .map(
-          (r) => `<tr${r.position <= 10 ? ' class="is-prize"' : ''}><td>${r.position}°</td><td>${escapeHtml(r.nickname)}</td><td><strong>${formatPoints(r.total)}</strong></td>${games
-            .map((g) => `<td>${r.best[g.id] ?? '—'}</td>`)
-            .join('')}<td>${r.extra_total || ''}</td></tr>`,
-        )
-        .join('')}</tbody>
-    </table></div>`;
-  board.querySelector('[data-action="csv"]').addEventListener('click', () => {
+  const games = Object.values(GAMES);
+
+  async function load(page) {
+    const res = await staffCall(ctx, 'leaderboard', { p_page: page }, error);
+    if (!res) return;
+    board.innerHTML = `
+      <p>${res.total} giocatori in classifica${res.window === 'closed' ? ' · <strong>Classifica finale</strong>' : ''}.</p>
+      <button type="button" class="button" data-action="csv">⬇️ Scarica CSV (tutta la classifica)</button>
+      <div class="staff-table-wrap"><table class="staff-table">
+        <thead><tr><th>Pos.</th><th>Nickname</th><th>Totale</th>${games.map((g) => `<th>${escapeHtml(g.name)}</th>`).join('')}<th>Extra</th></tr></thead>
+        <tbody>${res.rows
+          .map(
+            (r) => `<tr${r.position <= 10 ? ' class="is-prize"' : ''}><td>${r.position}°</td><td>${escapeHtml(r.nickname)}</td><td><strong>${formatPoints(r.total)}</strong></td>${games
+              .map((g) => `<td>${r.best[g.id] ?? '—'}</td>`)
+              .join('')}<td>${r.extra_total || ''}</td></tr>`,
+          )
+          .join('')}</tbody>
+      </table></div>
+      ${pagerMarkup(res.page, res.total, res.page_size)}`;
+  }
+
+  root.addEventListener('click', async (event) => {
+    const page = event.target.closest('[data-page]');
+    if (page) {
+      await load(Number(page.dataset.page));
+      root.scrollIntoView({ block: 'start' });
+      return;
+    }
+    if (!event.target.closest('[data-action="csv"]')) return;
+    const all = await staffCall(ctx, 'leaderboard', { p_all: true }, error);
+    if (!all) return;
     const rows = [
       ['Posizione', 'Nickname', 'Totale', ...games.map((g) => g.name), 'Punti extra'],
-      ...res.rows.map((r) => [r.position, r.nickname, r.total, ...games.map((g) => r.best[g.id] ?? ''), r.extra_total]),
+      ...all.rows.map((r) => [r.position, r.nickname, r.total, ...games.map((g) => r.best[g.id] ?? ''), r.extra_total]),
     ];
-    const date = new Date().toISOString().slice(0, 10);
-    downloadText(`classifica-sagra-${date}.csv`, toCsv(rows));
+    downloadText(`classifica-sagra-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(rows));
   });
+
+  load(0);
 }
 
 // ---------- Registro delle azioni ----------
@@ -195,16 +197,67 @@ const ACTIONS = {
   settings: 'ha cambiato le impostazioni',
 };
 
-export async function renderLogSection(root, ctx) {
-  root.innerHTML = '<div class="form-error" role="alert" hidden></div><div class="staff-log"><p class="leaderboard-note">Caricamento…</p></div>';
-  const res = await staffCall(ctx, 'log_list', {}, root.querySelector('.form-error'));
-  if (!res) return;
-  root.querySelector('.staff-log').innerHTML = res.entries.length
-    ? `<ul class="staff-list">${res.entries
-        .map((e) => {
-          const extra = e.details?.points ? ` (${e.details.points > 0 ? '+' : ''}${e.details.points}: ${escapeHtml(e.details.reason ?? '')})` : '';
-          return `<li>${formatDate(e.created_at)} · <strong>${escapeHtml(e.staff)}</strong> ${ACTIONS[e.action] ?? escapeHtml(e.action)} ${e.target ? `<strong>${escapeHtml(e.target)}</strong>` : ''}${extra}</li>`;
-        })
-        .join('')}</ul>`
-    : '<p class="leaderboard-note">Nessuna azione ancora.</p>';
+// Filtro "tipo di azione" → valore passato al server
+const ACTION_FILTERS = [
+  ['', 'Tutte le azioni'],
+  ['reset_pin', 'Reset PIN'],
+  ['account', 'Account (disattiva, riattiva, cancella)'],
+  ['extra', 'Punti extra'],
+  ['attempt', 'Partite (approva, scarta, rimetti)'],
+  ['settings', 'Impostazioni'],
+];
+
+export function renderLogSection(root, ctx) {
+  root.innerHTML = `
+    <form class="staff-filters" role="search" novalidate>
+      <label class="staff-filters__field"><span>Giorno</span><input class="form-field__input" type="date" name="day"></label>
+      <label class="staff-filters__field"><span>Operatore</span><select class="form-field__input" name="staff"><option value="">Tutti</option></select></label>
+      <label class="staff-filters__field staff-filters__field--wide"><span>Azione</span><select class="form-field__input" name="kind">
+        ${ACTION_FILTERS.map(([v, label]) => `<option value="${v}">${label}</option>`).join('')}
+      </select></label>
+      <button type="submit" class="button">Cerca</button>
+    </form>
+    <div class="form-error" role="alert" hidden></div>
+    <div class="staff-log staff-results"><p class="leaderboard-note">Caricamento…</p></div>`;
+  const form = root.querySelector('.staff-filters');
+  const error = root.querySelector('.form-error');
+  const list = root.querySelector('.staff-log');
+  let operatorsLoaded = false;
+
+  async function load(page) {
+    const res = await staffCall(
+      ctx,
+      'log_list',
+      { p_page: page, p_day: form.day.value || null, p_staff: form.staff.value || null, p_action: form.kind.value || null },
+      error,
+    );
+    if (!res) return;
+    if (!operatorsLoaded) {
+      operatorsLoaded = true;
+      form.staff.insertAdjacentHTML('beforeend', res.operators.map((o) => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join(''));
+    }
+    list.innerHTML = res.entries.length
+      ? `<p class="staff-muted">${res.total} azioni</p><ul class="staff-list">${res.entries
+          .map((e) => {
+            const extra = e.details?.points ? ` (${e.details.points > 0 ? '+' : ''}${e.details.points}: ${escapeHtml(e.details.reason ?? '')})` : '';
+            return `<li>${formatDate(e.created_at)} · <strong>${escapeHtml(e.staff)}</strong> ${ACTIONS[e.action] ?? escapeHtml(e.action)} ${e.target ? `<strong>${escapeHtml(e.target)}</strong>` : ''}${extra}</li>`;
+          })
+          .join('')}</ul>${pagerMarkup(res.page, res.total, res.page_size)}`
+      : '<p class="leaderboard-note">Nessuna azione con questi filtri.</p>';
+  }
+
+  // Appena si tocca un filtro, la barra va in cima allo schermo e lì resta (come nella ricerca giocatori)
+  form.addEventListener('focusin', () => form.scrollIntoView({ block: 'start', behavior: 'smooth' }), { once: true });
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    load(0);
+  });
+  list.addEventListener('click', async (event) => {
+    const page = event.target.closest('[data-page]');
+    if (!page) return;
+    await load(Number(page.dataset.page));
+    form.scrollIntoView({ block: 'start' });
+  });
+
+  load(0);
 }

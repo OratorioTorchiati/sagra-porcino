@@ -220,6 +220,13 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
       }
     },
 
+    /** Replay (pannello staff): rifà un tocco registrato */
+    replayAction(type, data, t) {
+      if (type !== 'tap') return null;
+      this.onPointerDown(data[0], data[1], t);
+      return { x: data[0], y: data[1] };
+    },
+
     onPointerDown(x, y, t) {
       // Tra gli elementi sotto il dito, quello col centro più vicino
       let best = null;
