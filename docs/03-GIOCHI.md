@@ -31,12 +31,12 @@ Regole comuni a tutti i giochi:
   - porcino "pinarolo" (cappello bruno-rossiccio);
   - porcino estivo (cappello chiaro, color camoscio).
 - **Elementi cattivi**:
-  - funghi **palesemente velenosi**: cappello rosso a puntini bianchi; fungo verdastro-giallognolo; eventuale fungo viola "fantasy". Devono essere impossibili da confondere con un porcino, anche per forma (non solo per colore);
-  - **oggetti a tema ma sbagliati**: castagna, riccio di castagna, pigna, foglia secca, lumaca.
+  - funghi **palesemente velenosi**: cappello rosso a puntini bianchi; fungo verdastro-giallognolo; eventuale fungo viola "fantasy". Devono essere impossibili da confondere con un porcino, anche per forma (non solo per colore). Con loro anche il **riccio** di castagna, che sembra un virus (D81): 4 velenosi;
+  - **oggetti a tema ma sbagliati**: castagna, pigna, foglia secca, lumaca (4).
 - **Punti**:
   - porcino toccato: **+5 × moltiplicatore** (era +10 fino al 29/09, D67);
   - fungo velenoso toccato: **la serie si azzera** (moltiplicatore torna ×1), con feedback visivo e vibrazione breve (se disponibile). Nessun punto tolto;
-  - oggetto toccato (castagna, riccio, pigna, foglia, lumaca): **-1,5 s** al tempo del moltiplicatore (D80); se il tempo finisce si scende subito di un livello. Stesso feedback, nessun punto tolto, la serie non si interrompe;
+  - oggetto toccato (castagna, pigna, foglia, lumaca): **-2 s al tempo della partita** (D81), con la scritta "-2 s"; il moltiplicatore e la serie non cambiano. Stesso feedback, nessun punto tolto;
   - tocco a vuoto: nessun effetto.
 - **Moltiplicatore** in base alla serie di porcini consecutivi:
 
@@ -47,7 +47,7 @@ Regole comuni a tutti i giochi:
   | 10–14 | ×3 |
   | 15+ | ×4 |
 
-  **Il moltiplicatore ha un tempo** (D67, D68, D80): salendo di livello parte pieno (×2 7 s, ×3 6 s, ×4 5 s) e **ogni porcino preso lo ricarica** (×2 +2 s, ×3 +1,5 s, ×4 +1 s), mai oltre il pieno: serve solo contro l'inattività. Scaduto, scende di un livello (che riparte col suo tempo pieno) e la serie riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano alla soglia successiva. Un oggetto toglie 1,5 s; un fungo velenoso riporta subito a ×1.
+  **Il moltiplicatore ha un tempo** (D67, D68, D80): salendo di livello parte pieno (×2 7 s, ×3 6 s, ×4 5 s) e **ogni porcino preso lo ricarica** (×2 +2 s, ×3 +1,5 s, ×4 +1 s), mai oltre il pieno: serve solo contro l'inattività. Scaduto, scende di un livello (che riparte col suo tempo pieno) e la serie riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano alla soglia successiva. Un fungo velenoso riporta subito a ×1; un oggetto non tocca il moltiplicatore.
   Mostrato nell'HUD dentro un **anello che si consuma come un orologio**; a ogni cambio di livello piccola animazione e anello di nuovo pieno; effetto 🔥 quando sale.
 - **Sfondo**: poco invasivo, a tema (sottobosco/prato di montagna sfocato, toni tenui), per non disturbare la lettura dei funghi.
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import config from './config.js';
-import { applyHit, currentMultiplier, expire, initialScoreState, maxRawScore, secondsLeft, timeLeftFraction } from './scoring.js';
+import { applyHit, currentMultiplier, expire, gameEndMs, initialScoreState, maxRawScore, secondsLeft, timeLeftFraction } from './scoring.js';
 
 /** Gioca una sequenza di [ms, 'good'|'poison'|'object'] */
 function play(hits) {
@@ -96,22 +96,19 @@ describe('moltiplicatore a tempo', () => {
     expect(currentMultiplier(expire(state, 8000, config), config)).toBe(2);
   });
 
-  it('un oggetto toglie 1,5 s; se il tempo finisce si scende subito di un livello', () => {
+  it('un oggetto non tocca il moltiplicatore né la serie: conta solo come errore', () => {
     // ×2 al 5° porcino (400 ms, scade a 7400)
-    let { state } = play([...goods(5), [1000, 'object']]);
-    expect(state.levelEndsMs).toBe(5900);
+    const { state } = play([...goods(5), [1000, 'object']]);
     expect(currentMultiplier(state, config)).toBe(2);
+    expect(state.levelEndsMs).toBe(7400);
     expect(state.errors).toBe(1);
-    expect(state.run).toBe(5); // la serie non si interrompe
-    // a 5000 ms mancano 0,9 s: un altro oggetto → ×1
-    state = applyHit(state, 'object', 5000, config).state;
-    expect(currentMultiplier(state, config)).toBe(1);
-    expect(state.levelEndsMs).toBe(null);
-    // da ×3 si scende a ×2 con il tempo pieno e la serie alla soglia del ×2
-    ({ state } = play([...goods(10), [6000, 'object']])); // ×3 a 900 ms, scade a 6900
-    expect(currentMultiplier(state, config)).toBe(2);
-    expect(state.levelEndsMs).toBe(13000);
-    expect(state.streak).toBe(5);
+    expect(state.run).toBe(5);
+  });
+
+  it('un oggetto toglie 2 s alla partita, mai prima del tocco', () => {
+    expect(gameEndMs(60000, 1000, config)).toBe(58000);
+    expect(gameEndMs(58000, 30000, config)).toBe(56000);
+    expect(gameEndMs(59000, 58500, config)).toBe(58500); // finisce subito, non nel passato
   });
 
   it('a ×1 un oggetto conta solo come errore', () => {

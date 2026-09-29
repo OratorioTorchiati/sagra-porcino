@@ -5,7 +5,7 @@
 // moltiplicatore parte pieno (`durationS` secondi). Ogni porcino preso aggiunge `boostS` secondi, senza superare
 // il pieno: il tempo serve solo contro l'inattività. Scaduto, si scende di un livello (che riparte col suo tempo
 // pieno) e la serie riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano.
-// Un oggetto toglie `objectPenaltyS` secondi (se il tempo finisce si scende subito di un livello);
+// Un oggetto non tocca il moltiplicatore ma toglie `objectPenaltyS` secondi alla partita (gameEndMs, D81);
 // un fungo velenoso riporta subito a ×1. I tempi sono in millisecondi di gioco (gli stessi del registro azioni).
 
 /** Livello (indice in config.multipliers) raggiunto con una serie di `streak` porcini di fila */
@@ -83,21 +83,18 @@ export function applyHit(state, hit, nowMs, config) {
       },
     };
   }
-  if (hit === 'object') {
-    // Oggetto: meno tempo al moltiplicatore; se finisce, si scende subito di un livello (col suo tempo pieno)
-    const errors = state.errors + 1;
-    if (state.level === 0) return { points: 0, state: { ...state, errors } };
-    let { level, streak } = state;
-    let levelEndsMs = state.levelEndsMs - config.objectPenaltyS * 1000;
-    if (levelEndsMs <= nowMs) {
-      level -= 1;
-      streak = config.multipliers[level].minStreak;
-      levelEndsMs = level > 0 ? nowMs + config.multipliers[level].durationS * 1000 : null;
-    }
-    return { points: 0, state: { ...state, level, levelEndsMs, streak, errors } };
-  }
+  // Oggetto: solo un errore (il tempo tolto alla partita lo calcola gameEndMs)
+  if (hit === 'object') return { points: 0, state: { ...state, errors: state.errors + 1 } };
   // Fungo velenoso: serie e moltiplicatore azzerati, nessun punto tolto
   return { points: 0, state: { ...state, streak: 0, level: 0, levelEndsMs: null, run: 0, errors: state.errors + 1 } };
+}
+
+/**
+ * Fine della partita dopo un oggetto toccato a `nowMs`: `objectPenaltyS` secondi in meno (mai prima del tocco).
+ * @param {number} endMs fine prevista finora (all'inizio config.durationS * 1000)
+ */
+export function gameEndMs(endMs, nowMs, config) {
+  return Math.max(nowMs, endMs - config.objectPenaltyS * 1000);
 }
 
 /**

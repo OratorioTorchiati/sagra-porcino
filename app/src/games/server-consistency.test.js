@@ -14,7 +14,8 @@ const migration = (name) => fs.readFileSync(new URL(`../../../supabase/migration
 const sql = migration('003_games_attempts.sql');
 const sql005 = migration('005_acchiappa_moltiplicatore_a_tempo.sql');
 const sql006 = migration('006_acchiappa_tempi_piu_lunghi.sql'); // durate aggiornate
-const sql014 = migration('014_acchiappa_ricarica_tempo.sql'); // soglie, ricarica del tempo, oggetti
+const sql014 = migration('014_acchiappa_ricarica_tempo.sql'); // soglie, ricarica del tempo
+const sql015 = migration('015_acchiappa_oggetti_tempo.sql'); // oggetti che tolgono tempo alla partita, velenosi
 
 function gameRow(id) {
   const m = sql.match(new RegExp(`\\('${id}', '[^']+', \\d+, (\\d+), (\\d+)\\)`));
@@ -43,8 +44,8 @@ describe('allineamento con il database', () => {
     expect(serverSteps).toEqual(clientSteps.map(({ minStreak, multiplier }) => ({ minStreak, multiplier })));
   });
 
-  it('Acchiappa: punti per porcino e moltiplicatore a tempo uguali a quelli del server (005, 006, 014)', () => {
-    expect(sql014).toContain(`v_score := v_score + ${acchiappaConfig.pointsPerPorcino} * v_level;`);
+  it('Acchiappa: punti per porcino e moltiplicatore a tempo uguali a quelli del server (005, 006, 014, 015)', () => {
+    expect(sql015).toContain(`v_score := v_score + ${acchiappaConfig.pointsPerPorcino} * v_level;`);
     const steps = acchiappaConfig.multipliers.filter((s) => s.multiplier > 1);
     const mins = steps.map((s) => `when ${s.multiplier} then ${s.minStreak}`).join(' ');
     const durations = steps.map((s) => `when ${s.multiplier} then ${s.durationS * 1000}`).join(' ');
@@ -52,10 +53,10 @@ describe('allineamento con il database', () => {
     expect(sql014).toContain(`select case p_level ${mins} else 0 end;`);
     expect(sql006).toContain(`select case p_level ${durations} else 0 end;`);
     expect(sql014).toContain(`select case p_level ${boosts} else 0 end;`);
-    expect(sql014).toContain(`v_ends := v_ends - ${acchiappaConfig.objectPenaltyS * 1000};`);
+    expect(sql015).toContain(`v_end := greatest(v_tap_ms, v_end - ${acchiappaConfig.objectPenaltyS * 1000});`);
     // Funghi velenosi: gli stessi di sprites.js
     const poisonous = fs.readFileSync(new URL('./acchiappa/sprites.js', import.meta.url), 'utf8').match(/BAD_POISONOUS = \{ (.*?) \}/)[1].split(', ');
-    expect(sql014).toContain(`select p_kind in (${poisonous.map((k) => `'${k}'`).join(', ')});`);
+    expect(sql015).toContain(`select p_kind in (${poisonous.map((k) => `'${k}'`).join(', ')});`);
     // I livelli devono essere ×1, ×2, ×3, ×4 (il server usa il moltiplicatore come livello)
     expect(acchiappaConfig.multipliers.map((s) => s.multiplier)).toEqual([1, 2, 3, 4]);
   });

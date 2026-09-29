@@ -8,6 +8,7 @@
 //   onPointerMove?(x, y, t), onPointerUp?(x, y, t)
 //   resize(width, height)  dimensioni dell'area di gioco
 //   isOver(t)              true quando la partita è finita
+//   timeLeft?(t)           secondi rimasti per il tempo nell'HUD (default: config.durationS - t)
 //   result()               { rawScore, stats }
 //   endText?()             scritta di fine partita (default "Fine partita!")
 //   start?()               chiamata al "VIA!" (es. il quiz mostra la prima domanda)
@@ -416,7 +417,7 @@ export class GameSession {
   updateTimeHud() {
     const duration = this.config.durationS;
     if (!duration || !this.hudValues.time) return;
-    const left = Math.max(0, Math.ceil(duration - this.gameTime));
+    const left = Math.max(0, Math.ceil(this.game.timeLeft?.(this.gameTime) ?? duration - this.gameTime));
     this.setHud('time', `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`);
     this.hudValues.time.classList.toggle('is-ending', left <= 10);
   }

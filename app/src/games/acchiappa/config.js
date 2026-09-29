@@ -20,8 +20,8 @@ export default {
     { minStreak: 10, multiplier: 3, durationS: 6, boostS: 1.5 },
     { minStreak: 15, multiplier: 4, durationS: 5, boostS: 1 },
   ],
-  /** Un oggetto toccato toglie questi secondi al moltiplicatore (un fungo velenoso invece riporta a ×1) */
-  objectPenaltyS: 1.5,
+  /** Un oggetto toccato toglie questi secondi al tempo della partita (un fungo velenoso invece riporta a ×1) (D81) */
+  objectPenaltyS: 2,
 
   /** Dimensione degli elementi in px (48 = minimo toccabile) */
   sizeMin: 48,

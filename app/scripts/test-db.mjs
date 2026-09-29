@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import acchiappaConfig from '../src/games/acchiappa/config.js';
-import { applyHit, initialScoreState } from '../src/games/acchiappa/scoring.js';
+import { applyHit, gameEndMs, initialScoreState } from '../src/games/acchiappa/scoring.js';
 
 const env = Object.fromEntries(
   fs
@@ -192,13 +192,16 @@ if (starts[1]?.attempt_id && perDay >= 2) {
   const gaps = [310, 420, 530, 370, 460, 610, 340]; // intervalli irregolari (niente segnalazione "troppo regolari")
   for (let i = 0; i < 90; i++) {
     ms += gaps[i % gaps.length] + (i === 25 || i === 55 ? 9000 : 0); // due pause lunghe: il moltiplicatore scade
-    taps.push([ms, i === 70 ? 'poison' : i === 18 || i === 40 || i === 41 || i === 80 ? 'object' : 'good']);
+    taps.push([ms, i === 70 ? 'poison' : i === 18 || i === 40 ? 'object' : 'good']);
   }
   let state = initialScoreState();
+  let endMs = acchiappaConfig.durationS * 1000; // ogni oggetto toglie 2 s alla partita
   const actions = [[0, 'start']];
-  const KIND = { good: 'estivo', poison: 'ovolaccio', object: 'castagna' };
+  const KIND = { good: 'estivo', poison: 'riccio', object: 'castagna' };
   for (const [t, hit] of taps) {
+    if (t >= endMs) break;
     state = applyHit(state, hit, t, acchiappaConfig).state;
+    if (hit === 'object') endMs = gameEndMs(endMs, t, acchiappaConfig);
     actions.push([t, 'tap', 100, 200, hit === 'good' ? 'good' : 'bad', KIND[hit], 420, 80, 5]);
   }
   const wait = 61000 - (Date.now() - acchiappaStartedAt);
@@ -206,11 +209,11 @@ if (starts[1]?.attempt_id && perDay >= 2) {
     console.log(`(attendo ${Math.ceil(wait / 1000)} s: una partita di Acchiappa dura un minuto vero)`);
     await sleep(wait);
   }
-  const acc = (await rpc('submit_score', { p_attempt_id: starts[1].attempt_id, p_raw_score: state.score, p_stats: { durationMs: 60000 }, p_actions: actions })).body;
+  const acc = (await rpc('submit_score', { p_attempt_id: starts[1].attempt_id, p_raw_score: state.score, p_stats: { durationMs: endMs }, p_actions: actions })).body;
   check(`Acchiappa col moltiplicatore a tempo → valida, stesso punteggio dell'app (${state.score})`, acc?.status === 'valid' && acc.raw_score === state.score, JSON.stringify(acc));
   if (starts[2]?.attempt_id) {
     const centered = actions.map((a) => (a[1] === 'tap' ? [...a.slice(0, 8), 0] : a)); // distanza dal centro 0 px
-    const bot = (await rpc('submit_score', { p_attempt_id: starts[2].attempt_id, p_raw_score: state.score, p_stats: { durationMs: 60000 }, p_actions: centered })).body;
+    const bot = (await rpc('submit_score', { p_attempt_id: starts[2].attempt_id, p_raw_score: state.score, p_stats: { durationMs: endMs }, p_actions: centered })).body;
     check('Acchiappa con tocchi sempre al centro esatto → segnalata (possibile bot)', bot?.status === 'flagged', JSON.stringify(bot));
   }
 }

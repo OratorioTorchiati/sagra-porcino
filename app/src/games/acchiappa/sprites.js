@@ -117,7 +117,10 @@ const lumaca = svg(`
   <path d="M60 50 C60 46 66 46 66 51 C66 57 56 58 54 51 C52 43 62 38 69 43 C77 49 73 62 62 64 C50 66 42 56 45 46" fill="none" stroke="#6e4516" stroke-width="3" stroke-linecap="round"/>
 `);
 
-export const BAD_POISONOUS = { ovolaccio, velenosoGiallo, velenosoViola };
-export const BAD_OBJECTS = { castagna, riccio: riccioSvg(), pigna: pignaSvg(), foglia, lumaca };
+const riccio = riccioSvg();
+
+// Il riccio (sembra un virus) sta con i velenosi: 4 porcini, 4 velenosi, 4 oggetti (D81)
+export const BAD_POISONOUS = { ovolaccio, velenosoGiallo, velenosoViola, riccio };
+export const BAD_OBJECTS = { castagna, pigna: pignaSvg(), foglia, lumaca };
 
 export const ALL_SPRITES = { ...GOOD, ...BAD_POISONOUS, ...BAD_OBJECTS };

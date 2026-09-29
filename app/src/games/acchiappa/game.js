@@ -2,7 +2,7 @@
 // si toccano i porcini e si evitano funghi velenosi e oggetti. Regole in docs/03-GIOCHI.md.
 
 import { GOOD, BAD_POISONOUS, BAD_OBJECTS } from './sprites.js';
-import { applyHit, currentMultiplier, expire, initialScoreState, timeLeftFraction } from './scoring.js';
+import { applyHit, currentMultiplier, expire, gameEndMs, initialScoreState, timeLeftFraction } from './scoring.js';
 import { softBackground } from '../engine/background.js';
 
 const GOOD_KINDS = Object.keys(GOOD);
@@ -27,6 +27,7 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
   let spawnTimer = 0.4;
   let score = initialScoreState();
   let nowMs = 0;
+  let endMs = config.durationS * 1000; // gli oggetti toccati la anticipano (D81)
 
   function progress(t) {
     return Math.min(1, t / config.durationS);
@@ -266,7 +267,13 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
         }
       } else {
         addBurst(best.x, best.y, best.size, false);
-        addText(best.x, best.y, '✕', '#c8231b');
+        if (hit === 'object') {
+          endMs = gameEndMs(endMs, nowMs, config);
+          addText(best.x, best.y, `-${config.objectPenaltyS} s`, '#c8231b');
+          hud.pulse('time');
+        } else {
+          addText(best.x, best.y, '✕', '#c8231b');
+        }
         flash('bad');
         navigator.vibrate?.(80);
         if (currentMultiplier(score, config) < before) hud.pulse('multiplier');
@@ -275,7 +282,12 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
     },
 
     isOver(t) {
-      return t >= config.durationS;
+      return t * 1000 >= endMs;
+    },
+
+    /** Secondi rimasti per il tempo nell'HUD (gli oggetti ne tolgono) */
+    timeLeft(t) {
+      return endMs / 1000 - t;
     },
 
     endText() {
