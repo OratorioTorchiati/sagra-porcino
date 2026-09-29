@@ -79,3 +79,25 @@ export function downloadText(filename, text, type = 'text/csv;charset=utf-8') {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/** Telefono o computer, dal "user agent" del browser (null se non si sa) */
+export function deviceKind(ua) {
+  if (!ua) return null;
+  if (/Mobi|Android|iPhone|iPod|iPad|Windows Phone/i.test(ua)) return 'mobile';
+  if (/Windows NT|Macintosh|X11|Linux x86_64|CrOS/.test(ua)) return 'computer';
+  return null;
+}
+
+/** Nome del browser dal "user agent" ("Safari", "Chrome"...) */
+export function browserName(ua) {
+  if (!ua) return '—';
+  if (/SamsungBrowser/.test(ua)) return 'Samsung Internet';
+  if (/Edg[A]?\//.test(ua)) return 'Edge';
+  if (/OPR\/|Opera/.test(ua)) return 'Opera';
+  if (/Firefox|FxiOS/.test(ua)) return 'Firefox';
+  if (/Chrome|CriOS/.test(ua)) return 'Chrome';
+  if (/Safari/.test(ua)) return 'Safari';
+  return 'Altro';
+}
+
+export const DEVICE_ICONS = { mobile: '📱', computer: '💻' };

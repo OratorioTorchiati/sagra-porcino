@@ -7,6 +7,7 @@ import { deviceCode } from '../lib/device.js';
 import { formatPoints } from '../lib/leaderboard.js';
 import { avatarSvg, playerStatsMarkup } from '../components/player-card.js';
 import { staffCall, formatDate, askDialog, pagerMarkup } from './staff-ui.js';
+import { deviceKind, browserName, DEVICE_ICONS } from '../lib/staff.js';
 
 function resultsMarkup({ players, total, page, page_size: size }) {
   if (!players.length) return '<p class="leaderboard-note">Nessun giocatore trovato.</p>';
@@ -25,19 +26,26 @@ function resultsMarkup({ players, total, page, page_size: size }) {
     .join('')}</ul>${pagerMarkup(page, total, size)}`;
 }
 
+/** 📱 telefono o 💻 computer (niente se non si sa) */
+function kindIcon(ua) {
+  const kind = deviceKind(ua);
+  return kind ? `<span class="kind-icon" title="${kind === 'mobile' ? 'Telefono' : 'Computer'}" aria-label="${kind === 'mobile' ? 'Telefono' : 'Computer'}">${DEVICE_ICONS[kind]}</span>` : '';
+}
+
 /** Telefoni del giocatore senza ripetizioni: quello della registrazione e quelli con un accesso attivo */
 export function playerPhones(p) {
   const byId = new Map();
   const get = (id) => {
-    if (!byId.has(id)) byId.set(id, { id, registration: false, active: false, banned: false, sameFingerprint: 0 });
+    if (!byId.has(id)) byId.set(id, { id, registration: false, active: false, banned: false, sameFingerprint: 0, userAgent: null });
     return byId.get(id);
   };
-  for (const d of p.devices) Object.assign(get(d.device_id), { registration: true, banned: d.banned, sameFingerprint: d.same_fingerprint });
+  for (const d of p.devices) Object.assign(get(d.device_id), { registration: true, banned: d.banned, sameFingerprint: d.same_fingerprint, userAgent: d.user_agent ?? null });
   for (const s of p.sessions) {
     if (!s.device_id) continue;
     const phone = get(s.device_id);
     phone.active = true;
     phone.banned = phone.banned || s.banned;
+    phone.userAgent = phone.userAgent ?? s.user_agent ?? null;
   }
   return [...byId.values()];
 }
@@ -52,7 +60,7 @@ function detailMarkup(p) {
         .map(
           (d) => `<li class="phone-row">
             <div class="phone-row__info">
-              <strong class="device-code">${deviceCode(d.id)}</strong>
+              <span class="phone-row__code">${kindIcon(d.userAgent)}<strong class="device-code">${deviceCode(d.id)}</strong></span>
               <div class="phone-row__tags">
                 ${d.registration ? '<span class="phone-tag" title="Telefono della registrazione" aria-label="Telefono della registrazione">📝</span>' : ''}
                 ${d.active ? '<span class="phone-tag phone-tag--active" title="Accesso attivo">🟢 Attivo</span>' : ''}
@@ -266,7 +274,12 @@ export function renderPlayersSection(root, ctx) {
       const res = await staffCall(ctx, 'player_accesses', { p_nickname: nick, p_device_id: deviceId }, detailError);
       if (!res) return;
       const rows = res.accesses.length
-        ? `<ul class="staff-list access-list">${res.accesses.map((a) => `<li>${formatDate(a.created_at)}</li>`).join('')}</ul>`
+        ? `<table class="access-table">
+            <thead><tr><th>Data e ora</th><th>Browser</th></tr></thead>
+            <tbody>${res.accesses
+              .map((a) => `<tr><td>${formatDate(a.created_at)}</td><td>${escapeHtml(browserName(a.user_agent))}</td></tr>`)
+              .join('')}</tbody>
+          </table>`
         : '<p>Nessun accesso.</p>';
       await askDialog({
         title: 'Ultimi 20 accessi',

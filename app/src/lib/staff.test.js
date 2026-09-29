@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isoToRomeLocal, romeLocalToIso, toCsv, noteLabel } from './staff.js';
+import { isoToRomeLocal, romeLocalToIso, toCsv, noteLabel, deviceKind, browserName } from './staff.js';
 import { playerPhones } from '../pages/staff-players.js';
 
 describe('date del pannello staff (ora italiana)', () => {
@@ -40,8 +40,32 @@ describe('telefoni del giocatore (pannello staff)', () => {
       sessions: [{ device_id: 'a', banned: false }, { device_id: 'b', banned: true }, { device_id: 'b', banned: true }, { device_id: null }],
     });
     expect(phones).toEqual([
-      { id: 'a', registration: true, active: true, banned: false, sameFingerprint: 2 },
-      { id: 'b', registration: false, active: true, banned: true, sameFingerprint: 0 },
+      { id: 'a', registration: true, active: true, banned: false, sameFingerprint: 2, userAgent: null },
+      { id: 'b', registration: false, active: true, banned: true, sameFingerprint: 0, userAgent: null },
     ]);
+  });
+});
+
+describe('telefono o computer, e browser (dal user agent)', () => {
+  const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_4_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Mobile/15E148 Safari/604.1';
+  const ANDROID = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36';
+  const SAMSUNG = 'Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/27.0 Chrome/125.0.0.0 Mobile Safari/537.36';
+  const WINDOWS = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
+  const EDGE = `${WINDOWS} Edg/140.0.0.0`;
+  const MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
+  it.each([
+    [IPHONE, 'mobile', 'Safari'],
+    [ANDROID, 'mobile', 'Chrome'],
+    [SAMSUNG, 'mobile', 'Samsung Internet'],
+    [WINDOWS, 'computer', 'Chrome'],
+    [EDGE, 'computer', 'Edge'],
+    [MAC, 'computer', 'Safari'],
+  ])('%#', (ua, kind, browser) => {
+    expect(deviceKind(ua)).toBe(kind);
+    expect(browserName(ua)).toBe(browser);
+  });
+  it('sconosciuto', () => {
+    expect(deviceKind(null)).toBe(null);
+    expect(browserName('')).toBe('—');
   });
 });

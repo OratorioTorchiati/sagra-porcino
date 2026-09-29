@@ -2384,3 +2384,44 @@ dialog:not([open]) {
 .access-list .device-code {
   font-size: 1rem;
 }
+
+/* 📱 / 💻 accanto al codice del telefono */
+.phone-row__code {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.kind-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+/* Ultimi 20 accessi: tabella a righe alterne */
+.access-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+}
+
+.access-table th {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 2px solid var(--color-border);
+  text-align: left;
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.access-table td {
+  padding: 0.45rem 0.5rem;
+  white-space: nowrap;
+}
+
+.access-table tbody tr:nth-child(odd) {
+  background: #f7f0e3;
+}
+
+.access-table .kind-icon {
+  margin-right: 0.3rem;
+  font-size: 1rem;
+}
