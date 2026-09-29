@@ -12,7 +12,7 @@ export function privacyContentMarkup() {
   return `
     <div class="privacy-text">
       <p><strong>Chi tratta i dati:</strong> ${CONTROLLER}.</p>
-      <p><strong>Quali dati:</strong> il nickname che scegli, il personaggio, il PIN (salvato cifrato, nessuno può leggerlo), un codice casuale che identifica il telefono, alcune informazioni tecniche del telefono (modello del browser, dimensioni dello schermo, lingua), i punteggi dei giochi.</p>
+      <p><strong>Quali dati:</strong> il nickname che scegli, il personaggio, il PIN (salvato cifrato, nessuno può leggerlo), un codice casuale che identifica il telefono, alcune informazioni tecniche del telefono (modello del browser, dimensioni dello schermo, lingua), i punteggi dei giochi. Se sbagli il PIN, per sicurezza l'indirizzo IP di quel tentativo viene conservato al massimo 2 giorni.</p>
       <p><strong>Non chiediamo</strong> nome, email o numero di telefono.</p>
       <p><strong>Perché:</strong> per far funzionare i giochi, la classifica e la consegna dei premi, ed evitare che una persona crei tanti account.</p>
       <p><strong>Per quanto tempo:</strong> i dati vengono cancellati entro ${RETENTION_DAYS} giorni dalla fine della sagra.</p>

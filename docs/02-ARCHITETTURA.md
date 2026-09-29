@@ -52,7 +52,7 @@ Supabase Auth richiede email + password, quindi si usa un'**email sintetica**:
 
 La registrazione avviene tramite `signUp` seguito dall'RPC `complete_registration` (vedi sotto), che crea il profilo e lega il dispositivo. Se `complete_registration` fallisce (dispositivo già usato, nickname preso), l'utente Auth appena creato va eliminato o marcato come orfano (scegliere la soluzione più semplice e documentarla; in alternativa fare tutta la registrazione in una Edge Function).
 
-Limite noto: un PIN corto è indovinabile per tentativi. Mitigazioni (D82): PIN di 5 cifre, niente PIN troppo semplici, 5 tentativi per nickname e poi un blocco che cresce (1, 5, 15, 60 minuti; tabelle `login_failures` e `login_locks`, controllate dalla funzione di login). Per una sagra è sufficiente.
+Limite noto: un PIN corto è indovinabile per tentativi. Mitigazioni (D82): PIN di 5 cifre, niente PIN troppo semplici, 5 tentativi per nickname dallo stesso IP e poi un blocco che cresce (1, 5, 15, 60 minuti), più un tetto per IP e uno per nickname (D83; tabelle `login_failures` e `login_blocks`, controllate dalla funzione di login). Per una sagra è sufficiente.
 
 Account staff: normali utenti Auth con email vera, con `role = 'staff'` in `profiles` (impostato a mano).
 

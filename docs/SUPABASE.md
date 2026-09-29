@@ -32,6 +32,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/014_acchiappa_ricarica_tempo.sql` | 8 | Acchiappa: ogni porcino ricarica il tempo del moltiplicatore, ×4 a 15 |
 | `supabase/migrations/015_acchiappa_oggetti_tempo.sql` | 8 | Acchiappa: gli oggetti tolgono 2 s alla partita, il riccio è velenoso |
 | `supabase/migrations/016_pin_sicurezza.sql` | 8 | PIN di 5 cifre non troppo semplice, 5 tentativi di accesso e blocco che cresce |
+| `supabase/migrations/017_blocco_per_ip.sql` | 8 | blocco dei tentativi per nickname + IP, tetto per IP e per nickname |
 
 Impostazioni dei giochi (SQL Editor):
 
@@ -93,7 +94,7 @@ Nel SQL Editor:
 ```sql
 delete from players where nickname like 'zz%';   -- giocatori di prova (sessioni, dispositivi, tentativi e riga in classifica si cancellano da soli)
 delete from login_failures;
-delete from login_locks;
+delete from login_blocks;
 delete from attempts;                              -- TUTTI i tentativi (classifica azzerata): solo prima della sagra!
 delete from quiz_questions;                        -- domande di esempio, prima di caricare quelle vere
 delete from staff_log;                             -- registro delle azioni dello staff fatte durante le prove

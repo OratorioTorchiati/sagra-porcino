@@ -99,7 +99,7 @@ const wrong = await rpc('login', { p_nickname: nick, p_secret: '0000', p_device_
 check('PIN sbagliato → rifiutato con tentativi rimasti', wrong.body?.error === 'WRONG_CREDENTIALS' && wrong.body.attempts_left === 4, JSON.stringify(wrong.body));
 check('PIN giusto dopo un errore → consentito (e azzera gli errori)', (await rpc('login', { p_nickname: nick, p_secret: '24680' })).body?.ok === true);
 
-// ---------- 5 tentativi, poi blocco che cresce (1, 5, 15, 60 minuti) ----------
+// ---------- 5 tentativi per nickname + IP, poi blocco che cresce (1, 5, 15, 60 minuti) ----------
 const lockNick = `zzl${suffix}`;
 await rpc('register', { p_nickname: lockNick, p_avatar: 'gufetto', p_pin: '27182', p_device_id: crypto.randomUUID() });
 const lefts = [];
@@ -274,7 +274,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
     ['staff_get_settings', {}], ['staff_update_settings', { p_values: { attempts_per_day: 99 } }], ['staff_leaderboard', {}], ['staff_log_list', {}],
     ['staff_attempt_replay', { p_attempt_id: crypto.randomUUID() }], ['staff_ban_player', { p_attempt_id: crypto.randomUUID() }], ['staff_confirm_exclusion', { p_attempt_id: crypto.randomUUID() }],
     ['staff_ban_device', { p_device_id: crypto.randomUUID(), p_ban: true }], ['staff_banned_devices', {}],
-    ['staff_player_accesses', { p_nickname: t5Nick }],
+    ['staff_player_accesses', { p_nickname: t5Nick }], ['staff_client_ip', {}],
   ];
   const denied = [];
   for (const [name, params] of calls) {
@@ -283,7 +283,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
       if (res?.error !== 'NOT_STAFF') denied.push(`${name}(${token ? 'giocatore' : 'senza sessione'}): ${JSON.stringify(res)}`);
     }
   }
-  check('pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le 20 funzioni', denied.length === 0, denied.join(' | '));
+  check(`pannello staff: un giocatore normale o senza sessione riceve NOT_STAFF da tutte le ${calls.length} funzioni`, denied.length === 0, denied.join(' | '));
   const stillThere = (await rpc('login', { p_nickname: t5Nick, p_secret: '55155' })).body;
   check('...e i tentativi del giocatore non hanno cambiato nulla (PIN e account intatti)', stillThere?.ok === true);
 }
@@ -294,6 +294,16 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('staff: accesso con nickname + password', staffLogin?.ok && staffLogin.player.role === 'staff', staffLogin?.error);
   const S = staffLogin?.token;
   const staff = async (name, params = {}) => (await rpc(`staff_${name}`, { p_token: S, ...params })).body;
+
+  // IP visto dal server (017): c'è, e non si falsifica aggiungendo intestazioni alla richiesta
+  const ipSeen = await staff('client_ip');
+  const spoofed = await (await fetch(`${BASE}/rest/v1/rpc/staff_client_ip`, {
+    method: 'POST',
+    headers: { ...headers, 'X-Forwarded-For': '203.0.113.7', 'CF-Connecting-IP': '203.0.113.8', 'X-Real-IP': '203.0.113.9' },
+    body: JSON.stringify({ p_token: S }),
+  })).json().catch(() => null);
+  check('il server vede l\'IP di chi fa la richiesta', ipSeen?.ok && ipSeen.ip && ipSeen.ip !== '?', JSON.stringify(ipSeen));
+  check('...e non si può falsificare con le intestazioni', spoofed?.ip === ipSeen?.ip, JSON.stringify(spoofed));
 
   const found = await staff('search_players', { p_query: t5Nick });
   check('staff: ricerca per nickname', found?.players?.[0]?.nickname === t5Nick && found.total >= 1);
