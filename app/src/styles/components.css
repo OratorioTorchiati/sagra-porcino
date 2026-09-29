@@ -992,6 +992,29 @@ img.memory-card__image {
   font-weight: 700;
 }
 
+/*
+ * Nickname e PIN: campo stretto e al centro, con testo scritto, nome del campo e suggerimenti al centro (D87).
+ * Nickname: al massimo 16 caratteri, più un po' di margine.
+ */
+.form-field--nick,
+.form-field--pin {
+  width: 100%;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.form-field--nick {
+  max-width: 15rem;
+}
+
+.form-field--pin {
+  max-width: 10rem;
+}
+
+.form-field--nick .form-field__input {
+  text-align: center;
+}
+
 .form-field__input {
   min-height: var(--tap-min);
   padding: 0 1rem;

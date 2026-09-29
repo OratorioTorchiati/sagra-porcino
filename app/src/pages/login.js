@@ -21,11 +21,11 @@ export function renderLogin() {
           ? `<p>Sei già dentro come <strong>${escapeHtml(player.nickname)}</strong>.</p><a class="button" href="#/profilo">Vai al tuo profilo</a>`
           : `
       <form class="auth-form" novalidate>
-        <label class="form-field">
+        <label class="form-field form-field--nick">
           <span class="form-field__label">Nickname</span>
           <input class="form-field__input" name="nickname" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="16" required>
         </label>
-        <label class="form-field">
+        <label class="form-field form-field--pin">
           <span class="form-field__label">PIN</span>
           <input class="form-field__input form-field__input--pin" name="pin" placeholder="-----" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="current-password" required>
         </label>
@@ -39,7 +39,7 @@ export function renderLogin() {
       <dialog class="dialog forgot-dialog" aria-labelledby="forgot-title">
         <div data-step="nickname">
           <h2 class="dialog__title" id="forgot-title">PIN dimenticato</h2>
-          <label class="form-field">
+          <label class="form-field form-field--nick">
             <span class="form-field__label">Scrivi il tuo nickname</span>
             <input class="form-field__input" name="forgot-nickname" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="16">
           </label>

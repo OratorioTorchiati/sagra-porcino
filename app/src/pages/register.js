@@ -47,7 +47,7 @@ export function renderRegister() {
 
         <div class="form-section" role="group" aria-labelledby="sezione-2">
           <h2 class="form-section__title" id="sezione-2">2. Scegli un nickname</h2>
-          <label class="form-field">
+          <label class="form-field form-field--nick">
             <span class="form-field__label">Nickname</span>
             <input class="form-field__input" name="nickname" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16" required>
             <span class="form-field__hint">Da 3 a 16 caratteri: lettere, numeri e _</span>
@@ -57,12 +57,12 @@ export function renderRegister() {
 
         <div class="form-section" role="group" aria-labelledby="sezione-3">
           <h2 class="form-section__title" id="sezione-3">3. Scegli un PIN di 5 cifre</h2>
-          <label class="form-field">
+          <label class="form-field form-field--pin">
             <span class="form-field__label">PIN</span>
             <input class="form-field__input form-field__input--pin" name="pin" placeholder="-----" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="new-password" required>
             <span class="form-field__status" data-pin-status aria-live="polite"></span>
           </label>
-          <label class="form-field">
+          <label class="form-field form-field--pin">
             <span class="form-field__label">Ripeti il PIN</span>
             <input class="form-field__input form-field__input--pin" name="pin2" placeholder="-----" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="new-password" required>
           </label>
