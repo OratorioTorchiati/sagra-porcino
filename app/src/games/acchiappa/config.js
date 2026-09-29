@@ -11,13 +11,13 @@ export default {
 
   /**
    * Moltiplicatore: con `minStreak` porcini di fila si sale; dura `durationS` secondi, poi scende di uno
-   * (29/09, D67). Vedi scoring.js.
+   * (29/09, D67; +1 s a tutti i livelli il 29/09, D68). Vedi scoring.js.
    */
   multipliers: [
     { minStreak: 0, multiplier: 1 },
-    { minStreak: 5, multiplier: 2, durationS: 6 },
-    { minStreak: 10, multiplier: 3, durationS: 5 },
-    { minStreak: 20, multiplier: 4, durationS: 4 },
+    { minStreak: 5, multiplier: 2, durationS: 7 },
+    { minStreak: 10, multiplier: 3, durationS: 6 },
+    { minStreak: 20, multiplier: 4, durationS: 5 },
   ],
 
   /** Dimensione degli elementi in px (48 = minimo toccabile) */

@@ -10,7 +10,7 @@ export default {
   hud: [
     { key: 'time', label: 'Tempo' },
     { key: 'score', label: 'Punti' },
-    { key: 'multiplier', label: 'Serie' },
+    { key: 'multiplier', label: 'Serie', ring: true },
   ],
 
   /** Disegni da mostrare nella schermata delle regole */

@@ -495,6 +495,54 @@ html.is-playing body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Anello che si consuma intorno al valore (moltiplicatore a tempo di Acchiappa) */
+.game-hud__ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  margin-top: -0.2rem;
+}
+
+.game-hud__ring-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); /* parte da mezzogiorno */
+}
+
+.game-hud__ring-track,
+.game-hud__ring-bar {
+  fill: none;
+  stroke-width: 4;
+}
+
+.game-hud__ring-track {
+  stroke: rgb(255 255 255 / 0.2);
+}
+
+.game-hud__ring-bar {
+  stroke: #ffd166;
+  stroke-linecap: round;
+}
+
+.game-hud__ring .game-hud__value {
+  font-size: 1.35rem;
+}
+
+.game-hud__item.is-pulsing .game-hud__ring-bar {
+  animation: hud-ring-flash 0.5s ease-out;
+}
+
+@keyframes hud-ring-flash {
+  30% {
+    stroke: #fff;
+    stroke-width: 6;
+  }
+}
+
 .game-hud__item.is-ending .game-hud__value {
   color: #ffd166;
 }

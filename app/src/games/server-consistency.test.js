@@ -13,6 +13,7 @@ import { maxRawScore as cadonoMax } from './cadono/scoring.js';
 const migration = (name) => fs.readFileSync(new URL(`../../../supabase/migrations/${name}`, import.meta.url), 'utf8');
 const sql = migration('003_games_attempts.sql');
 const sql005 = migration('005_acchiappa_moltiplicatore_a_tempo.sql');
+const sql006 = migration('006_acchiappa_tempi_piu_lunghi.sql'); // durate aggiornate
 
 function gameRow(id) {
   const m = sql.match(new RegExp(`\\('${id}', '[^']+', \\d+, (\\d+), (\\d+)\\)`));
@@ -47,7 +48,7 @@ describe('allineamento con il database', () => {
     const mins = steps.map((s) => `when ${s.multiplier} then ${s.minStreak}`).join(' ');
     const durations = steps.map((s) => `when ${s.multiplier} then ${s.durationS * 1000}`).join(' ');
     expect(sql005).toContain(`select case p_level ${mins} else 0 end;`);
-    expect(sql005).toContain(`select case p_level ${durations} else 0 end;`);
+    expect(sql006).toContain(`select case p_level ${durations} else 0 end;`);
     // I livelli devono essere ×1, ×2, ×3, ×4 (il server usa il moltiplicatore come livello)
     expect(acchiappaConfig.multipliers.map((s) => s.multiplier)).toEqual([1, 2, 3, 4]);
   });

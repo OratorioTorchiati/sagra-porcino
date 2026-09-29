@@ -2,7 +2,7 @@
 // si toccano i porcini e si evitano funghi velenosi e oggetti. Regole in docs/03-GIOCHI.md.
 
 import { GOOD, BAD_POISONOUS, BAD_OBJECTS } from './sprites.js';
-import { applyHit, currentMultiplier, expire, initialScoreState, secondsLeft } from './scoring.js';
+import { applyHit, currentMultiplier, expire, initialScoreState, timeLeftFraction } from './scoring.js';
 import { softBackground } from '../engine/background.js';
 
 const GOOD_KINDS = Object.keys(GOOD);
@@ -34,8 +34,8 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
 
   function refreshHud() {
     hud.set('score', score.score);
-    const left = secondsLeft(score, nowMs);
-    hud.set('multiplier', left === null ? '×1' : `×${currentMultiplier(score, config)} · ${left}s`);
+    hud.set('multiplier', `×${currentMultiplier(score, config)}`);
+    hud.ring?.('multiplier', timeLeftFraction(score, nowMs, config)); // l'anello si consuma come un orologio
   }
   refreshHud();
 

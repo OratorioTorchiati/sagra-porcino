@@ -29,6 +29,12 @@ export function secondsLeft(state, nowMs) {
   return state.levelEndsMs === null ? null : Math.max(0, Math.ceil((state.levelEndsMs - nowMs) / 1000));
 }
 
+/** Parte di tempo rimasta al moltiplicatore attuale, da 1 a 0 (null a ×1) */
+export function timeLeftFraction(state, nowMs, config) {
+  if (state.levelEndsMs === null) return null;
+  return Math.max(0, (state.levelEndsMs - nowMs) / (config.multipliers[state.level].durationS * 1000));
+}
+
 /** Fa scadere i moltiplicatori fino a `nowMs` (si può chiamare quando si vuole: il risultato non cambia). */
 export function expire(state, nowMs, config) {
   let { level, levelEndsMs, streak } = state;

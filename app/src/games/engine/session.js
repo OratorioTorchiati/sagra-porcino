@@ -27,6 +27,10 @@ import { createRng } from './rng.js';
 const COUNTDOWN_STEP_MS = 800;
 const MAX_FRAME_S = 0.05; // un frame lento (o una pausa del browser) non fa saltare il gioco
 
+// Anello del HUD (es. moltiplicatore a tempo): circonferenza del cerchio di raggio 20
+const RING_LENGTH = 2 * Math.PI * 20;
+const RING_MARKUP = `<span class="game-hud__ring"><svg class="game-hud__ring-svg" viewBox="0 0 48 48" aria-hidden="true"><circle class="game-hud__ring-track" cx="24" cy="24" r="20" /><circle class="game-hud__ring-bar" cx="24" cy="24" r="20" stroke-dasharray="${RING_LENGTH.toFixed(1)}" stroke-dashoffset="${RING_LENGTH.toFixed(1)}" /></svg><span class="game-hud__value"></span></span>`;
+
 export class GameSession {
   /**
    * @param {object} options
@@ -53,7 +57,7 @@ export class GameSession {
     this.element = html(`
       <div class="game-screen" role="application" aria-label="${gameDef.name}">
         <div class="game-hud">
-          ${gameDef.hud.map((item) => `<div class="game-hud__item game-hud__item--${item.key}" data-hud="${item.key}"><span class="game-hud__label">${item.label}</span><span class="game-hud__value"></span></div>`).join('')}
+          ${gameDef.hud.map((item) => `<div class="game-hud__item game-hud__item--${item.key}" data-hud="${item.key}"><span class="game-hud__label">${item.label}</span>${item.ring ? RING_MARKUP : '<span class="game-hud__value"></span>'}</div>`).join('')}
         </div>
         <div class="game-stage">
           ${this.usesCanvas ? '<canvas class="game-canvas"></canvas>' : '<div class="game-dom"></div>'}
@@ -78,7 +82,7 @@ export class GameSession {
       rng: createRng(seed),
       config: this.config,
       assets,
-      hud: { set: (key, value) => this.setHud(key, value), pulse: (key) => this.pulseHud(key) },
+      hud: { set: (key, value) => this.setHud(key, value), pulse: (key) => this.pulseHud(key), ring: (key, fraction) => this.setHudRing(key, fraction) },
       log: (...data) => this.actions.push([Math.round(this.gameTime * 1000), ...data]),
       flash: (kind) => this.flash(kind),
       shake: () => this.shake(),
@@ -244,6 +248,15 @@ export class GameSession {
     const valueEl = this.hudValues[key]?.querySelector('.game-hud__value');
     const text = String(value);
     if (valueEl && valueEl.textContent !== text) valueEl.textContent = text;
+  }
+
+  /** Anello intorno al valore (voci con `ring: true`): frazione 1 → 0 che si consuma, null = nascosto */
+  setHudRing(key, fraction) {
+    const bar = this.hudValues[key]?.querySelector('.game-hud__ring-bar');
+    if (!bar) return;
+    const offset = fraction === null ? RING_LENGTH : RING_LENGTH * (1 - Math.min(1, Math.max(0, fraction)));
+    const value = offset.toFixed(1);
+    if (bar.getAttribute('stroke-dashoffset') !== value) bar.setAttribute('stroke-dashoffset', value);
   }
 
   pulseHud(key) {

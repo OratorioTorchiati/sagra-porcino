@@ -46,8 +46,8 @@ Regole comuni a tutti i giochi:
   | 10–19 | ×3 |
   | 20+ | ×4 |
 
-  **Il moltiplicatore dura poco** (D67): ×2 6 s, ×3 5 s, ×4 4 s. Scaduto, scende di un livello (che riparte col suo tempo pieno) e la serie riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano alla soglia successiva. Un elemento cattivo riporta subito a ×1.
-  Mostrato grande nell'HUD con i secondi rimasti (es. "×3 · 4s") ed effetto 🔥 quando sale.
+  **Il moltiplicatore dura poco** (D67, D68): ×2 7 s, ×3 6 s, ×4 5 s. Scaduto, scende di un livello (che riparte col suo tempo pieno) e la serie riparte dalla soglia di quel livello: per risalire servono di nuovo i porcini che mancano alla soglia successiva. Un elemento cattivo riporta subito a ×1.
+  Mostrato nell'HUD dentro un **anello che si consuma come un orologio**; a ogni cambio di livello piccola animazione e anello di nuovo pieno; effetto 🔥 quando sale.
 - **Sfondo**: poco invasivo, a tema (sottobosco/prato di montagna sfocato, toni tenui), per non disturbare la lettura dei funghi.
 
 ### Punteggio grezzo
