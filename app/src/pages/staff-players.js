@@ -118,7 +118,7 @@ export function renderPlayersSection(root, ctx) {
   function showList() {
     detail.hidden = true;
     results.hidden = false;
-    input.closest('.form-field').hidden = false;
+    input.closest('.form-field').style.display = '';
     current = null;
   }
 
@@ -129,7 +129,7 @@ export function renderPlayersSection(root, ctx) {
     detail.innerHTML = detailMarkup(current);
     detail.hidden = false;
     results.hidden = true;
-    input.closest('.form-field').hidden = true;
+    input.closest('.form-field').style.display = 'none';
     if (okMessage) {
       const ok = detail.querySelector('.staff-ok');
       ok.textContent = okMessage;

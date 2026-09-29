@@ -98,7 +98,8 @@ export function renderStaff() {
       cleanup?.();
       body.querySelectorAll('.staff-tab').forEach((b) => b.classList.toggle('is-active', b.dataset.section === id));
       section.innerHTML = '';
-      cleanup = SECTIONS.find((s) => s.id === id).render(section, { onNotStaff: () => showLogin('La sessione staff non è più valida: entra di nuovo.') });
+      const result = SECTIONS.find((s) => s.id === id).render(section, { onNotStaff: () => showLogin('La sessione staff non è più valida: entra di nuovo.') });
+      cleanup = typeof result === 'function' ? result : null; // le sezioni che caricano e basta non hanno niente da chiudere
     };
     body.querySelector('.staff-tabs').addEventListener('click', (event) => {
       const id = event.target.closest('[data-section]')?.dataset.section;
