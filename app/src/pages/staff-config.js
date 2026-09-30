@@ -101,13 +101,19 @@ function menuBody() {
     <div class="config-group">
       <h4 class="config-group__title">Aggiorna il menù</h4>
       <div class="config-row">
-        <span class="config-row__label">Template</span>
-        <button type="button" class="button button--secondary config-row__button" data-menu="template">⬇️ Scarica</button>
+        <span class="config-row__label">Modifica
+          <span class="config-row__hint">Il menù attuale in tabella, da cambiare qui</span></span>
+        <button type="button" class="icon-button" data-menu="edit" aria-label="Modifica il menù" title="Modifica">✏️</button>
+      </div>
+      <div class="config-row">
+        <span class="config-row__label">Template
+          <span class="config-row__hint">Il file da compilare con Excel</span></span>
+        <button type="button" class="icon-button" data-menu="template" aria-label="Scarica il template" title="Scarica">⬇️</button>
       </div>
       <div class="config-row">
         <span class="config-row__label">Carica file
-          <span class="config-row__hint">Il template compilato con Excel, salvato come CSV</span></span>
-        <button type="button" class="button button--secondary config-row__button" data-menu="upload">📤 Carica</button>
+          <span class="config-row__hint">Il template compilato, salvato come CSV</span></span>
+        <button type="button" class="icon-button" data-menu="upload" aria-label="Carica il file del menù" title="Carica">📤</button>
         <input type="file" name="menu_file" accept=".csv,text/csv" hidden>
       </div>
     </div>`;
@@ -124,6 +130,132 @@ const menuPreview = (menu) => `
         <ul>${c.dishes.map((d) => `<li><span>${escapeHtml(d.name)}</span><span>${priceFormat.format(d.price)}</span></li>`).join('')}</ul>`,
     )
     .join('')}</div>`;
+
+/**
+ * Controlla il testo CSV del menù (errori → elenco), mostra l'anteprima e pubblica.
+ * `lineLabel` trasforma "Riga N" nei messaggi (nel file o nella tabella). Restituisce i piatti pubblicati o null.
+ */
+async function checkAndPublish(text, ctx, error, { errorsIntro, lineLabel = (n) => `Riga ${n}` } = {}) {
+  const { menu, errors } = readMenuFile(text);
+  if (errors) {
+    await askDialog({
+      title: 'Ci sono degli errori',
+      body: `<p>${errorsIntro}</p><ul class="menu-errors">${errors
+        .map((e) => `<li>${escapeHtml(e.replace(/^Riga (\d+)/, (_, n) => lineLabel(Number(n))))}</li>`)
+        .join('')}</ul>`,
+      confirmLabel: 'Ho capito',
+      infoOnly: true,
+    });
+    return null;
+  }
+  const ok = await askDialog({ title: 'Pubblicare questo menù?', body: menuPreview(menu), confirmLabel: 'Pubblica' });
+  if (!ok) return null;
+  const saved = await staffCall(ctx, 'set_menu', { p_menu: { categories: menu.categories } }, error);
+  if (!saved) return null;
+  await refreshMenu();
+  return saved.dishes;
+}
+
+// ---------- ✏️ Modifica del menù in tabella (D98): una riga per piatto, come il file ----------
+
+const EDIT_COLUMNS = [
+  ['categoria', 'Categoria'],
+  ['piatto', 'Piatto'],
+  ['prezzo', 'Prezzo'],
+  ['descrizione', 'Descrizione'],
+  ['simboli', 'Simboli'],
+  ['allergeni', 'Allergeni'],
+];
+
+/** Righe della tabella dal menù attuale */
+function menuRows(menu) {
+  return menu.categories.flatMap((c) =>
+    c.dishes.map((d) => ({
+      categoria: c.name,
+      piatto: d.name,
+      prezzo: d.price.toFixed(2).replace('.', ','),
+      descrizione: d.description ?? '',
+      simboli: d.symbols.join(', '),
+      allergeni: d.allergens.join(', '),
+    })),
+  );
+}
+
+/** Righe → testo CSV (lo stesso formato del file, così i controlli sono identici) */
+function rowsToCsv(rows) {
+  const cell = (v) => (/[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  return [EDIT_COLUMNS.map(([k]) => k).join(';'), ...rows.map((r) => EDIT_COLUMNS.map(([k]) => cell(r[k] ?? '')).join(';'))].join('\n');
+}
+
+const editRowMarkup = (row, i) => `
+  <tr data-row="${i}">
+    <td class="menu-edit__n">${i + 1}</td>
+    ${EDIT_COLUMNS.map(
+      ([k, label]) => `<td><input class="menu-edit__input menu-edit__input--${k}" name="${k}" value="${escapeHtml(row[k] ?? '')}" aria-label="${label}, riga ${i + 1}"${k === 'prezzo' ? ' inputmode="decimal"' : ''}></td>`,
+    ).join('')}
+    <td><button type="button" class="icon-button" data-remove="${i}" aria-label="Togli la riga ${i + 1}" title="Togli">🗑️</button></td>
+  </tr>`;
+
+function openMenuEditor(root, ctx) {
+  let rows = menuRows(currentMenu());
+  root.innerHTML = `
+    <div class="menu-edit">
+      <button type="button" class="staff-link" data-edit-action="back">← Torna alle Configurazioni</button>
+      <h3 class="config-card__title">✏️ Modifica il menù</h3>
+      <p class="staff-muted">Una riga per piatto. Prezzo con la virgola (9,00). Simboli: porcini, vegetariano, piccante. La tabella scorre di lato.</p>
+      <div class="form-error" role="alert" hidden></div>
+      <div class="menu-edit__wrap"><table class="config-table menu-edit__table">
+        <thead><tr><th>#</th>${EDIT_COLUMNS.map(([, label]) => `<th>${label}</th>`).join('')}<th></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+      <button type="button" class="button button--secondary" data-edit-action="add">➕ Aggiungi piatto</button>
+      <div class="config-save">
+        <button type="button" class="button" data-edit-action="save">Salva e pubblica</button>
+      </div>
+    </div>`;
+  const tbody = root.querySelector('tbody');
+  const error = root.querySelector('.form-error');
+  const draw = () => (tbody.innerHTML = rows.map(editRowMarkup).join(''));
+  // I valori scritti restano nelle righe (anche aggiungendo o togliendo righe)
+  const read = () => {
+    rows = [...tbody.querySelectorAll('tr')].map((tr) => Object.fromEntries(EDIT_COLUMNS.map(([k]) => [k, tr.querySelector(`[name="${k}"]`).value.trim()])));
+  };
+  draw();
+
+  root.querySelector('.menu-edit').addEventListener('click', async (event) => {
+    const remove = event.target.closest('[data-remove]')?.dataset.remove;
+    if (remove !== undefined) {
+      read();
+      rows.splice(Number(remove), 1);
+      return draw();
+    }
+    const action = event.target.closest('[data-edit-action]')?.dataset.editAction;
+    if (action === 'back') return renderConfigSection(root, ctx);
+    if (action === 'add') {
+      read();
+      rows.push({ categoria: rows.at(-1)?.categoria ?? '' });
+      draw();
+      tbody.querySelector('tr:last-child [name="piatto"]')?.focus();
+      return;
+    }
+    if (action === 'save') {
+      read();
+      const dishes = await checkAndPublish(rowsToCsv(rows), ctx, error, {
+        errorsIntro: 'Correggi queste righe della tabella:',
+        lineLabel: (n) => `Riga ${n - 1}`, // riga 1 del testo = intestazione
+      });
+      if (dishes !== null) {
+        renderConfigSection(root, ctx).then(() => {
+          const msg = root.querySelector('.staff-ok');
+          if (msg) {
+            msg.textContent = `✅ Menù pubblicato (${dishes} piatti).`;
+            msg.hidden = false;
+          }
+        });
+      }
+    }
+  });
+}
 
 const BODIES = { giochi: gamesBody, menu: menuBody };
 
@@ -218,25 +350,12 @@ export async function renderConfigSection(root, ctx) {
       });
       return;
     }
-    const { menu, errors } = readMenuFile(await file.text());
-    if (errors) {
-      await askDialog({
-        title: 'Il file ha degli errori',
-        body: `<p>Correggili nel file e caricalo di nuovo:</p><ul class="menu-errors">${errors.map((e) => `<li>${escapeHtml(e)}</li>`).join('')}</ul>`,
-        confirmLabel: 'Ho capito',
-        infoOnly: true,
-      });
-      return;
-    }
-    const ok = await askDialog({ title: 'Pubblicare questo menù?', body: menuPreview(menu), confirmLabel: 'Pubblica' });
-    if (!ok) return;
-    const saved = await staffCall(ctx, 'set_menu', { p_menu: { categories: menu.categories } }, error);
-    if (saved) {
-      await refreshMenu();
+    const dishes = await checkAndPublish(await file.text(), ctx, error, { errorsIntro: 'Correggili nel file e caricalo di nuovo:' });
+    if (dishes !== null) {
       renderConfigSection(root, ctx).then(() => {
         const msg = root.querySelector('.staff-ok');
         if (msg) {
-          msg.textContent = `✅ Menù pubblicato (${saved.dishes} piatti).`;
+          msg.textContent = `✅ Menù pubblicato (${dishes} piatti).`;
           msg.hidden = false;
         }
       });
@@ -247,6 +366,7 @@ export async function renderConfigSection(root, ctx) {
     const menuAction = event.target.closest('[data-menu]')?.dataset.menu;
     if (menuAction === 'template') return downloadText('menu-sagra-template.csv', menuTemplate());
     if (menuAction === 'upload') return menuFile.click();
+    if (menuAction === 'edit') return openMenuEditor(root, ctx);
     const edit = event.target.closest('[data-edit]')?.dataset.edit;
     if (edit) return askDate(edit);
     const game = event.target.closest('[data-game-settings]')?.dataset.gameSettings;

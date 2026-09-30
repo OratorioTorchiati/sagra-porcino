@@ -2120,6 +2120,57 @@ dialog:not([open]) {
   accent-color: var(--color-forest);
 }
 
+/* ✏️ Modifica del menù in tabella (D98): scorre di lato sul telefono */
+.menu-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.menu-edit__wrap {
+  overflow-x: auto;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.menu-edit__table td,
+.menu-edit__table th {
+  padding: 0.25rem;
+  white-space: nowrap;
+}
+
+.menu-edit__n {
+  color: var(--color-text-muted);
+  font-weight: 400 !important;
+}
+
+.menu-edit__input {
+  width: 9rem;
+  min-height: 44px;
+  padding: 0 0.5rem;
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 1rem;
+  background: #fff;
+}
+
+.menu-edit__input:focus {
+  outline: 3px solid var(--color-focus);
+  border-color: var(--color-focus);
+}
+
+.menu-edit__input--piatto,
+.menu-edit__input--descrizione {
+  width: 13rem;
+}
+
+.menu-edit__input--prezzo {
+  width: 5.5rem;
+  text-align: right;
+}
+
 /* Anteprima del menù prima di pubblicarlo; errori del file */
 .menu-preview {
   max-height: 45vh;
