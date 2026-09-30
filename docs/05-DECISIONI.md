@@ -170,3 +170,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 8 (ritocchi) | Completata | 2026-09-30 | Ruoli dal pannello con superadmin (D95), menù caricato dal pannello con template e anteprima (D96), tentativi illimitati (D97). Migrazioni 022 e 023 applicate: 120/120 controlli. |
 | 8 (ritocchi) | Completata | 2026-09-30 | Menù: bottoni quadrati, ✏️ Modifica in tabella (D98). |
 | 8 (ritocchi) | Completata | 2026-09-30 | Impostazioni dei singoli giochi: durata (a tempo / per domanda), difficoltà in arrivo, domande del quiz in tabella (D99). Migrazione 024 applicata: 126/126 controlli. |
+| 8 (ritocchi) | Completata | 2026-09-30 | Vincitori e classifica senza account dal pannello (D101), menù in due tabelle con trascinamento (D102), sezioni ricontrollate a ogni cambio di pagina (D100); migrazione 025 applicata: 131/131 controlli. |
