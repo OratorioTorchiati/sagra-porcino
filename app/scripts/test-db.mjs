@@ -490,7 +490,7 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('quiz: numero di domande rimesso com\'era', back5?.questions === quizNow.questions && back5.duration_s === quizNow.duration_s, JSON.stringify(back5));
   check('quiz: 2 domande → rifiutato', (await staff('set_game', { p_game_id: 'quiz', p_seconds: perQ, p_questions: 2 }))?.error === 'QUESTIONS_INVALID');
   // Punteggio sulle 7 domande: nessuna risposta = 0 punti, e nessun controllo che la escluda
-  const sub7 = (await rpc('submit_score', { p_attempt_id: quiz7.attempt_id, p_raw_score: 0, p_stats: { answers: quiz7.questions.map((q) => ({ questionId: q.id, choice: null, ms: 100 })) }, p_actions: [] })).body;
+  const sub7 = (await rpc('submit_score', { p_attempt_id: quiz7.attempt_id, p_raw_score: 0, p_stats: { durationMs: 700, answers: quiz7.questions.map((q) => ({ questionId: q.id, choice: null, ms: 100 })) }, p_actions: [] })).body;
   check('quiz a 7 domande: partita inviata e ricalcolata dal server', sub7?.ok === true && sub7.status !== 'rejected', JSON.stringify(sub7));
   const quizList = await staff('quiz_list');
   check('Admin: vede le domande del quiz con la risposta giusta', quizList?.ok && quizList.questions.length > 0 && Number.isInteger(quizList.questions[0].correct));

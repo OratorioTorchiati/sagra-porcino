@@ -9,8 +9,8 @@
 //    sfondo collegato al bordo, così le parti chiare DENTRO il soggetto restano;
 // 2. ritaglia stretto attorno al soggetto (il vuoto intorno rimpicciolirebbe il soggetto sulla carta);
 // 3. lo mette in un quadrato trasparente, centrato in larghezza e appoggiato sul fondo;
-// 4. riduce a 480×480 (le carte sul telefono sono ~80 px: 480 basta anche per gli schermi più fitti)
-//    e salva in WebP con trasparenza (~30–60 KB invece di ~1 MB).
+// 4. riduce a 240×240 (le carte sul telefono sono al massimo ~82 px: 240 bastano anche per gli schermi ×3)
+//    e salva in WebP con trasparenza (~10 KB invece di ~1 MB).
 // Ritagli speciali (es. solo mezzo busto) in CROPS qui sotto.
 
 import sharp from 'sharp';
@@ -22,9 +22,9 @@ const ROOT = new URL('../../', import.meta.url);
 const SRC = new URL('contenuti/memory/', ROOT);
 const OUT = new URL('app/src/games/memory/photos/', ROOT);
 
-const SIZE = 480;
+const SIZE = 240; // le carte sono larghe al massimo ~82 px: 240 bastano anche per gli schermi ×3 (D105)
 const MARGIN = 0.01; // margine intorno al soggetto, in proporzione al lato (quasi nulla: il soggetto riempie la carta)
-const QUALITY = 80;
+const QUALITY = 72;
 
 /** Ritagli per singola immagine, in frazioni del soggetto già ritagliato: { top, bottom, left, right } (0–1) */
 const CROPS = {
@@ -158,7 +158,7 @@ async function prepare(file) {
     .png()
     .toBuffer();
   const target = new URL(`${name}.webp`, OUT);
-  await sharp(output).resize(SIZE, SIZE).webp({ quality: QUALITY, alphaQuality: 90, effort: 6 }).toFile(fileURLToPath(target));
+  await sharp(output).resize(SIZE, SIZE).webp({ quality: QUALITY, alphaQuality: 80, effort: 6 }).toFile(fileURLToPath(target));
   const kb = Math.round(fs.statSync(target).size / 1024);
   console.log(`${file} → photos/${name}.webp  ${kb} KB${fakeChecker ? '  (scacchiera finta tolta)' : hasTransparency ? '' : '  (sfondo tolto dai bordi)'}${crop ? '  (ritaglio speciale)' : ''}`);
 }
