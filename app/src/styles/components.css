@@ -792,12 +792,20 @@ img.memory-card__image {
   object-fit: cover;
 }
 
-/* Foto con sfondo trasparente: riempie il riquadro colorato senza tagliare il soggetto */
+/*
+ * Foto con sfondo trasparente sul riquadro colorato. Le foto sono tagliate dritte in basso (mezzo busto, base tolta):
+ * appoggiate sul fondo, contro la didascalia, così sotto non resta una striscia di colore (D92).
+ */
+.memory-card__image--photo {
+  overflow: hidden;
+}
+
 .memory-card__image--photo img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
+  object-position: center bottom;
 }
 
 .memory-card__caption {

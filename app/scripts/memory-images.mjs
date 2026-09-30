@@ -8,7 +8,7 @@
 // 1. se non ha lo sfondo trasparente (es. sfondo bianco), lo toglie partendo dai bordi: si cancella solo lo
 //    sfondo collegato al bordo, così le parti chiare DENTRO il soggetto restano;
 // 2. ritaglia stretto attorno al soggetto (il vuoto intorno rimpicciolirebbe il soggetto sulla carta);
-// 3. lo mette al centro di un quadrato trasparente con un piccolo margine;
+// 3. lo mette in un quadrato trasparente, centrato in larghezza e appoggiato sul fondo;
 // 4. riduce a 480×480 (le carte sul telefono sono ~80 px: 480 basta anche per gli schermi più fitti)
 //    e salva in WebP con trasparenza (~30–60 KB invece di ~1 MB).
 // Ritagli speciali (es. solo mezzo busto) in CROPS qui sotto.
@@ -29,7 +29,7 @@ const QUALITY = 80;
 /** Ritagli per singola immagine, in frazioni del soggetto già ritagliato: { top, bottom, left, right } (0–1) */
 const CROPS = {
   // bottom = dove finisce il ritaglio, in frazione dell'altezza del soggetto (0.5 = tiene la metà alta)
-  salvatore: { bottom: 0.5 }, // mezzo busto: testa con aureola, mano e globo (D72)
+  salvatore: { bottom: 0.42 }, // mezzo busto: testa con aureola, mano e globo (D72)
   monumento: { bottom: 0.82 }, // tolta la base sotto la ringhiera (D72)
   comune: { left: 0.15, right: 0.85, bottom: 0.74 }, // Municipio e aiuola, un po' di zoom: senza lampioni e gran parte della piazza
 };
@@ -152,7 +152,8 @@ async function prepare(file) {
   const side = Math.round(Math.max(box.width, box.height) * (1 + 2 * MARGIN));
   const subject = await sharp(data, { raw: { width, height, channels: 4 } }).extract(box).png().toBuffer();
   const output = await sharp({ create: { width: side, height: side, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-    .composite([{ input: subject, left: Math.round((side - box.width) / 2), top: Math.round((side - box.height) / 2) }])
+    // appoggiato sul fondo: le foto sono tagliate dritte in basso e sulla carta toccano la didascalia (D92)
+    .composite([{ input: subject, left: Math.round((side - box.width) / 2), top: side - box.height }])
     .png()
     .toBuffer();
   const target = new URL(`${name}.webp`, OUT);
