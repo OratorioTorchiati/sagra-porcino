@@ -8,7 +8,7 @@ import { GAMES } from '../games/registry.js';
 import { isoToRomeLocal, romeLocalToIso, downloadText } from '../lib/staff.js';
 import { currentMenu, refreshMenu, countDishes, readMenuFile, menuTemplate } from '../lib/menu-data.js';
 import { SECTIONS, FUTURE_SECTIONS, refreshAppConfig } from '../lib/app-config.js';
-import { staffCall, askDialog, formatDate } from './staff-ui.js';
+import { staffCall, askDialog, formatDate, flashOk } from './staff-ui.js';
 import { openGameSettings } from './staff-game-settings.js';
 
 const gameName = (id) => GAMES[id]?.name ?? id;
@@ -237,13 +237,7 @@ function openMenuEditor(root, ctx) {
         lineLabel: (n) => `Riga ${n - 1}`, // riga 1 del testo = intestazione
       });
       if (dishes !== null) {
-        renderConfigSection(root, ctx).then(() => {
-          const msg = root.querySelector('.staff-ok');
-          if (msg) {
-            msg.textContent = `✅ Menù pubblicato (${dishes} piatti).`;
-            msg.hidden = false;
-          }
-        });
+        renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), `✅ Menù pubblicato (${dishes} piatti).`));
       }
     }
   });
@@ -344,13 +338,7 @@ export async function renderConfigSection(root, ctx) {
     }
     const dishes = await checkAndPublish(await file.text(), ctx, error, { errorsIntro: 'Correggili nel file e caricalo di nuovo:' });
     if (dishes !== null) {
-      renderConfigSection(root, ctx).then(() => {
-        const msg = root.querySelector('.staff-ok');
-        if (msg) {
-          msg.textContent = `✅ Menù pubblicato (${dishes} piatti).`;
-          msg.hidden = false;
-        }
-      });
+      renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), `✅ Menù pubblicato (${dishes} piatti).`));
     }
   });
 
@@ -366,11 +354,7 @@ export async function renderConfigSection(root, ctx) {
       // ⚙️ Impostazioni del gioco (D99): schermata a parte, poi si torna qui (le modifiche non salvate qui restano da salvare)
       openGameSettings(root, ctx, res.games.find((g) => g.id === game), (message) =>
         renderConfigSection(root, ctx).then(() => {
-          const msg = message && root.querySelector('.staff-ok');
-          if (msg) {
-            msg.textContent = message;
-            msg.hidden = false;
-          }
+          if (message) flashOk(root.querySelector('.staff-ok'), message);
         }),
       );
     }
@@ -402,13 +386,7 @@ export async function renderConfigSection(root, ctx) {
     if (!confirmed) return;
     if (await staffCall(ctx, 'update_settings', { p_values: values }, error)) {
       refreshAppConfig(); // anche la home di questo telefono si aggiorna
-      renderConfigSection(root, ctx).then(() => {
-        const saved = root.querySelector('.staff-ok');
-        if (saved) {
-          saved.textContent = '✅ Configurazioni salvate.';
-          saved.hidden = false;
-        }
-      });
+      renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), '✅ Configurazioni salvate.'));
     }
   });
 }

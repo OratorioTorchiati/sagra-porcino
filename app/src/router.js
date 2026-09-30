@@ -104,8 +104,19 @@ function matchRoute(routes, path) {
 
 /**
  * Avvia il router. Ogni pagina è una funzione (params) → { title, element, destroy? }.
- * `destroy` viene chiamata quando si lascia la pagina (es. per fermare una partita).
+ * `destroy` viene chiamata quando si lascia la pagina (es. per fermare una partita); `busy` (facoltativa)
+ * dice se in questo momento la pagina non va ridisegnata (vedi refreshPage).
  */
+let refreshCurrent = () => {};
+
+/**
+ * Ridisegna la pagina corrente (es. una sezione appena spenta o riaccesa), a meno che la pagina sia occupata
+ * (`busy()`: una partita in corso o il suo risultato), per non interrompere chi sta giocando.
+ */
+export function refreshPage() {
+  refreshCurrent();
+}
+
 export function startRouter(root, { routes, notFound }) {
   let currentPage = null;
   historyPaths = history.state && Number.isInteger(history.state.sagraIdx) ? loadHistory() : [];
@@ -127,6 +138,10 @@ export function startRouter(root, { routes, notFound }) {
       heading.focus({ preventScroll: true });
     }
   }
+
+  refreshCurrent = () => {
+    if (!currentPage?.busy?.()) show();
+  };
 
   window.addEventListener('hashchange', () => {
     hasNavigated = true;

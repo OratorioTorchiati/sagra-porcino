@@ -7,7 +7,7 @@ import { isStaffRole, isAdminRole, roleLabel, currentPlayer } from '../lib/accou
 import { deviceCode } from '../lib/device.js';
 import { formatPoints } from '../lib/leaderboard.js';
 import { avatarSvg, playerStatsMarkup } from '../components/player-card.js';
-import { staffCall, formatDate, askDialog, pagerMarkup } from './staff-ui.js';
+import { staffCall, formatDate, askDialog, pagerMarkup, flashOk } from './staff-ui.js';
 import { pinProblem } from '../lib/pin.js';
 import { enhancePinInputs } from '../components/pin-input.js';
 import { authErrorMessage } from './auth-messages.js';
@@ -212,9 +212,7 @@ export function renderPlayersSection(root, ctx) {
     results.hidden = true;
     form.style.display = 'none';
     if (okMessage) {
-      const ok = detail.querySelector('.staff-ok');
-      ok.textContent = okMessage;
-      ok.hidden = false;
+      flashOk(detail.querySelector('.staff-ok'), okMessage);
     }
     window.scrollTo(0, 0);
   }
@@ -359,7 +357,8 @@ export function renderPlayersSection(root, ctx) {
         showList();
         await search(lastQuery, lastPage);
         const ok = root.querySelector('.staff-results');
-        ok.insertAdjacentHTML('afterbegin', `<p class="staff-ok">✅ ${escapeHtml(nick)} cancellato.</p>`);
+        ok.insertAdjacentHTML('afterbegin', '<p class="staff-ok" role="status"></p>');
+        flashOk(ok.firstElementChild, `✅ ${nick} cancellato.`);
       }
     }
   });

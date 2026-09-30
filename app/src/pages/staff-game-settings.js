@@ -6,17 +6,13 @@
 import { escapeHtml } from '../lib/dom.js';
 import { GAMES } from '../games/registry.js';
 import { isStepGame, formatDuration } from '../games/duration.js';
-import { staffCall, askDialog } from './staff-ui.js';
+import { staffCall, askDialog, flashOk } from './staff-ui.js';
 
 const QUESTIONS_PER_GAME = 5;
 
 /** Messaggio di conferma sopra la schermata a cui si torna */
 function showOk(root, text) {
-  const msg = root.querySelector('.staff-ok');
-  if (msg) {
-    msg.textContent = text;
-    msg.hidden = false;
-  }
+  flashOk(root.querySelector('.staff-ok'), text);
 }
 
 /**

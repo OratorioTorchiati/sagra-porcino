@@ -39,6 +39,24 @@ export function onConfigChange(fn) {
   return () => listeners.delete(fn);
 }
 
+/**
+ * Ripete `fn` ogni minuto finché l'app è in primo piano, e subito quando ci si torna (telefono sbloccato,
+ * cambio di app). Così chi resta su una pagina si accorge se l'Admin spegne qualcosa. Restituisce "stop".
+ */
+export function everyMinute(fn) {
+  const timer = setInterval(() => {
+    if (document.visibilityState === 'visible') fn();
+  }, 60_000);
+  const onVisible = () => {
+    if (document.visibilityState === 'visible') fn();
+  };
+  document.addEventListener('visibilitychange', onVisible);
+  return () => {
+    clearInterval(timer);
+    document.removeEventListener('visibilitychange', onVisible);
+  };
+}
+
 /** Aggiorna dal server (senza rete resta l'ultima copia). */
 export async function refreshAppConfig() {
   if (!serverConfigured) return config;

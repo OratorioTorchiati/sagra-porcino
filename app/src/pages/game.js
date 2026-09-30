@@ -8,6 +8,7 @@ import { rpc, NetworkError } from '../lib/api.js';
 import { currentPlayer, sessionToken, refreshProfile, isStaffRole } from '../lib/account.js';
 import { enqueueScore, onSubmitResult, resultFor, isPending } from '../lib/queue.js';
 import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason, gameInfo, NO_ATTEMPTS_TEXT } from '../lib/games-state.js';
+import { everyMinute, refreshAppConfig } from '../lib/app-config.js';
 import { withDuration, formatDuration } from '../games/duration.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { GAMES, PRACTICE_MODE } from '../games/registry.js';
@@ -83,6 +84,8 @@ export function renderGame({ gameId }) {
   let destroyed = false;
   let gamesState = cachedGamesState()?.state ?? null;
   let unsubscribe = null;
+  let stopRefresh = null;
+  let busy = false;
 
   function loadGame() {
     if (gameDef && assets) return Promise.resolve();
@@ -106,6 +109,8 @@ export function renderGame({ gameId }) {
 
   function showRules() {
     unsubscribe?.();
+    stopRefresh?.();
+    busy = false;
     const view = html(rulesMarkup(game, gameInfo(gamesState, game.id)?.duration_s));
     bindTopBar(view);
     container.replaceChildren(view);
@@ -136,7 +141,7 @@ export function renderGame({ gameId }) {
           // Al posto del bottone GIOCA (D64)
           markup = `<p class="no-attempts">${NO_ATTEMPTS_TEXT}</p>`;
         } else if (reason) {
-          markup = notice('blocked', `⏳ ${reason.text}`);
+          markup = notice('blocked', `⏳ ${reason.text}`) + '<a class="button button--secondary" href="#/giochi">Torna ai giochi</a>';
         } else if (gamesState?.unlimited) {
           markup = isStaffRole(player.role)
             ? notice('info', '🛠️ <strong>Staff</strong>: tentativi illimitati. I tuoi punti non vanno in classifica.')
@@ -193,6 +198,7 @@ export function renderGame({ gameId }) {
         startError = 'Devi rientrare nel tuo account.';
       } else if (result.error === 'SECTION_OFF') {
         startError = 'I minigiochi in questo momento non sono disponibili.';
+        refreshAppConfig(); // la pagina diventa "non disponibile", con Torna alla home
       } else if (result.error === 'QUIZ_EMPTY') {
         startError = 'Il quiz non è ancora pronto. Riprova più tardi.';
       }
@@ -218,20 +224,27 @@ export function renderGame({ gameId }) {
         renderPlayArea();
       });
 
-    // Tentativi rimasti aggiornati dal server (se c'è rete)
+    // Tentativi rimasti aggiornati dal server (se c'è rete), e poi ogni minuto: se l'Admin spegne o chiude
+    // il gioco mentre si leggono le regole, al posto di GIOCA compare il motivo
     if (!PRACTICE_MODE && currentPlayer()) {
-      fetchGamesState()
-        .then((state) => {
-          gamesState = state;
-          renderPlayArea();
-        })
-        .catch(() => {});
+      const refresh = () =>
+        fetchGamesState()
+          .then((state) => {
+            gamesState = state;
+            if (playArea.isConnected && !playArea.querySelector('[data-action="play"]:disabled')) renderPlayArea();
+          })
+          .catch(() => {});
+      refresh();
+      stopRefresh = everyMinute(refresh);
     }
   }
 
   // ---------- Partita ----------
 
   function startSession(start) {
+    stopRefresh?.();
+    stopRefresh = null;
+    busy = true; // partita e poi risultato: niente ridisegni della pagina (vedi refreshPage)
     session?.destroy();
     const sessionAssets = start.questions ? { ...assets, pool: start.questions } : assets;
     session = new GameSession({
@@ -357,9 +370,11 @@ export function renderGame({ gameId }) {
   return {
     title: game.name,
     element: container,
+    busy: () => busy,
     destroy() {
       destroyed = true;
       unsubscribe?.();
+      stopRefresh?.();
       session?.destroy();
     },
   };

@@ -9,6 +9,22 @@ const dateTime = new Intl.DateTimeFormat('it-IT', { weekday: 'short', day: 'nume
 /** "dom 18/10, 21:14" */
 export const formatDate = (iso) => (iso ? dateTime.format(new Date(iso)) : '—');
 
+/** Messaggio di conferma (✅ ...): compare e sparisce da solo dopo qualche secondo */
+export function flashOk(el, text, ms = 3500) {
+  if (!el) return;
+  clearTimeout(el._okTimer);
+  el.textContent = text;
+  el.hidden = false;
+  el.classList.remove('is-leaving');
+  el._okTimer = setTimeout(() => {
+    el.classList.add('is-leaving');
+    el._okTimer = setTimeout(() => {
+      el.hidden = true;
+      el.classList.remove('is-leaving');
+    }, 400);
+  }, ms);
+}
+
 /**
  * Chiama staff_<name>. Restituisce il risultato se ok, altrimenti null dopo aver mostrato l'errore in `errorEl`
  * (o, se la sessione non è più staff, dopo aver riportato al login).

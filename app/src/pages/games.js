@@ -10,6 +10,7 @@ import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { GAMES, PRACTICE_MODE } from '../games/registry.js';
 import { currentPlayer, isStaffRole } from '../lib/account.js';
 import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason, gameInfo } from '../lib/games-state.js';
+import { everyMinute } from '../lib/app-config.js';
 import { setAfterLogin } from './auth-messages.js';
 import gamepadSvg from '../assets/gamepad.svg?raw';
 
@@ -131,7 +132,8 @@ export function renderGames() {
   }
 
   render();
-  if (!PRACTICE_MODE) {
+  let stop = null;
+  const refresh = () =>
     fetchGamesState()
       .then((fresh) => {
         state = fresh;
@@ -143,7 +145,10 @@ export function renderGames() {
         if (openDetails) body.querySelector('details')?.setAttribute('open', '');
       })
       .catch(() => {});
+  if (!PRACTICE_MODE) {
+    refresh();
+    stop = everyMinute(refresh); // giochi spenti, aperti o chiusi dall'Admin mentre si guarda la pagina
   }
 
-  return { title: 'Minigiochi', element };
+  return { title: 'Minigiochi', element, destroy: () => stop?.() };
 }

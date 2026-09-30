@@ -3,7 +3,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/components.css';
 
-import { startRouter, currentPath } from './router.js';
+import { startRouter, currentPath, refreshPage } from './router.js';
 import { startAppUpdates } from './lib/app-update.js';
 import { startQueue } from './lib/queue.js';
 import { renderHome } from './pages/home.js';
@@ -18,7 +18,7 @@ import { renderLogin } from './pages/login.js';
 import { renderPrivacy } from './pages/privacy.js';
 import { renderNotFound } from './pages/not-found.js';
 import { renderSectionOff } from './pages/section-off.js';
-import { sectionForPath, sectionOn, onConfigChange, refreshAppConfig } from './lib/app-config.js';
+import { sectionForPath, sectionOn, onConfigChange, refreshAppConfig, everyMinute } from './lib/app-config.js';
 import { currentPlayer, isStaffRole } from './lib/account.js';
 
 // Sezione spenta dall'Admin (D93): al posto della pagina, "non disponibile". Mod e Admin la vedono lo stesso (prove).
@@ -49,12 +49,16 @@ startRouter(document.getElementById('app'), {
   notFound: renderNotFound,
 });
 
-// Se l'Admin spegne la sezione che si sta guardando, si torna alla home
+// Se l'Admin spegne la sezione che si sta guardando, la pagina diventa "non disponibile" con "Torna alla home"
+// (e torna normale se la riaccende). Chi è in partita la finisce: il punteggio conta lo stesso.
 onConfigChange(() => {
   const s = sectionForPath(currentPath());
-  if (s && !sectionOn(s.id) && !canSeeOff()) location.replace('#/');
+  if (!s) return;
+  const off = !sectionOn(s.id) && !canSeeOff();
+  if (off !== Boolean(document.querySelector('#app .section-off'))) refreshPage();
 });
 refreshAppConfig();
+everyMinute(refreshAppConfig);
 
 startAppUpdates();
 startQueue(); // punteggi rimasti in sospeso (fatti senza rete)
