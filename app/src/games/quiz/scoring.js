@@ -1,12 +1,15 @@
 // Punteggio del quiz (docs/03-GIOCHI.md). In produzione lo calcola il SERVER (Tappa 5), perché le
 // risposte giuste non sono nel sito; qui serve per la modalità prova e come riferimento per i test.
 
-/** Punti di una risposta: 150 + bonus velocità (0–50) se giusta, 0 se sbagliata o scaduta. */
+/**
+ * Punti di una risposta giusta (come nel server, D104): (75% + fino al 25% di velocità) di maxScore / domande.
+ * Con 5 domande: 150 + bonus velocità 0–50. Sbagliata o scaduta: 0.
+ */
 export function answerPoints(correct, ms, config) {
   if (!correct) return 0;
   const maxMs = config.timePerQuestionS * 1000;
   const t = Math.min(Math.max(ms, 0), maxMs);
-  return config.perCorrect + Math.round(config.speedBonusMax * (1 - t / maxMs));
+  return Math.round((config.maxScore * 0.75 + config.maxScore * 0.25 * (1 - t / maxMs)) / config.questionsPerGame);
 }
 
 /**
@@ -21,5 +24,5 @@ export function quizScore(answers, correctIndex, config) {
     if (ok) correct++;
     score += answerPoints(ok, a.ms, config);
   }
-  return { score, correct };
+  return { score: Math.min(score, config.maxScore), correct };
 }

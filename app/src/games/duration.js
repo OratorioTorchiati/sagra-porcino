@@ -2,16 +2,21 @@
 // qui la si applica alla configurazione del gioco, al posto del numero scritto nel suo config.js.
 //
 // Giochi a tempo (Acchiappa, Porcini che cadono, Memory): durata della partita in secondi.
-// Giochi a domande (Quiz): la durata è domande × secondi per domanda.
+// Giochi a domande (Quiz): la durata è domande × secondi per domanda; anche il numero di domande lo decide
+// l'Admin (D104).
 
 /** Gioco a domande? (gli altri sono a tempo) */
 export const isStepGame = (gameId) => gameId === 'quiz';
 
-/** Configurazione del gioco con la durata decisa dall'Admin (senza durata: quella del config.js) */
-export function withDuration(gameDef, gameId, durationS) {
+/**
+ * Configurazione del gioco con la durata (e, per il quiz, il numero di domande) decisi dall'Admin.
+ * Senza durata: quella del config.js.
+ */
+export function withDuration(gameDef, gameId, durationS, questions = null) {
   if (!durationS) return gameDef;
+  const questionsPerGame = questions || gameDef.config.questionsPerGame;
   const config = isStepGame(gameId)
-    ? { ...gameDef.config, timePerQuestionS: durationS / gameDef.config.questionsPerGame }
+    ? { ...gameDef.config, questionsPerGame, timePerQuestionS: durationS / questionsPerGame }
     : { ...gameDef.config, durationS };
   return { ...gameDef, config };
 }

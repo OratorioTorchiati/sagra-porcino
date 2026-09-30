@@ -1,14 +1,15 @@
 // ⚙️ Impostazioni di un singolo gioco (Configurazioni → Minigiochi → ⚙️, solo Admin, D99). Stesso schema delle
 // altre schede: scheda con titolo, gruppi marcati, righe "nome a sinistra, controllo a destra", un solo Salva.
 // - Giochi a tempo (Acchiappa, Porcini che cadono, Memory): durata della partita; difficoltà (in arrivo).
-// - Giochi a domande (Quiz): secondi per domanda; ✏️ domande in tabella (testo, 4 risposte, giusta, attiva).
+// - Giochi a domande (Quiz): numero di domande (D104) e secondi per domanda; ✏️ domande in tabella (testo,
+//   4 risposte, giusta, attiva).
 
 import { escapeHtml } from '../lib/dom.js';
 import { GAMES } from '../games/registry.js';
 import { isStepGame, formatDuration } from '../games/duration.js';
 import { staffCall, askDialog, flashOk } from './staff-ui.js';
 
-const QUESTIONS_PER_GAME = 5;
+const QUESTIONS_RANGE = [3, 20];
 
 /** Messaggio di conferma sopra la schermata a cui si torna */
 function showOk(root, text) {
@@ -16,13 +17,14 @@ function showOk(root, text) {
 }
 
 /**
- * @param game  { id, duration_s } dal server
+ * @param game  { id, duration_s, questions } dal server
  * @param back  (message?) => torna alle Configurazioni (con un messaggio facoltativo)
  */
 export async function openGameSettings(root, ctx, game, back) {
   const steps = isStepGame(game.id);
   const name = GAMES[game.id]?.name ?? game.id;
-  const seconds = steps ? game.duration_s / QUESTIONS_PER_GAME : game.duration_s;
+  const questions = game.questions ?? 5; // domande per partita (solo quiz)
+  const seconds = steps ? Math.round(game.duration_s / questions) : game.duration_s;
   root.innerHTML = `
     <div class="menu-edit">
       <button type="button" class="staff-link" data-gs="back">← Torna alle Configurazioni</button>
@@ -35,7 +37,16 @@ export async function openGameSettings(root, ctx, game, back) {
           </div>
           <div class="config-card__body">
             <div class="config-group">
-              <h4 class="config-group__title">Durata</h4>
+              <h4 class="config-group__title">${steps ? 'Partita' : 'Durata'}</h4>
+              ${
+                steps
+                  ? `<label class="config-row">
+                      <span class="config-row__label">Numero di domande</span>
+                      <input class="form-field__input config-row__number" name="questions" type="number" inputmode="numeric"
+                        min="${QUESTIONS_RANGE[0]}" max="${QUESTIONS_RANGE[1]}" value="${questions}" aria-label="Numero di domande (${QUESTIONS_RANGE[0]}–${QUESTIONS_RANGE[1]})">
+                    </label>`
+                  : ''
+              }
               <label class="config-row">
                 <span class="config-row__label">${steps ? 'Secondi per domanda' : 'Durata della partita'}
                   <span class="config-row__hint" data-gs="total"></span></span>
@@ -85,15 +96,19 @@ export async function openGameSettings(root, ctx, game, back) {
   const total = view.querySelector('[data-gs="total"]');
   const range = steps ? [5, 60] : [20, 600];
 
+  const validQuestions = (n) => Number.isInteger(n) && n >= QUESTIONS_RANGE[0] && n <= QUESTIONS_RANGE[1];
   // "In tutto 1 minuto e 40 secondi" (quiz) / "1 minuto" (giochi a tempo)
   const showTotal = () => {
     const s = Number(form.seconds.value);
+    const n = steps ? Number(form.questions.value) : 1;
     total.textContent = Number.isInteger(s) && s >= range[0] && s <= range[1]
-      ? steps ? `${QUESTIONS_PER_GAME} domande: in tutto ${formatDuration(s * QUESTIONS_PER_GAME)}` : formatDuration(s)
+      ? steps
+        ? validQuestions(n) ? `${n} domande: in tutto ${formatDuration(s * n)}` : `Domande: da ${QUESTIONS_RANGE[0]} a ${QUESTIONS_RANGE[1]}`
+        : formatDuration(s)
       : `Da ${range[0]} a ${range[1]} secondi`;
   };
   showTotal();
-  form.seconds.addEventListener('input', showTotal);
+  form.addEventListener('input', showTotal);
 
   if (steps) {
     staffCall(ctx, 'quiz_list', {}, error).then((res) => {
@@ -105,7 +120,7 @@ export async function openGameSettings(root, ctx, game, back) {
   view.addEventListener('click', (event) => {
     const action = event.target.closest('[data-gs]')?.dataset.gs;
     if (action === 'back') back();
-    if (action === 'questions') openQuizEditor(root, ctx, () => openGameSettings(root, ctx, game, back));
+    if (action === 'questions') openQuizEditor(root, ctx, questions, () => openGameSettings(root, ctx, game, back));
   });
 
   form.addEventListener('submit', async (event) => {
@@ -116,8 +131,18 @@ export async function openGameSettings(root, ctx, game, back) {
       error.hidden = false;
       return;
     }
-    const saved = await staffCall(ctx, 'set_game', { p_game_id: game.id, p_seconds: s }, error);
-    if (saved) back(`✅ ${name}: durata salvata (${formatDuration(saved.duration_s)}).`);
+    const n = steps ? Number(form.questions.value) : null;
+    if (steps && !validQuestions(n)) {
+      error.textContent = `Scrivi un numero di domande da ${QUESTIONS_RANGE[0]} a ${QUESTIONS_RANGE[1]}.`;
+      error.hidden = false;
+      return;
+    }
+    const saved = await staffCall(ctx, 'set_game', { p_game_id: game.id, p_seconds: s, ...(steps ? { p_questions: n } : {}) }, error);
+    if (saved) {
+      back(steps
+        ? `✅ ${name}: ${saved.questions} domande, in tutto ${formatDuration(saved.duration_s)}.`
+        : `✅ ${name}: durata salvata (${formatDuration(saved.duration_s)}).`);
+    }
   });
 }
 
@@ -136,12 +161,12 @@ const questionRow = (q, i) => `
     <td><input type="checkbox" class="menu-edit__check" name="active" ${q.active !== false ? 'checked' : ''} aria-label="Domanda ${i + 1} attiva"></td>
   </tr>`;
 
-async function openQuizEditor(root, ctx, back) {
+async function openQuizEditor(root, ctx, perGame, back) {
   root.innerHTML = `
     <div class="menu-edit">
       <button type="button" class="staff-link" data-qe="back">← Torna al Quiz</button>
       <h3 class="config-card__title">✏️ Domande del quiz</h3>
-      <p class="staff-muted">Una riga per domanda, 4 risposte, e il numero di quella giusta. Le domande non si cancellano (le partite passate le ricordano): togli la spunta "Attiva" per non farle più uscire. Servono almeno ${QUESTIONS_PER_GAME} domande attive.</p>
+      <p class="staff-muted">Una riga per domanda, 4 risposte, e il numero di quella giusta. Le domande non si cancellano (le partite passate le ricordano): togli la spunta "Attiva" per non farle più uscire. Servono almeno ${perGame} domande attive.</p>
       <div class="form-error" role="alert" hidden></div>
       <div class="menu-edit__wrap"><table class="config-table menu-edit__table">
         <thead><tr><th>#</th><th>Domanda</th><th>Risposta 1</th><th>Risposta 2</th><th>Risposta 3</th><th>Risposta 4</th><th>Giusta</th><th>Attiva</th></tr></thead>
@@ -202,7 +227,7 @@ async function openQuizEditor(root, ctx, back) {
     const ok = await askDialog({
       title: 'Salvare le domande?',
       body: `<p><strong>${active}</strong> domande attive su ${toSave.length}. Valgono dalla prossima partita.</p>${
-        active < QUESTIONS_PER_GAME ? `<p class="staff-warn">⚠️ Con meno di ${QUESTIONS_PER_GAME} domande attive il quiz non si può giocare bene.</p>` : ''
+        active < perGame ? `<p class="staff-warn">⚠️ Con meno di ${perGame} domande attive il quiz non si può giocare bene.</p>` : ''
       }`,
       confirmLabel: 'Salva',
     });

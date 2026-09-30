@@ -4,9 +4,9 @@ export default {
   questionsPerGame: 5,
   /** Secondi per domanda: a tempo scaduto conta come sbagliata */
   timePerQuestionS: 20,
-  /** Punti per risposta giusta, più un bonus velocità da 0 a speedBonusMax (massimo 5 × 200 = 1000) */
-  perCorrect: 150,
-  speedBonusMax: 50,
+  /** Punti al massimo in tutto (D104): per risposta giusta 75% di maxScore/domande + fino al 25% di velocità
+   *  (con 5 domande: 150 + fino a 50). Uguale qualunque sia il numero di domande. */
+  maxScore: 1000,
   /** Pausa dopo il tocco, prima della domanda successiva (nessun giusto/sbagliato mostrato) */
   answerPauseMs: 350,
 };

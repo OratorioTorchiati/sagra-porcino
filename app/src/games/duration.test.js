@@ -25,4 +25,8 @@ describe('durata decisa dall\'Admin (D99)', () => {
     expect(formatDuration(90)).toBe('1 minuto e 30 secondi');
     expect(formatDuration(45)).toBe('45 secondi');
   });
+
+  it('quiz con 10 domande in 150 secondi: 15 secondi per domanda (D104)', () => {
+    expect(withDuration(quiz, 'quiz', 150, 10).config).toMatchObject({ questionsPerGame: 10, timePerQuestionS: 15 });
+  });
 });

@@ -480,6 +480,18 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const sameDuration = await staff('set_game', { p_game_id: 'memory', p_seconds: memoryNow.duration_s });
   check('Admin: durata di un gioco salvata (stessi secondi)', sameDuration?.ok && sameDuration.duration_s === memoryNow.duration_s, JSON.stringify(sameDuration));
   check('Admin: durata fuori limite → rifiutata', (await staff('set_game', { p_game_id: 'memory', p_seconds: 5 }))?.error === 'DURATION_INVALID');
+  // Numero di domande del quiz (D104): per un attimo 7, poi com'era
+  const quizNow = settings.games.find((g) => g.id === 'quiz');
+  const perQ = quizNow.duration_s / quizNow.questions;
+  const set7 = await staff('set_game', { p_game_id: 'quiz', p_seconds: perQ, p_questions: 7 });
+  const quiz7 = (await rpc('start_attempt', { p_token: S, p_game_id: 'quiz' })).body;
+  const back5 = await staff('set_game', { p_game_id: 'quiz', p_seconds: perQ, p_questions: quizNow.questions });
+  check('quiz: con 7 domande la partita ne riceve 7, con la durata giusta', set7?.questions === 7 && quiz7?.questions?.length === 7 && quiz7.duration_s === perQ * 7, JSON.stringify({ set7, n: quiz7?.questions?.length, d: quiz7?.duration_s }));
+  check('quiz: numero di domande rimesso com\'era', back5?.questions === quizNow.questions && back5.duration_s === quizNow.duration_s, JSON.stringify(back5));
+  check('quiz: 2 domande → rifiutato', (await staff('set_game', { p_game_id: 'quiz', p_seconds: perQ, p_questions: 2 }))?.error === 'QUESTIONS_INVALID');
+  // Punteggio sulle 7 domande: nessuna risposta = 0 punti, e nessun controllo che la escluda
+  const sub7 = (await rpc('submit_score', { p_attempt_id: quiz7.attempt_id, p_raw_score: 0, p_stats: { answers: quiz7.questions.map((q) => ({ questionId: q.id, choice: null, ms: 100 })) }, p_actions: [] })).body;
+  check('quiz a 7 domande: partita inviata e ricalcolata dal server', sub7?.ok === true && sub7.status !== 'rejected', JSON.stringify(sub7));
   const quizList = await staff('quiz_list');
   check('Admin: vede le domande del quiz con la risposta giusta', quizList?.ok && quizList.questions.length > 0 && Number.isInteger(quizList.questions[0].correct));
   check('quiz: domanda con 3 risposte → rifiutata', (await staff('quiz_save', { p_questions: [{ text: 'Domanda?', options: ['a', 'b', 'c'], correct: 0, active: true }] }))?.error === 'QUIZ_INVALID');

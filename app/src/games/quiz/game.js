@@ -1,4 +1,4 @@
-// "Quiz del paese": 5 domande, 4 risposte, 20 secondi per domanda, bonus velocità.
+// "Quiz": N domande (di solito 5, le decide l'Admin, D104), 4 risposte, secondi per domanda decisi dall'Admin, bonus velocità.
 // Nessun giusto/sbagliato durante il quiz: le risposte giuste non stanno nel sito (in produzione).
 // Il tempo delle domande è quello reale (orologio), non si ferma se si esce dall'app.
 

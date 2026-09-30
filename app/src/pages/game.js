@@ -35,10 +35,11 @@ try {
 
 // ---------- Markup ----------
 
-/** Testo di una regola: "{durata}" diventa la durata decisa dall'Admin ("1 minuto", "90 secondi"...) */
-const ruleText = (text, durationS) => text.replace('{durata}', formatDuration(durationS ?? 60));
+/** Testo di una regola: "{durata}" e "{domande}" diventano quelli decisi dall'Admin ("1 minuto", "5"...) */
+const ruleText = (text, info) =>
+  text.replace('{durata}', formatDuration(info?.duration_s ?? 60)).replace('{domande}', String(info?.questions ?? 5));
 
-function rulesMarkup(game, durationS) {
+function rulesMarkup(game, info) {
   return `
     <main class="page game-page">
       ${topBarMarkup()}
@@ -50,7 +51,7 @@ function rulesMarkup(game, durationS) {
           <li class="rules__item">
             <span class="rules__icon" aria-hidden="true">${r.icon}</span>
             <span class="rules__body">
-              <span class="rules__text">${ruleText(r.text, durationS)}</span>
+              <span class="rules__text">${ruleText(r.text, info)}</span>
               ${r.gallery ? `<span class="rules__gallery" data-gallery="${r.gallery}" aria-hidden="true"></span>` : ''}
             </span>
           </li>`,
@@ -109,7 +110,7 @@ export function renderGame({ gameId }) {
   function showRules() {
     unsubscribe?.();
     busy = false;
-    const view = html(rulesMarkup(game, gameInfo(gamesState, game.id)?.duration_s));
+    const view = html(rulesMarkup(game, gameInfo(gamesState, game.id)));
     bindTopBar(view);
     container.replaceChildren(view);
     window.scrollTo(0, 0);
@@ -242,7 +243,7 @@ export function renderGame({ gameId }) {
     const sessionAssets = start.questions ? { ...assets, pool: start.questions } : assets;
     session = new GameSession({
       root: container,
-      gameDef: { ...withDuration(gameDef, game.id, start.durationS), name: game.name },
+      gameDef: { ...withDuration(gameDef, game.id, start.durationS, start.questions?.length), name: game.name },
       assets: sessionAssets,
       seed: start.seed,
       onFinish: (result) => showResult(result, start),

@@ -47,7 +47,7 @@ export async function openReplay(attemptId, ctx, errorEl, onDone) {
     session?.destroy();
     session = new GameSession({
       root: container,
-      gameDef: { ...withDuration(gameDef, attempt.game_id ?? game.id, attempt.duration_s), name: game.name }, // durata della partita (D99)
+      gameDef: { ...withDuration(gameDef, attempt.game_id ?? game.id, attempt.duration_s, attempt.questions?.length), name: game.name }, // durata della partita (D99)
       assets,
       seed: Number(attempt.seed),
       replay: { actions, durationMs },

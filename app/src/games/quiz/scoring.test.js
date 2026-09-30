@@ -49,3 +49,22 @@ describe('domande di esempio', () => {
     expect(SAMPLE_QUESTIONS.length).toBeGreaterThanOrEqual(10);
   });
 });
+
+describe('numero di domande deciso dall\'Admin (D104)', () => {
+  it('il massimo resta 1000 punti con 3, 7 o 10 domande', () => {
+    for (const n of [3, 7, 10]) {
+      const cfg = { ...config, questionsPerGame: n };
+      const answers = Array.from({ length: n }, (_, i) => ({ questionId: i, choice: 0, ms: 0 }));
+      const correct = new Map(answers.map((a) => [a.questionId, 0]));
+      const { score } = quizScore(answers, correct, cfg);
+      expect(score).toBeLessThanOrEqual(1000);
+      expect(score).toBeGreaterThanOrEqual(995);
+    }
+  });
+
+  it('con 10 domande: 75 per risposta giusta + fino a 25 di velocità', () => {
+    const cfg = { ...config, questionsPerGame: 10 };
+    expect(answerPoints(true, 0, cfg)).toBe(100);
+    expect(answerPoints(true, 20000, cfg)).toBe(75);
+  });
+});
