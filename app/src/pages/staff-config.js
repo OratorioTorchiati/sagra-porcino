@@ -5,7 +5,8 @@
 
 import { escapeHtml } from '../lib/dom.js';
 import { GAMES } from '../games/registry.js';
-import { isoToRomeLocal, romeLocalToIso } from '../lib/staff.js';
+import { isoToRomeLocal, romeLocalToIso, downloadText } from '../lib/staff.js';
+import { currentMenu, uploadedMenu, refreshMenu, countDishes, readMenuFile, menuTemplate } from '../lib/menu-data.js';
 import { SECTIONS, FUTURE_SECTIONS, refreshAppConfig } from '../lib/app-config.js';
 import { staffCall, askDialog, formatDate } from './staff-ui.js';
 
@@ -35,47 +36,94 @@ const SCHEDULES = {
   },
 };
 
+// La data sta subito sotto il titolo della riga (toccandola si modifica)
 const scheduleMarkup = (key, iso) => `
   <div class="config-row" data-schedule="${key}">
-    <span class="config-row__label">${SCHEDULES[key].title}</span>
+    <span class="config-row__label">${SCHEDULES[key].title}
+      ${iso ? `<button type="button" class="config-row__info" data-edit="${key}">${SCHEDULES[key].info(iso)} ✏️</button>` : ''}</span>
     <span class="config-row__state">${iso ? 'CHIUSO' : 'APERTO'}</span>
     ${switchMarkup(`schedule_${key}`, !iso, SCHEDULES[key].title)}
-  </div>
-  ${iso ? `<button type="button" class="config-row__info" data-edit="${key}">${SCHEDULES[key].info(iso)} ✏️</button>` : ''}`;
+  </div>`;
+
+/** "09:00": l'ora in cui tornano i tentativi, come orario */
+const hourOptions = (selected) =>
+  Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${h === selected ? 'selected' : ''}>${String(h).padStart(2, '0')}:00</option>`).join('');
 
 function gamesBody(res) {
   return `
-    <div class="config-group" role="group" aria-labelledby="config-games-title">
-      <p class="config-group__title" id="config-games-title">Giochi</p>
-      ${res.games
-        .map(
-          (g) => `
-          <div class="config-row">
-            <span class="config-row__label">${escapeHtml(gameName(g.id))}</span>
-            <button type="button" class="icon-button" data-game-settings="${g.id}" aria-label="Impostazioni di ${escapeHtml(gameName(g.id))}" title="Impostazioni">⚙️</button>
-            ${switchMarkup(`game_${g.id}`, g.enabled, escapeHtml(gameName(g.id)))}
-          </div>`,
-        )
-        .join('')}
+    <div class="config-group">
+      <h4 class="config-group__title" id="config-games-title">Giochi</h4>
+      <table class="config-table" aria-labelledby="config-games-title">
+        <thead><tr><th>Gioco</th><th>Impostazioni</th><th>Attivo</th></tr></thead>
+        <tbody>${res.games
+          .map(
+            (g) => `
+            <tr>
+              <td>${escapeHtml(gameName(g.id))}</td>
+              <td><button type="button" class="icon-button" data-game-settings="${g.id}" aria-label="Impostazioni di ${escapeHtml(gameName(g.id))}" title="Impostazioni">⚙️</button></td>
+              <td>${switchMarkup(`game_${g.id}`, g.enabled, escapeHtml(gameName(g.id)))}</td>
+            </tr>`,
+          )
+          .join('')}</tbody>
+      </table>
     </div>
     <div class="config-group">
-      <label class="config-row">
+      <div class="config-row">
         <span class="config-row__label">Tentativi</span>
-        <input class="form-field__input config-row__number" name="attempts_per_day" type="number" min="1" max="50" value="${res.attempts_per_day}" aria-label="Tentativi al giorno per gioco">
-      </label>
+        <label class="config-chip"><input type="checkbox" name="attempts_unlimited" ${res.attempts_per_day === 0 ? 'checked' : ''}> ∞ Illimitati</label>
+        <input class="form-field__input config-row__number" name="attempts_per_day" type="number" min="1" max="99" inputmode="numeric"
+          value="${res.attempts_per_day || 3}" aria-label="Tentativi al giorno per gioco (da 1 a 99)">
+      </div>
       <label class="config-row">
         <span class="config-row__label">Reset tentativi</span>
-        <input class="form-field__input config-row__number" name="attempts_reset_hour" type="number" min="0" max="23" value="${res.attempts_reset_hour}" aria-label="Ora in cui tornano i tentativi (0–23)">
+        <select class="form-field__input config-row__time" name="attempts_reset_hour" aria-label="Ora in cui tornano i tentativi">${hourOptions(res.attempts_reset_hour)}</select>
       </label>
     </div>
     <div class="config-group">
-      <p class="config-group__title">Orari</p>
+      <h4 class="config-group__title">Orari</h4>
       <div class="config-schedules"></div>
     </div>`;
 }
 
-const menuBody = () => `
-  <p class="staff-muted">📤 Caricamento di un nuovo menù (file Excel/CSV, con anteprima): in arrivo.</p>`;
+// ---------- Menù (D96): modello da scaricare, file da caricare con controllo e anteprima ----------
+
+function menuBody() {
+  const up = uploadedMenu();
+  const dishes = countDishes(currentMenu());
+  const source = up
+    ? `Caricato da <strong>${escapeHtml(up.by ?? '')}</strong> ${formatDate(up.updated_at)}`
+    : 'Quello incluso nell\'app (nessun menù caricato dal pannello)';
+  return `
+    <div class="config-group">
+      <h4 class="config-group__title">Menù attuale</h4>
+      <p>${source} · <strong>${dishes}</strong> piatti.</p>
+    </div>
+    <div class="config-group">
+      <h4 class="config-group__title">Aggiorna il menù</h4>
+      <div class="config-row">
+        <span class="config-row__label">Template</span>
+        <button type="button" class="button button--secondary config-row__button" data-menu="template">⬇️ Scarica</button>
+      </div>
+      <div class="config-row">
+        <span class="config-row__label">Carica file
+          <span class="config-row__hint">Il template compilato con Excel, salvato come CSV</span></span>
+        <button type="button" class="button button--secondary config-row__button" data-menu="upload">📤 Carica</button>
+        <input type="file" name="menu_file" accept=".csv,text/csv" hidden>
+      </div>
+    </div>`;
+}
+
+const priceFormat = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
+
+/** Anteprima del menù letto dal file, prima di pubblicarlo */
+const menuPreview = (menu) => `
+  <p><strong>${menu.categories.length}</strong> categorie, <strong>${countDishes(menu)}</strong> piatti. Sostituisce il menù attuale per tutti.</p>
+  <div class="menu-preview">${menu.categories
+    .map(
+      (c) => `<p class="menu-preview__category">${escapeHtml(c.name)}</p>
+        <ul>${c.dishes.map((d) => `<li><span>${escapeHtml(d.name)}</span><span>${priceFormat.format(d.price)}</span></li>`).join('')}</ul>`,
+    )
+    .join('')}</div>`;
 
 const BODIES = { giochi: gamesBody, menu: menuBody };
 
@@ -84,6 +132,7 @@ export async function renderConfigSection(root, ctx) {
   const error = root.querySelector('.form-error');
   const res = await staffCall(ctx, 'get_settings', {}, error);
   if (!res) return;
+  await refreshMenu(); // per "Menù attuale"
   const schedule = { games_open_from: res.games_open_from, games_open_until: res.games_open_until };
 
   const box = root.querySelector('.staff-config');
@@ -135,8 +184,13 @@ export async function renderConfigSection(root, ctx) {
     renderSchedules();
   }
 
+  // Tentativi illimitati: il numero non serve (D97)
+  const syncAttempts = () => (form.attempts_per_day.hidden = form.attempts_unlimited.checked);
+  syncAttempts();
+
   form.addEventListener('change', (event) => {
     const name = event.target.name ?? '';
+    if (name === 'attempts_unlimited') return syncAttempts();
     if (name.startsWith('section_')) return syncCards();
     if (name.startsWith('schedule_')) {
       const key = name.slice('schedule_'.length);
@@ -149,7 +203,50 @@ export async function renderConfigSection(root, ctx) {
     }
   });
 
+  // Menù: modello e caricamento del file
+  const menuFile = form.menu_file;
+  menuFile?.addEventListener('change', async () => {
+    const file = menuFile.files[0];
+    menuFile.value = '';
+    if (!file) return;
+    if (/\.xlsx?$/i.test(file.name)) {
+      await askDialog({
+        title: 'Serve il file CSV',
+        body: '<p>In Excel: <strong>File → Salva con nome → "CSV UTF-8 (delimitato da virgole)"</strong>, poi carica quel file.</p>',
+        confirmLabel: 'Ho capito',
+        infoOnly: true,
+      });
+      return;
+    }
+    const { menu, errors } = readMenuFile(await file.text());
+    if (errors) {
+      await askDialog({
+        title: 'Il file ha degli errori',
+        body: `<p>Correggili nel file e caricalo di nuovo:</p><ul class="menu-errors">${errors.map((e) => `<li>${escapeHtml(e)}</li>`).join('')}</ul>`,
+        confirmLabel: 'Ho capito',
+        infoOnly: true,
+      });
+      return;
+    }
+    const ok = await askDialog({ title: 'Pubblicare questo menù?', body: menuPreview(menu), confirmLabel: 'Pubblica' });
+    if (!ok) return;
+    const saved = await staffCall(ctx, 'set_menu', { p_menu: { categories: menu.categories } }, error);
+    if (saved) {
+      await refreshMenu();
+      renderConfigSection(root, ctx).then(() => {
+        const msg = root.querySelector('.staff-ok');
+        if (msg) {
+          msg.textContent = `✅ Menù pubblicato (${saved.dishes} piatti).`;
+          msg.hidden = false;
+        }
+      });
+    }
+  });
+
   form.addEventListener('click', async (event) => {
+    const menuAction = event.target.closest('[data-menu]')?.dataset.menu;
+    if (menuAction === 'template') return downloadText('menu-sagra-template.csv', menuTemplate());
+    if (menuAction === 'upload') return menuFile.click();
     const edit = event.target.closest('[data-edit]')?.dataset.edit;
     if (edit) return askDate(edit);
     const game = event.target.closest('[data-game-settings]')?.dataset.gameSettings;
@@ -165,9 +262,16 @@ export async function renderConfigSection(root, ctx) {
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    const perDay = form.attempts_unlimited.checked ? 0 : Number(form.attempts_per_day.value);
+    if (!form.attempts_unlimited.checked && !(Number.isInteger(perDay) && perDay >= 1 && perDay <= 99)) {
+      error.textContent = 'Tentativi: scrivi un numero da 1 a 99, oppure scegli "Illimitati".';
+      error.hidden = false;
+      form.attempts_per_day.focus();
+      return;
+    }
     const values = {
       sections: Object.fromEntries(SECTIONS.map((s) => [s.id, form[`section_${s.id}`].checked])),
-      attempts_per_day: Number(form.attempts_per_day.value),
+      attempts_per_day: perDay, // 0 = illimitati
       attempts_reset_hour: Number(form.attempts_reset_hour.value),
       games_open_from: schedule.games_open_from,
       games_open_until: schedule.games_open_until,

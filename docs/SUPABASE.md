@@ -36,6 +36,8 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/018_ip_affidabile.sql` | 8 | IP del telefono solo da fonti affidabili (non falsificabile) |
 | `supabase/migrations/019_acchiappa_livelli_a_timer.sql` | 8 | Acchiappa: livelli a timer (sforamento → livello successivo) |
 | `supabase/migrations/020_personaggi_velenosi.sql` | 8 | 4 personaggi velenosi, cambio del personaggio dal profilo |
+| `supabase/migrations/022_ruoli_dal_pannello.sql` | 8 | l'Admin promuove e declassa (superadmin = account "staff") |
+| `supabase/migrations/023_menu_dal_pannello.sql` | 8 | menù caricato dal pannello (file CSV con anteprima), tentativi da 0 (illimitati) a 99 |
 | `supabase/migrations/021_ruoli_e_sezioni.sql` | 8 | ruoli Mod e Admin (l'account "staff" diventa Admin), sezioni dell'app accendibili, Configurazioni e Registro solo Admin |
 
 Impostazioni dei giochi (SQL Editor):
@@ -80,7 +82,8 @@ where nickname = 'Staff-Nome' and role = 'staff';
 
 Togliere un account staff: `delete from players where nickname = 'Staff-Nome' and role = 'staff';`
 
-Promuovere un Mod ad Admin (o il contrario): `update players set role = 'admin' where nickname = 'Staff-Nome';`
+Dal pannello (D95): l'Admin, nella scheda di un giocatore, lo rende Mod o Admin, e riporta un Mod a giocatore. Togliere o abbassare un Admin lo può fare solo il **superadmin** (l'account "staff"), che nessuno può declassare.
+Chi viene promosso entra nel pannello con il suo nickname e il suo PIN.
 
 ⚠️ Il SQL Editor salva le query: dopo aver creato l'account (o cambiato la password) cancella quella query
 dall'elenco delle query salvate/recenti, così la password non resta scritta da nessuna parte.

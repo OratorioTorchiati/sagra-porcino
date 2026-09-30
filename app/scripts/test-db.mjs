@@ -449,6 +449,33 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
     logSettings.entries.every((e) => e.action === 'settings'));
   const tomorrow = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
   check('staff: registro filtrato per giorno', (await staff('log_list', { p_day: tomorrow }))?.total === 0);
+
+  // Ruoli dal pannello (022): giocatore → Admin; un Admin normale non può declassare un altro Admin (solo il superadmin)
+  const me = (await rpc('get_my_profile', { p_token: S })).body?.player;
+  check('Admin: l\'account di prova è il superadmin', me?.superadmin === true, JSON.stringify(me));
+  check('Admin: non si cambia il proprio ruolo', (await staff('set_role', { p_nickname: env.TEST_STAFF_NICKNAME, p_role: 'player' }))?.error === 'ROLE_SELF');
+  const toAdmin = await staff('set_role', { p_nickname: t5Nick, p_role: 'admin' });
+  const toAdmin2 = await staff('set_role', { p_nickname: lockNick, p_role: 'admin' });
+  const t5Profile = (await rpc('get_my_profile', { p_token: t5Token })).body?.player;
+  check('Admin: un giocatore diventa Admin (e la sua sessione lo vede)', toAdmin?.ok && toAdmin2?.ok && t5Profile?.role === 'admin', JSON.stringify(toAdmin));
+  const byNormalAdmin = (await rpc('staff_set_role', { p_token: t5Token, p_nickname: lockNick, p_role: 'staff' })).body;
+  check('Admin normale: non può declassare un altro Admin', byNormalAdmin?.error === 'ROLE_ONLY_SUPERADMIN', JSON.stringify(byNormalAdmin));
+  const superByNormal = (await rpc('staff_set_role', { p_token: t5Token, p_nickname: env.TEST_STAFF_NICKNAME, p_role: 'player' })).body;
+  check('Admin normale: il superadmin non si tocca', superByNormal?.error === 'ROLE_SUPERADMIN', JSON.stringify(superByNormal));
+  const down = [await staff('set_role', { p_nickname: lockNick, p_role: 'staff' }), await staff('set_role', { p_nickname: lockNick, p_role: 'player' }),
+    await staff('set_role', { p_nickname: t5Nick, p_role: 'player' })];
+  check('superadmin: declassa Admin → Mod → giocatore', down.every((r) => r?.ok), JSON.stringify(down));
+  const modTry = (await rpc('staff_get_settings', { p_token: t5Token })).body;
+  check('ex Admin tornato giocatore: niente pannello', modTry?.error === 'NOT_STAFF', JSON.stringify(modTry));
+  check('registro: i cambi di ruolo ci sono', (await staff('log_list', { p_action: 'role' }))?.entries?.some((e) => e.target === t5Nick && e.details?.to === 'player'));
+
+  // Menù dal pannello (023): lettura per tutti; un menù non valido viene rifiutato (niente menù vero: cambierebbe l'app)
+  check('menù: get_menu risponde anche senza account', (await rpc('get_menu')).body?.ok === true);
+  const badMenu = await staff('set_menu', { p_menu: { categories: [{ name: 'Primi', dishes: [{ name: '', price: 'nove' }] }] } });
+  check('menù: piatto senza nome e prezzo non numerico → rifiutato', badMenu?.error === 'MENU_INVALID', JSON.stringify(badMenu));
+  check('menù: un giocatore non può caricarlo', (await rpc('staff_set_menu', { p_token: t5Token, p_menu: { categories: [] } })).body?.error === 'NOT_STAFF');
+  // Tentativi: da 0 (illimitati) a 99
+  check('tentativi: 100 al giorno → rifiutato', (await staff('update_settings', { p_values: { attempts_per_day: 100 } }))?.error === 'ATTEMPTS_INVALID');
   if (mine) {
     const rep = await staff('attempt_replay', { p_attempt_id: mine.id });
     check('staff: "Rivedi partita" riceve seme, azioni e durata', rep?.ok && rep.attempt.seed !== null && Array.isArray(rep.attempt.actions) && rep.attempt.actions.length > 5 && rep.attempt.stats.durationMs > 0);

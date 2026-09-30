@@ -3,7 +3,7 @@
 // (reset PIN col codice del telefono, disattiva/riattiva, punti extra, cancella).
 
 import { escapeHtml } from '../lib/dom.js';
-import { isStaffRole, roleLabel } from '../lib/account.js';
+import { isStaffRole, isAdminRole, roleLabel, currentPlayer } from '../lib/account.js';
 import { deviceCode } from '../lib/device.js';
 import { formatPoints } from '../lib/leaderboard.js';
 import { avatarSvg, playerStatsMarkup } from '../components/player-card.js';
@@ -54,6 +54,28 @@ export function playerPhones(p) {
     phone.userAgent = phone.userAgent ?? s.user_agent ?? null;
   }
   return [...byId.values()];
+}
+
+// Ruolo (solo per l'Admin, D95): giocatore → Mod/Admin, Mod → Admin/giocatore; un Admin lo abbassa solo il superadmin
+const ROLE_BUTTONS = {
+  player: [['staff', '🛡️ Rendi Mod'], ['admin', '👑 Rendi Admin']],
+  staff: [['admin', '👑 Rendi Admin'], ['player', '👤 Riporta a giocatore']],
+  admin: [['staff', '🛡️ Riporta a Mod'], ['player', '👤 Riporta a giocatore']],
+};
+
+function roleMarkup(p) {
+  const me = currentPlayer();
+  if (!isAdminRole(me?.role)) return '';
+  let content;
+  if (p.nickname.toLowerCase() === me.nickname.toLowerCase()) content = '<p class="staff-muted">È il tuo account: il ruolo lo cambia un altro Admin.</p>';
+  else if (p.superadmin) content = '<p class="staff-muted">È il superadmin: il ruolo non si può cambiare.</p>';
+  else if (p.role === 'admin' && !me.superadmin) content = '<p class="staff-muted">Un Admin lo può togliere solo il superadmin.</p>';
+  else {
+    content = `<div class="staff-actions">${ROLE_BUTTONS[p.role]
+      .map(([role, label]) => `<button type="button" class="button button--secondary" data-action="role" data-role="${role}">${label}</button>`)
+      .join('')}</div>`;
+  }
+  return `<h3 class="staff-h3">🎖️ Ruolo: ${roleLabel(p.role)}${p.superadmin ? ' (superadmin)' : ''}</h3>${content}`;
 }
 
 function detailMarkup(p) {
@@ -131,8 +153,9 @@ function detailMarkup(p) {
             <button type="button" class="button button--secondary" data-action="toggle">${p.disabled ? '✅ Togli ban' : '⛔ Ban account'}</button>
             <button type="button" class="button button--danger" data-action="delete">🗑️ Cancella account</button>
           </div>`
-        : '<p class="staff-muted">Gli account staff si gestiscono dal database.</p>'
+        : ''
     }
+    ${roleMarkup(p)}
     <div class="form-error" role="alert" hidden></div>
     <p class="staff-ok" role="status" hidden></p>`;
 }
@@ -264,6 +287,18 @@ export function renderPlayersSection(root, ctx) {
       const id = Number(event.target.closest('[data-id]').dataset.id);
       const ok = await askDialog({ title: 'Togliere questi punti extra?', confirmLabel: 'Togli' });
       if (ok && (await staffCall(ctx, 'delete_extra_points', { p_id: id }, detailError))) showDetail(nick, '✅ Punti extra tolti.');
+    } else if (action === 'role') {
+      const role = event.target.closest('[data-role]').dataset.role;
+      const what = { player: 'giocatore', staff: 'Mod', admin: 'Admin' }[role];
+      const effects = {
+        player: '<p>Torna un giocatore normale: niente pannello, e compare di nuovo in classifica.</p>',
+        staff: '<p>Come Mod entra nel pannello (Giocatori, Da controllare, Telefoni, Classifica) con il suo nickname e il suo PIN. Non compare in classifica.</p>',
+        admin: '<p>Come Admin entra nel pannello con il suo nickname e il suo PIN e può fare tutto, anche le Configurazioni. Non compare in classifica.</p>',
+      }[role];
+      const ok = await askDialog({ title: `${escapeHtml(nick)} diventa ${what}?`, body: effects, confirmLabel: `Sì, ${what}` });
+      if (ok && (await staffCall(ctx, 'set_role', { p_nickname: nick, p_role: role }, detailError))) {
+        showDetail(nick, `✅ ${nick} ora è ${what}.`);
+      }
     } else if (action === 'toggle') {
       const disable = !current.disabled;
       const ok = await askDialog({

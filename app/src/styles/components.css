@@ -2060,6 +2060,9 @@ dialog:not([open]) {
 
 .config-row__label {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   font-weight: 700;
 }
 
@@ -2073,16 +2076,137 @@ dialog:not([open]) {
   text-align: center;
 }
 
+.config-row__time {
+  width: 6.5rem;
+  padding: 0 0.5rem;
+  text-align: center;
+}
+
+.config-row__button {
+  min-height: var(--tap-min);
+  padding: 0.3rem 0.9rem;
+  font-size: 1rem;
+}
+
+/* Suggerimento sotto il nome della riga */
+.config-row__hint {
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--color-text-muted);
+}
+
+/* Opzione a spunta dentro una riga (es. "∞ Illimitati") */
+.config-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: var(--tap-min);
+  padding: 0 0.6rem;
+  border: 2px solid var(--color-border);
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.config-chip:has(input:checked) {
+  border-color: var(--color-forest);
+  background: #e6f0e8;
+}
+
+.config-chip input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--color-forest);
+}
+
+/* Anteprima del menù prima di pubblicarlo; errori del file */
+.menu-preview {
+  max-height: 45vh;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.menu-preview__category {
+  margin: 0.5rem 0 0.2rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.menu-preview ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-preview li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.menu-errors {
+  max-height: 45vh;
+  overflow-y: auto;
+  padding-left: 1.2rem;
+  color: #a3261d;
+}
+
+/* Data sotto il titolo della riga ("Aprono sab 17/10, 15:00 ✏️"): attaccata al titolo */
 .config-row__info {
-  align-self: flex-start;
-  margin-top: -0.25rem;
-  padding: 0.25rem 0;
+  padding: 0;
   border: 0;
   background: none;
   font: inherit;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.3;
   color: var(--color-text-muted);
   text-align: left;
   cursor: pointer;
+}
+
+/* Elenchi in tabella (es. i giochi): nome, impostazioni, interruttore */
+.config-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.config-table th {
+  padding: 0.3rem 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-align: center;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.config-table th:first-child {
+  text-align: left;
+}
+
+.config-table td {
+  padding: 0.35rem 0.4rem;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.config-table td:first-child {
+  text-align: left;
+  font-weight: 700;
+}
+
+.config-table tbody tr:nth-child(even) {
+  background: var(--color-bg);
+}
+
+.config-table .switch {
+  justify-content: center;
 }
 
 .config-card__body p {
@@ -2095,9 +2219,15 @@ dialog:not([open]) {
   gap: 0.5rem;
 }
 
+/* Titolo di un gruppo (Giochi, Orari…): marcato, con una riga sotto */
 .config-group__title {
   margin: 0;
+  padding-bottom: 0.2rem;
+  font-family: var(--font-title);
+  font-size: 1.15rem;
   font-weight: 800;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-accent, var(--color-border));
 }
 
 .config-card--future {

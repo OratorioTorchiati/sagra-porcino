@@ -34,7 +34,7 @@ function loginMarkup(message = '') {
       <p>Accesso riservato agli organizzatori.</p>
       ${player ? `<p class="notice">Ora sei dentro come <strong>${escapeHtml(player.nickname)}</strong>: entrando come staff uscirai da questo account (poi potrai rientrare col suo PIN).</p>` : ''}
       <label class="form-field">
-        <span class="form-field__label">Nickname staff</span>
+        <span class="form-field__label">Nickname</span>
         <input class="form-field__input" name="nickname" autocomplete="username" autocapitalize="off" spellcheck="false" required>
       </label>
       <label class="form-field">

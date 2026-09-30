@@ -1,6 +1,7 @@
 // Converte contenuti/menu.csv (compilato con Excel dagli organizzatori) nei dati del menù usati dall'app.
 // Gira durante la build (e in sviluppo): se il file contiene errori la build si ferma con l'elenco delle righe
-// da correggere, così un menù sbagliato non viene mai pubblicato.
+// da correggere, così un menù sbagliato non viene mai pubblicato. Lo usa anche il pannello Admin per il menù
+// caricato dal telefono (D96): stessi controlli, errori mostrati prima di pubblicare.
 
 /** Simboli ammessi nella colonna "simboli" → descrizione mostrata nella legenda. */
 export const SYMBOLS = {
@@ -175,7 +176,9 @@ export function parseMenuCsv(text) {
     errors.push('Manca la riga con i nomi delle colonne: categoria;piatto;descrizione;prezzo;simboli;allergeni');
   }
   if (errors.length) {
-    throw new Error(`Il file menu.csv contiene errori:\n  - ${errors.join('\n  - ')}`);
+    const error = new Error(`Il file menu.csv contiene errori:\n  - ${errors.join('\n  - ')}`);
+    error.errors = errors; // per il pannello Admin, che le mostra in elenco
+    throw error;
   }
   return { categories };
 }

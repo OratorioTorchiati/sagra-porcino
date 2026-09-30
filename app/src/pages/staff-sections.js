@@ -184,6 +184,8 @@ const ACTIONS = {
   ban: 'ha bannato',
   exclusion: 'ha confermato l\'esclusione di una partita di',
   settings: 'ha cambiato le impostazioni',
+  role: 'ha cambiato il ruolo di',
+  menu: 'ha caricato un nuovo menù',
 };
 
 // Filtro "tipo di azione" → valore passato al server
@@ -197,6 +199,8 @@ const ACTION_FILTERS = [
   ['extra', 'Punti extra'],
   ['attempt', 'Partite approvate'],
   ['settings', 'Impostazioni'],
+  ['role', 'Ruoli'],
+  ['menu', 'Menù'],
 ];
 
 export function renderLogSection(root, ctx) {
@@ -231,7 +235,12 @@ export function renderLogSection(root, ctx) {
     list.innerHTML = res.entries.length
       ? `<p class="staff-muted">${res.total} azioni</p><ul class="staff-list">${res.entries
           .map((e) => {
-            const extra = e.details?.points ? ` (${e.details.points > 0 ? '+' : ''}${e.details.points}: ${escapeHtml(e.details.reason ?? '')})` : '';
+            const roleName = (r) => ({ player: 'giocatore', staff: 'Mod', admin: 'Admin' })[r] ?? escapeHtml(String(r));
+            const extra = e.details?.points
+              ? ` (${e.details.points > 0 ? '+' : ''}${e.details.points}: ${escapeHtml(e.details.reason ?? '')})`
+              : e.action === 'role' && e.details
+                ? ` (${roleName(e.details.from)} → ${roleName(e.details.to)})`
+                : '';
             return `<li>${formatDate(e.created_at)} · <strong>${escapeHtml(e.staff)}</strong> ${ACTIONS[e.action] ?? escapeHtml(e.action)} ${e.target ? `<strong>${escapeHtml(e.target)}</strong>` : ''}${extra}</li>`;
           })
           .join('')}</ul>${pagerMarkup(res.page, res.total, res.page_size)}`

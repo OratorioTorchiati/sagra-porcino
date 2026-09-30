@@ -5,7 +5,7 @@
 import { html, escapeHtml } from '../lib/dom.js';
 import { readJson, writeJson } from '../lib/storage.js';
 import { rpc, NetworkError } from '../lib/api.js';
-import { currentPlayer, sessionToken, refreshProfile } from '../lib/account.js';
+import { currentPlayer, sessionToken, refreshProfile, isStaffRole } from '../lib/account.js';
 import { enqueueScore, onSubmitResult, resultFor, isPending } from '../lib/queue.js';
 import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason, NO_ATTEMPTS_TEXT } from '../lib/games-state.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
@@ -134,7 +134,9 @@ export function renderGame({ gameId }) {
         } else if (reason) {
           markup = notice('blocked', `⏳ ${reason.text}`);
         } else if (gamesState?.unlimited) {
-          markup = notice('info', '🛠️ <strong>Staff</strong>: tentativi illimitati. I tuoi punti non vanno in classifica.');
+          markup = isStaffRole(player.role)
+            ? notice('info', '🛠️ <strong>Staff</strong>: tentativi illimitati. I tuoi punti non vanno in classifica.')
+            : notice('info', '♾️ Oggi i tentativi sono <strong>illimitati</strong>: gioca quanto vuoi, vale il punteggio migliore.');
           canPlay = true;
         } else {
           const left = attemptsLeft(gamesState, game.id);

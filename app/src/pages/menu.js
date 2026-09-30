@@ -1,7 +1,7 @@
-// Menù della sagra, generato da contenuti/menu.csv durante la build (vedi scripts/menu-plugin.js).
-// È incluso nell'app, quindi si legge anche senza rete.
+// Menù della sagra: quello caricato dall'Admin dal pannello (D96) o, se non c'è, quello incluso nell'app
+// (contenuti/menu.csv, vedi scripts/menu-plugin.js). Resta sul telefono, quindi si legge anche senza rete.
 
-import menu from 'virtual:menu';
+import { currentMenu, onMenuChange, refreshMenu } from '../lib/menu-data.js';
 import { html, escapeHtml } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import porcinoSvg from '../assets/porcino.svg?raw';
@@ -88,16 +88,18 @@ export function renderMenu() {
     <main class="page">
       ${topBarMarkup()}
       <h1 class="page-title"><span class="page-title__icon" aria-hidden="true">🍽️</span>Menù</h1>
-      ${menuMarkup(menu.categories)}
+      <div class="menu-body">${menuMarkup(currentMenu().categories)}</div>
     </main>
   `);
   bindTopBar(element);
+  const body = element.querySelector('.menu-body');
+  // Menù aggiornato dal pannello: si ridisegna da solo
+  const stop = onMenuChange((menu) => (body.innerHTML = menuMarkup(menu.categories)));
+  refreshMenu();
 
-  element.querySelectorAll('.menu-jump').forEach((button) => {
-    button.addEventListener('click', () => {
-      element.querySelector(`#${button.dataset.target}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+  element.addEventListener('click', (event) => {
+    const button = event.target.closest('.menu-jump');
+    if (button) element.querySelector(`#${button.dataset.target}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
-
-  return { title: 'Menù', element };
+  return { title: 'Menù', element, destroy: stop };
 }

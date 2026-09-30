@@ -8,7 +8,7 @@ import { html } from '../lib/dom.js';
 import { readJson, writeJson } from '../lib/storage.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { GAMES, PRACTICE_MODE } from '../games/registry.js';
-import { currentPlayer } from '../lib/account.js';
+import { currentPlayer, isStaffRole } from '../lib/account.js';
 import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason, gameInfo } from '../lib/games-state.js';
 import { setAfterLogin } from './auth-messages.js';
 import gamepadSvg from '../assets/gamepad.svg?raw';
@@ -48,7 +48,7 @@ function cardStatus(game, state, player) {
   let first;
   if (reason?.code === 'closed') first = 'Gioco concluso';
   else if (reason) first = `🔒 ${reason.text}`;
-  else if (state.unlimited) first = 'Staff: tentativi illimitati';
+  else if (state.unlimited) first = isStaffRole(currentPlayer()?.role) ? 'Staff: tentativi illimitati' : '♾️ Tentativi illimitati';
   else first = `Tentativi oggi: <strong>${attemptsLeft(state, game.id)}/${state.attempts_per_day}</strong>`;
   return [first, bestLine].filter(Boolean);
 }
