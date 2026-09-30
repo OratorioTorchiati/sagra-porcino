@@ -9,6 +9,7 @@ import { currentPlayer, login } from '../lib/account.js';
 import { authErrorMessage, OFFLINE_MESSAGE, NOT_CONFIGURED_MESSAGE, takeAfterLogin } from './auth-messages.js';
 import { LOGIN_PIN_RE } from '../lib/pin.js';
 import { fillDeviceCode } from '../components/device-code.js';
+import { enhancePinInputs, refreshPinInput } from '../components/pin-input.js';
 
 export function renderLogin() {
   const player = currentPlayer();
@@ -27,7 +28,7 @@ export function renderLogin() {
         </label>
         <label class="form-field form-field--pin">
           <span class="form-field__label">PIN</span>
-          <input class="form-field__input form-field__input--pin" name="pin" placeholder="–––––" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="current-password" required>
+          <input class="form-field__input form-field__input--pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="current-password" required>
         </label>
         <div class="form-error" role="alert" hidden></div>
         <button type="submit" class="button button--play">ENTRA</button>
@@ -65,6 +66,7 @@ export function renderLogin() {
   `);
   bindTopBar(element);
   fillDeviceCode(element);
+  enhancePinInputs(element);
 
   const form = element.querySelector('.auth-form');
   if (form) {
@@ -93,6 +95,7 @@ export function renderLogin() {
         }
         showError(authErrorMessage(result));
         form.elements.pin.value = '';
+        refreshPinInput(form.elements.pin);
       } catch (error) {
         showError(error instanceof NetworkError ? OFFLINE_MESSAGE : authErrorMessage({}));
       }

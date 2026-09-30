@@ -1033,28 +1033,84 @@ img.memory-card__image {
 }
 
 /*
- * 5 caratteri grandi con spazio tra l'uno e l'altro: il campo deve contenerli tutti con margine
- * (a 10rem la prima e l'ultima cifra restavano tagliate). Cifre a larghezza fissa, tutto al centro.
+ * Campo PIN a 5 caselle (D90, components/pin-input.js): trattini per le cifre mancanti, pallino per quelle
+ * scritte, cursore che lampeggia sul trattino della prossima cifra. Il vero <input> è invisibile e sta sopra
+ * alle caselle: riceve i tocchi, la tastiera e il riempimento automatico.
  */
-.form-field__input--pin {
+.pin-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
   width: 100%;
   max-width: 14rem;
-  padding: 0 0.75rem;
-  letter-spacing: 0.4em;
-  font-size: 1.5rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  /* cifre e trattini al centro (il rientro compensa la spaziatura dopo l'ultimo carattere) */
-  text-align: center;
-  text-indent: 0.4em;
+  min-height: var(--tap-min);
+  margin-inline: auto;
+  padding: 0 0.5rem;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  cursor: text;
 }
 
-/* 5 trattini quando è vuoto, grandi come le cifre: si capisce che servono 5 cifre (D86) */
-.form-field__input--pin::placeholder {
-  color: var(--color-text-muted);
-  opacity: 0.8;
-  letter-spacing: 0.4em;
+.pin-box:focus-within {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 1px;
+  border-color: var(--color-focus);
+}
+
+.pin-box .form-field__input--pin {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  font-size: 16px; /* niente zoom automatico su iPhone */
+  caret-color: transparent;
+}
+
+.pin-box__slot {
+  position: relative;
+  width: 1.5em;
+  font-size: 1.5rem;
   font-weight: 800;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.pin-box__slot:not(.is-filled) {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+/* Il trattino della prossima cifra diventa il cursore che lampeggia (solo mentre si scrive) */
+.pin-box:focus-within .pin-box__slot.is-active {
+  color: transparent;
+}
+
+.pin-box:focus-within .pin-box__slot.is-active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  bottom: 20%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--color-text);
+  opacity: 1;
+  animation: pin-caret 1s steps(1) infinite;
+}
+
+@keyframes pin-caret {
+  50% {
+    opacity: 0;
+  }
 }
 
 .form-field__hint {
