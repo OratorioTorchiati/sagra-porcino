@@ -162,4 +162,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 10 (contenuti) | In corso | 2026-09-30 | Memory: foto appoggiate sul fondo della carta, Salvatore più grande (D92). |
 | 8 (ritocchi) | Completata | 2026-09-30 | Migrazione 021 applicata. Ruoli Mod/Admin, ⚙️ Configurazioni per sezione, sezioni della home accendibili (D93). |
 | 8 (ritocchi) | Completata | 2026-09-30 | Pannello Admin (#/admin) e Configurazioni riorganizzate: interruttori accanto ai titoli, schede che si chiudono, orari con APERTO/CHIUSO e finestra per la data (D94). |
-| 8 (ritocchi) | Completata | 2026-09-30 | Ruoli dal pannello con superadmin (D95), menù caricato dal pannello con template e anteprima (D96), tentativi illimitati (D97); migrazioni 022 e 023. |
+| 8 (ritocchi) | Completata | 2026-09-30 | Ruoli dal pannello con superadmin (D95), menù caricato dal pannello con template e anteprima (D96), tentativi illimitati (D97). Migrazioni 022 e 023 applicate: 120/120 controlli. |
