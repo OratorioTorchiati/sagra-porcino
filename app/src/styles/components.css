@@ -1008,7 +1008,7 @@ img.memory-card__image {
 }
 
 .form-field--pin {
-  max-width: 10rem;
+  max-width: 14rem;
 }
 
 .form-field--nick .form-field__input {
@@ -1032,20 +1032,29 @@ img.memory-card__image {
   border-color: var(--color-focus);
 }
 
+/*
+ * 5 caratteri grandi con spazio tra l'uno e l'altro: il campo deve contenerli tutti con margine
+ * (a 10rem la prima e l'ultima cifra restavano tagliate). Cifre a larghezza fissa, tutto al centro.
+ */
 .form-field__input--pin {
-  max-width: 10rem;
+  width: 100%;
+  max-width: 14rem;
+  padding: 0 0.75rem;
   letter-spacing: 0.4em;
   font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
   /* cifre e trattini al centro (il rientro compensa la spaziatura dopo l'ultimo carattere) */
   text-align: center;
   text-indent: 0.4em;
 }
 
-/* 5 trattini quando è vuoto: si capisce che servono 5 cifre (D86) */
+/* 5 trattini quando è vuoto, grandi come le cifre: si capisce che servono 5 cifre (D86) */
 .form-field__input--pin::placeholder {
   color: var(--color-text-muted);
   opacity: 0.8;
   letter-spacing: 0.4em;
+  font-weight: 800;
 }
 
 .form-field__hint {

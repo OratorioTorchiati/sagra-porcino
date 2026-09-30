@@ -27,7 +27,7 @@ export function renderLogin() {
         </label>
         <label class="form-field form-field--pin">
           <span class="form-field__label">PIN</span>
-          <input class="form-field__input form-field__input--pin" name="pin" placeholder="-----" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="current-password" required>
+          <input class="form-field__input form-field__input--pin" name="pin" placeholder="–––––" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="current-password" required>
         </label>
         <div class="form-error" role="alert" hidden></div>
         <button type="submit" class="button button--play">ENTRA</button>
