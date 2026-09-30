@@ -39,7 +39,12 @@ startRouter(document.getElementById('app'), {
     '/registrati': renderRegister,
     '/accedi': renderLogin,
     '/privacy': renderPrivacy,
-    '/staff': renderStaff,
+    '/admin': renderStaff,
+    // vecchio indirizzo del pannello (D94)
+    '/staff': () => {
+      location.replace('#/admin');
+      return renderStaff();
+    },
   },
   notFound: renderNotFound,
 });

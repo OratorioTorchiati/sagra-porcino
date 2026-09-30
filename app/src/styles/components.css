@@ -1985,17 +1985,7 @@ dialog:not([open]) {
   color: #fff;
 }
 
-/* ---------- ⚙️ Configurazioni (solo Admin, D93) ---------- */
-
-.staff-config-button {
-  margin-bottom: 1rem;
-}
-
-.staff-config-button.is-active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
-}
+/* ---------- ⚙️ Configurazioni (solo Admin, D93, D94) ---------- */
 
 .config-form {
   display: flex;
@@ -2006,11 +1996,18 @@ dialog:not([open]) {
 .config-card {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border-radius: var(--radius);
   background: var(--color-surface);
   box-shadow: var(--shadow);
+}
+
+/* Titolo a sinistra, interruttore a destra */
+.config-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .config-card__title {
@@ -2020,12 +2017,72 @@ dialog:not([open]) {
   color: var(--color-primary);
 }
 
+/* Scheda spenta: il contenuto si chiude (animato), resta solo il titolo */
+.config-card__fold {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.config-card.is-off .config-card__fold {
+  grid-template-rows: 0fr;
+}
+
+.config-card__fold > .config-card__body {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.config-card.is-off .config-card__title {
+  color: var(--color-text-muted);
+}
+
 .config-card__body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding-top: 0.75rem;
+}
+
+.config-card__body::before {
+  content: '';
+  display: block;
+  margin-top: 0.75rem;
   border-top: 2px solid var(--color-border);
+}
+
+/* Una riga di impostazione: nome a sinistra, controlli a destra */
+.config-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--tap-min);
+}
+
+.config-row__label {
+  flex: 1;
+  font-weight: 700;
+}
+
+.config-row__state {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.config-row__number {
+  width: 5rem;
+  text-align: center;
+}
+
+.config-row__info {
+  align-self: flex-start;
+  margin-top: -0.25rem;
+  padding: 0.25rem 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--color-text-muted);
+  text-align: left;
+  cursor: pointer;
 }
 
 .config-card__body p {
@@ -2044,6 +2101,7 @@ dialog:not([open]) {
 }
 
 .config-card--future {
+  gap: 0.75rem;
   opacity: 0.75;
 }
 

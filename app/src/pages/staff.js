@@ -1,4 +1,4 @@
-// Pannello staff (#/staff, Tappa 8, D73). Si entra con nickname + password di un account staff.
+// Pannello Admin (#/admin, prima #/staff; Tappa 8, D73, D94). Si entra con nickname + password di un account staff.
 // Ruoli (D93): Mod (ruolo "staff") = Giocatori, Da controllare, Telefoni, Classifica; Admin = in più Registro e
 // ⚙️ Configurazioni. Tutto passa dalle funzioni staff_* del server, che controllano il ruolo a ogni chiamata.
 
@@ -50,7 +50,7 @@ export function renderStaff() {
   const element = html(`
     <main class="page staff-page">
       ${topBarMarkup({ showAccount: false })}
-      <h1 class="page-title">🛠️ Pannello staff</h1>
+      <h1 class="page-title">🛠️ Pannello Admin</h1>
       <div class="staff-body"></div>
     </main>
   `);
@@ -95,22 +95,21 @@ export function renderStaff() {
     const admin = isAdminRole(me.role);
     const visible = [...SECTIONS, CONFIG].filter((s) => admin || !s.admin);
     body.innerHTML = `
-      <p class="staff-who">Sei dentro come <strong>${escapeHtml(me.nickname)}</strong> (${roleLabel(me.role)}).</p>
+      <p class="staff-who">Sei dentro come <strong>${roleLabel(me.role)}</strong>.</p>
       <nav class="staff-tabs" aria-label="Sezioni del pannello">
-        ${visible.filter((s) => s !== CONFIG).map((s) => `<button type="button" class="staff-tab" data-section="${s.id}">${s.label}</button>`).join('')}
+        ${visible.map((s) => `<button type="button" class="staff-tab" data-section="${s.id}">${s.label}</button>`).join('')}
       </nav>
-      ${admin ? `<button type="button" class="button button--secondary staff-config-button" data-section="${CONFIG.id}">${CONFIG.label}</button>` : ''}
       <section class="staff-section" aria-live="polite"></section>`;
     const section = body.querySelector('.staff-section');
     const open = (id) => {
       cleanup?.();
-      body.querySelectorAll('[data-section]').forEach((b) => b.classList.toggle('is-active', b.dataset.section === id));
+      body.querySelectorAll('.staff-tab').forEach((b) => b.classList.toggle('is-active', b.dataset.section === id));
       section.innerHTML = '';
       const result = visible.find((s) => s.id === id).render(section, { onNotStaff: () => showLogin('La sessione staff non è più valida: entra di nuovo.') });
       cleanup = typeof result === 'function' ? result : null; // le sezioni che caricano e basta non hanno niente da chiudere
     };
-    body.addEventListener('click', (event) => {
-      const id = event.target.closest('.staff-tab, .staff-config-button')?.dataset.section;
+    body.querySelector('.staff-tabs').addEventListener('click', (event) => {
+      const id = event.target.closest('.staff-tab')?.dataset.section;
       if (id) open(id);
     });
     open(sectionId);
@@ -119,5 +118,5 @@ export function renderStaff() {
   if (isStaffRole(currentPlayer()?.role)) showPanel();
   else showLogin();
 
-  return { title: 'Pannello staff', element, destroy: () => cleanup?.() };
+  return { title: 'Pannello Admin', element, destroy: () => cleanup?.() };
 }

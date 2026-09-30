@@ -57,7 +57,7 @@ insert into allowed_words (word) values ('parolainnocua');
 
 I file si possono rieseguire senza danni (`create ... if not exists`, `create or replace`).
 
-## 2b. Account dello staff: Mod e Admin (pannello `#/staff`)
+## 2b. Account dello staff: Mod e Admin (pannello `#/admin`)
 
 Due ruoli (D93):
 - **Mod** (`role = 'staff'`): giocatori (ricerca, reset PIN, ban, punti extra, cancella), partite da controllare con replay, telefoni, classifica.
@@ -85,7 +85,7 @@ Promuovere un Mod ad Admin (o il contrario): `update players set role = 'admin' 
 ⚠️ Il SQL Editor salva le query: dopo aver creato l'account (o cambiato la password) cancella quella query
 dall'elenco delle query salvate/recenti, così la password non resta scritta da nessuna parte.
 
-Si entra da `https://oratoriotorchiati.github.io/sagra-porcino/#/staff` (o dal Profilo → "🛠️ Pannello staff").
+Si entra da `https://oratoriotorchiati.github.io/sagra-porcino/#/admin` (o dal Profilo → "🛠️ Pannello Admin"; il vecchio `#/staff` porta lì).
 Mod e Admin hanno tentativi illimitati e non compaiono in classifica.
 
 ## 3. Collegare l'app
