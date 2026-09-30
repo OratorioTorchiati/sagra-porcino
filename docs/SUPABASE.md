@@ -36,6 +36,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/018_ip_affidabile.sql` | 8 | IP del telefono solo da fonti affidabili (non falsificabile) |
 | `supabase/migrations/019_acchiappa_livelli_a_timer.sql` | 8 | Acchiappa: livelli a timer (sforamento → livello successivo) |
 | `supabase/migrations/020_personaggi_velenosi.sql` | 8 | 4 personaggi velenosi, cambio del personaggio dal profilo |
+| `supabase/migrations/021_ruoli_e_sezioni.sql` | 8 | ruoli Mod e Admin (l'account "staff" diventa Admin), sezioni dell'app accendibili, Configurazioni e Registro solo Admin |
 
 Impostazioni dei giochi (SQL Editor):
 
@@ -56,9 +57,13 @@ insert into allowed_words (word) values ('parolainnocua');
 
 I file si possono rieseguire senza danni (`create ... if not exists`, `create or replace`).
 
-## 2b. Account staff (pannello `#/staff`)
+## 2b. Account dello staff: Mod e Admin (pannello `#/staff`)
 
-Gli account staff si creano a mano nel SQL Editor. **La password la scrivi tu** al posto di `SCRIVI-QUI-LA-PASSWORD`
+Due ruoli (D93):
+- **Mod** (`role = 'staff'`): giocatori (ricerca, reset PIN, ban, punti extra, cancella), partite da controllare con replay, telefoni, classifica.
+- **Admin** (`role = 'admin'`): tutto quello del Mod, più **⚙️ Configurazioni** (sezioni dell'app, minigiochi, tentativi, orari…) e **Registro**.
+
+Gli account si creano a mano nel SQL Editor (per un Admin scrivere `'admin'` al posto di `'staff'`). **La password la scrivi tu** al posto di `SCRIVI-QUI-LA-PASSWORD`
 (lunga, almeno 12 caratteri; non va mai nel repository né in chat). Il nickname è quello con cui si entra.
 
 ```sql
@@ -75,11 +80,13 @@ where nickname = 'Staff-Nome' and role = 'staff';
 
 Togliere un account staff: `delete from players where nickname = 'Staff-Nome' and role = 'staff';`
 
+Promuovere un Mod ad Admin (o il contrario): `update players set role = 'admin' where nickname = 'Staff-Nome';`
+
 ⚠️ Il SQL Editor salva le query: dopo aver creato l'account (o cambiato la password) cancella quella query
 dall'elenco delle query salvate/recenti, così la password non resta scritta da nessuna parte.
 
 Si entra da `https://oratoriotorchiati.github.io/sagra-porcino/#/staff` (o dal Profilo → "🛠️ Pannello staff").
-Gli account staff hanno tentativi illimitati e non compaiono in classifica.
+Mod e Admin hanno tentativi illimitati e non compaiono in classifica.
 
 ## 3. Collegare l'app
 

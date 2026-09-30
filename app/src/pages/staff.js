@@ -1,22 +1,24 @@
 // Pannello staff (#/staff, Tappa 8, D73). Si entra con nickname + password di un account staff.
-// Sezioni: Giocatori, Da controllare, Telefoni sospetti, Impostazioni, Classifica, Registro.
-// Tutto passa dalle funzioni staff_* del server, che controllano il ruolo a ogni chiamata.
+// Ruoli (D93): Mod (ruolo "staff") = Giocatori, Da controllare, Telefoni, Classifica; Admin = in più Registro e
+// ⚙️ Configurazioni. Tutto passa dalle funzioni staff_* del server, che controllano il ruolo a ogni chiamata.
 
 import { html, escapeHtml } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
-import { currentPlayer, login, logout } from '../lib/account.js';
+import { currentPlayer, login, logout, isStaffRole, isAdminRole, roleLabel } from '../lib/account.js';
 import { NetworkError } from '../lib/api.js';
 import { renderPlayersSection } from './staff-players.js';
-import { renderReviewSection, renderSuspiciousSection, renderSettingsSection, renderLeaderboardSection, renderLogSection } from './staff-sections.js';
+import { renderReviewSection, renderSuspiciousSection, renderLeaderboardSection, renderLogSection } from './staff-sections.js';
+import { renderConfigSection } from './staff-config.js';
 
+// admin: true = solo per l'Admin
 const SECTIONS = [
   { id: 'giocatori', label: '👤 Giocatori', render: renderPlayersSection },
   { id: 'controlli', label: '🚩 Da controllare', render: renderReviewSection },
   { id: 'sospetti', label: '📱 Telefoni', render: renderSuspiciousSection },
-  { id: 'impostazioni', label: '⚙️ Impostazioni', render: renderSettingsSection },
   { id: 'classifica', label: '🏆 Classifica', render: renderLeaderboardSection },
-  { id: 'registro', label: '📜 Registro', render: renderLogSection },
+  { id: 'registro', label: '📜 Registro', render: renderLogSection, admin: true },
 ];
+const CONFIG = { id: 'configurazioni', label: '⚙️ Configurazioni', render: renderConfigSection, admin: true };
 
 const LOGIN_ERRORS = {
   WRONG_CREDENTIALS: 'Nickname o password sbagliati.',
@@ -72,9 +74,9 @@ export function renderStaff() {
         if (!result.ok) {
           error.textContent = LOGIN_ERRORS[result.error] ?? 'Accesso non riuscito.';
           error.hidden = false;
-        } else if (result.player.role !== 'staff') {
+        } else if (!isStaffRole(result.player.role)) {
           await logout();
-          error.textContent = 'Questo non è un account staff.';
+          error.textContent = 'Questo non è un account dello staff.';
           error.hidden = false;
         } else {
           showPanel();
@@ -90,28 +92,31 @@ export function renderStaff() {
 
   function showPanel(sectionId = SECTIONS[0].id) {
     const me = currentPlayer();
+    const admin = isAdminRole(me.role);
+    const visible = [...SECTIONS, CONFIG].filter((s) => admin || !s.admin);
     body.innerHTML = `
-      <p class="staff-who">Sei dentro come <strong>${escapeHtml(me.nickname)}</strong> (staff).</p>
+      <p class="staff-who">Sei dentro come <strong>${escapeHtml(me.nickname)}</strong> (${roleLabel(me.role)}).</p>
       <nav class="staff-tabs" aria-label="Sezioni del pannello">
-        ${SECTIONS.map((s) => `<button type="button" class="staff-tab" data-section="${s.id}">${s.label}</button>`).join('')}
+        ${visible.filter((s) => s !== CONFIG).map((s) => `<button type="button" class="staff-tab" data-section="${s.id}">${s.label}</button>`).join('')}
       </nav>
+      ${admin ? `<button type="button" class="button button--secondary staff-config-button" data-section="${CONFIG.id}">${CONFIG.label}</button>` : ''}
       <section class="staff-section" aria-live="polite"></section>`;
     const section = body.querySelector('.staff-section');
     const open = (id) => {
       cleanup?.();
-      body.querySelectorAll('.staff-tab').forEach((b) => b.classList.toggle('is-active', b.dataset.section === id));
+      body.querySelectorAll('[data-section]').forEach((b) => b.classList.toggle('is-active', b.dataset.section === id));
       section.innerHTML = '';
-      const result = SECTIONS.find((s) => s.id === id).render(section, { onNotStaff: () => showLogin('La sessione staff non è più valida: entra di nuovo.') });
+      const result = visible.find((s) => s.id === id).render(section, { onNotStaff: () => showLogin('La sessione staff non è più valida: entra di nuovo.') });
       cleanup = typeof result === 'function' ? result : null; // le sezioni che caricano e basta non hanno niente da chiudere
     };
-    body.querySelector('.staff-tabs').addEventListener('click', (event) => {
-      const id = event.target.closest('[data-section]')?.dataset.section;
+    body.addEventListener('click', (event) => {
+      const id = event.target.closest('.staff-tab, .staff-config-button')?.dataset.section;
       if (id) open(id);
     });
     open(sectionId);
   }
 
-  if (currentPlayer()?.role === 'staff') showPanel();
+  if (isStaffRole(currentPlayer()?.role)) showPanel();
   else showLogin();
 
   return { title: 'Pannello staff', element, destroy: () => cleanup?.() };

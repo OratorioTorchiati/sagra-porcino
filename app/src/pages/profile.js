@@ -4,7 +4,7 @@
 
 import { html, escapeHtml, openDialog, closeDialog } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
-import { currentPlayer, logout, refreshProfile, changeAvatar } from '../lib/account.js';
+import { currentPlayer, logout, refreshProfile, changeAvatar, isStaffRole, roleLabel } from '../lib/account.js';
 import { NetworkError } from '../lib/api.js';
 import { charPickerMarkup, bindCharPicker } from '../components/char-picker.js';
 import { authErrorMessage, OFFLINE_MESSAGE } from './auth-messages.js';
@@ -25,8 +25,8 @@ const PENCIL_SVG = `<svg viewBox="0 0 40 40" aria-hidden="true">
 </svg>`;
 
 function statsMarkup(player, card) {
-  if (player.role === 'staff') {
-    return '<p class="notice">🛠️ Sei dello <strong>staff</strong>: i tuoi punti non vanno in classifica.</p><a class="button button--leaderboard" href="#/staff">🛠️ Pannello staff</a>';
+  if (isStaffRole(player.role)) {
+    return `<p class="notice">🛠️ Sei <strong>${roleLabel(player.role)}</strong>: i tuoi punti non vanno in classifica.</p><a class="button button--leaderboard" href="#/staff">🛠️ Pannello staff</a>`;
   }
   if (!card) return '<p class="leaderboard-note">Caricamento dei punti…</p>';
   return `${playerStatsMarkup(card)}<a class="button button--leaderboard" href="#/giochi/classifica">🏆 Vai alla classifica</a>`;
@@ -142,7 +142,7 @@ export function renderProfile() {
   if (currentPlayer()) refreshProfile().then(render).catch(() => {});
   // Punti aggiornati (senza rete resta l'ultima scheda salvata)
   const me = currentPlayer();
-  if (me && me.role !== 'staff') {
+  if (me && !isStaffRole(me.role)) {
     fetchPlayerCard(me.nickname)
       .then((card) => {
         const box = body.querySelector('.profile-stats');

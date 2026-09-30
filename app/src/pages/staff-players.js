@@ -3,6 +3,7 @@
 // (reset PIN col codice del telefono, disattiva/riattiva, punti extra, cancella).
 
 import { escapeHtml } from '../lib/dom.js';
+import { isStaffRole, roleLabel } from '../lib/account.js';
 import { deviceCode } from '../lib/device.js';
 import { formatPoints } from '../lib/leaderboard.js';
 import { avatarSvg, playerStatsMarkup } from '../components/player-card.js';
@@ -21,7 +22,7 @@ function resultsMarkup({ players, total, page, page_size: size }) {
       <li>
         <button type="button" class="rank-row staff-player-row${p.disabled ? ' is-disabled' : ''}" data-nickname="${escapeHtml(p.nickname)}">
           <span class="rank-row__avatar" aria-hidden="true">${avatarSvg(p.avatar)}</span>
-          <span class="rank-row__name">${escapeHtml(p.nickname)}${p.role === 'staff' ? ' <span class="me-tag">staff</span>' : ''}${p.disabled ? ' <span class="staff-tag staff-tag--off">bannato</span>' : ''}</span>
+          <span class="rank-row__name">${escapeHtml(p.nickname)}${isStaffRole(p.role) ? ` <span class="me-tag">${roleLabel(p.role)}</span>` : ''}${p.disabled ? ' <span class="staff-tag staff-tag--off">bannato</span>' : ''}</span>
           <span class="rank-row__points">${formatPoints(p.total)}</span>
         </button>
       </li>`,
@@ -102,7 +103,7 @@ function detailMarkup(p) {
     <div class="profile-card profile-card--compact">
       <span class="profile-card__avatar" aria-hidden="true">${avatarSvg(p.avatar)}</span>
       <p class="profile-card__nickname">${escapeHtml(p.nickname)}</p>
-      <p class="profile-card__character">${p.role === 'staff' ? 'Staff' : 'Giocatore'} · registrato ${formatDate(p.created_at)}${
+      <p class="profile-card__character">${roleLabel(p.role)} · registrato ${formatDate(p.created_at)}${
         p.disabled ? ' · <span class="staff-tag staff-tag--off">bannato</span>' : ''
       }</p>
     </div>

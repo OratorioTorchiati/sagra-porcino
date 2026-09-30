@@ -23,6 +23,13 @@ function save(next) {
   listeners.forEach((fn) => fn(state));
 }
 
+/** Account del pannello: Mod ('staff') o Admin (D93) */
+export const isStaffRole = (role) => role === 'staff' || role === 'admin';
+export const isAdminRole = (role) => role === 'admin';
+
+/** Nome del ruolo per le scritte */
+export const roleLabel = (role) => ({ staff: 'Mod', admin: 'Admin' })[role] ?? 'Giocatore';
+
 /** Giocatore collegato ({ nickname, avatar, role }) o null. */
 export function currentPlayer() {
   return state?.player ?? null;

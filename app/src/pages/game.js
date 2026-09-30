@@ -184,6 +184,8 @@ export function renderGame({ gameId }) {
       if (result.error === 'NOT_LOGGED_IN') {
         await refreshProfile().catch(() => {});
         startError = 'Devi rientrare nel tuo account.';
+      } else if (result.error === 'SECTION_OFF') {
+        startError = 'I minigiochi in questo momento non sono disponibili.';
       } else if (result.error === 'QUIZ_EMPTY') {
         startError = 'Il quiz non è ancora pronto. Riprova più tardi.';
       }

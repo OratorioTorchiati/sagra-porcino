@@ -4,7 +4,7 @@ import { escapeHtml } from '../lib/dom.js';
 import { formatPoints } from '../lib/leaderboard.js';
 import { GAMES } from '../games/registry.js';
 import { deviceCode } from '../lib/device.js';
-import { noteLabel, isoToRomeLocal, romeLocalToIso, toCsv, downloadText } from '../lib/staff.js';
+import { noteLabel, toCsv, downloadText } from '../lib/staff.js';
 import { staffCall, formatDate, askDialog, pagerMarkup } from './staff-ui.js';
 import { openReplay } from './staff-replay.js';
 
@@ -119,62 +119,6 @@ export async function renderSuspiciousSection(root, ctx) {
         .map((g) => `<li class="review-item"><p><strong>${g.count} account</strong> · impronta ${escapeHtml(g.fingerprint)}</p><p>${g.nicknames.map(escapeHtml).join(', ')}</p></li>`)
         .join('')}</ul>`
     : '<p class="leaderboard-note">Nessun gruppo sospetto. 👍</p>';
-}
-
-// ---------- Impostazioni ----------
-
-export async function renderSettingsSection(root, ctx) {
-  root.innerHTML = '<div class="form-error" role="alert" hidden></div><div class="staff-settings"><p class="leaderboard-note">Caricamento…</p></div>';
-  const error = root.querySelector('.form-error');
-  const res = await staffCall(ctx, 'get_settings', {}, error);
-  if (!res) return;
-  const box = root.querySelector('.staff-settings');
-  const windowText = { not_yet: 'non ancora aperti', open: 'aperti', closed: 'chiusi (Classifica finale)' }[res.window];
-  box.innerHTML = `
-    <form class="auth-form staff-settings-form" novalidate>
-      <p>Adesso i giochi sono <strong>${windowText}</strong>.</p>
-      <label class="form-field"><span class="form-field__label">Tentativi al giorno per gioco</span>
-        <input class="form-field__input" name="attempts_per_day" type="number" min="1" max="50" value="${res.attempts_per_day}"></label>
-      <label class="form-field"><span class="form-field__label">Ora in cui tornano i tentativi (0–23)</span>
-        <input class="form-field__input" name="attempts_reset_hour" type="number" min="0" max="23" value="${res.attempts_reset_hour}"></label>
-      <label class="form-field"><span class="form-field__label">Apertura dei giochi (vuoto = già aperti)</span>
-        <input class="form-field__input" name="games_open_from" type="datetime-local" value="${isoToRomeLocal(res.games_open_from)}"></label>
-      <label class="form-field"><span class="form-field__label">Chiusura dei giochi e della classifica (vuoto = mai)</span>
-        <input class="form-field__input" name="games_open_until" type="datetime-local" value="${isoToRomeLocal(res.games_open_until)}"></label>
-      <div class="staff-games" role="group" aria-labelledby="staff-games-title">
-        <p class="form-field__label" id="staff-games-title">Giochi accesi</p>
-        ${res.games
-          .map((g) => `<label class="form-check"><input type="checkbox" name="game_${g.id}" ${g.enabled ? 'checked' : ''}> <span>${escapeHtml(gameName(g.id))}</span></label>`)
-          .join('')}
-      </div>
-      <p class="staff-muted">Orari in ora italiana. Le modifiche valgono subito per tutti.</p>
-      <button type="submit" class="button">Salva</button>
-      <p class="staff-ok" role="status" hidden></p>
-    </form>`;
-  const form = box.querySelector('form');
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const ok = form.querySelector('.staff-ok');
-    ok.hidden = true;
-    const values = {
-      attempts_per_day: Number(form.attempts_per_day.value),
-      attempts_reset_hour: Number(form.attempts_reset_hour.value),
-      games_open_from: romeLocalToIso(form.games_open_from.value),
-      games_open_until: romeLocalToIso(form.games_open_until.value),
-      games: Object.fromEntries(res.games.map((g) => [g.id, form[`game_${g.id}`].checked])),
-    };
-    const confirmed = await askDialog({ title: 'Salvare le impostazioni?', body: '<p>Valgono subito per tutti i giocatori.</p>', confirmLabel: 'Salva' });
-    if (!confirmed) return;
-    if (await staffCall(ctx, 'update_settings', { p_values: values }, error)) {
-      renderSettingsSection(root, ctx).then(() => {
-        const saved = root.querySelector('.staff-ok');
-        if (saved) {
-          saved.textContent = '✅ Impostazioni salvate.';
-          saved.hidden = false;
-        }
-      });
-    }
-  });
 }
 
 // ---------- Classifica completa (50 per pagina; il CSV scarica tutta la classifica) ----------

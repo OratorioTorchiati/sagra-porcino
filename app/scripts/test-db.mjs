@@ -298,7 +298,8 @@ if (starts[1]?.attempt_id && perDay >= 2) {
 // Pannello staff con un account staff di prova (facoltativo): TEST_STAFF_NICKNAME e TEST_STAFF_PASSWORD in app/.env.local
 if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const staffLogin = (await rpc('login', { p_nickname: env.TEST_STAFF_NICKNAME, p_secret: env.TEST_STAFF_PASSWORD })).body;
-  check('staff: accesso con nickname + password', staffLogin?.ok && staffLogin.player.role === 'staff', staffLogin?.error);
+  // L'account di prova "staff" è l'Admin (021): può tutto, anche Configurazioni e Registro
+  check('staff: accesso con nickname + password (Admin)', staffLogin?.ok && staffLogin.player.role === 'admin', staffLogin?.error);
   const S = staffLogin?.token;
   const staff = async (name, params = {}) => (await rpc(`staff_${name}`, { p_token: S, ...params })).body;
 
@@ -426,7 +427,12 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('staff: il giocatore bannato sparisce dalla classifica', (await rpc('get_player_card', { p_nickname: xNick })).body?.error === 'NOT_FOUND');
 
   const settings = await staff('get_settings');
-  check('staff: impostazioni leggibili', settings?.ok && settings.games.length === 4 && Number.isInteger(settings.attempts_per_day));
+  check('staff: impostazioni leggibili, con le sezioni dell\'app', settings?.ok && settings.games.length === 4 && Number.isInteger(settings.attempts_per_day) && typeof settings.sections?.menu === 'boolean' && typeof settings.sections?.giochi === 'boolean', JSON.stringify(settings?.sections));
+  // Sezioni: si salvano gli stessi valori (spegnerle, anche per un attimo, si vedrebbe nell'app vera)
+  const sameSections = await staff('update_settings', { p_values: { sections: settings.sections } });
+  const appConfig = (await rpc('get_app_config')).body;
+  check('Admin: salvare le sezioni; l\'app le legge anche senza account', sameSections?.ok && JSON.stringify(appConfig?.sections) === JSON.stringify(settings.sections), JSON.stringify(appConfig));
+  check('Admin: sezione sconosciuta → rifiutata', (await staff('update_settings', { p_values: { sections: { casino: true } } }))?.error === 'SECTION_INVALID');
   const same = await staff('update_settings', { p_values: { attempts_per_day: settings.attempts_per_day, attempts_reset_hour: settings.attempts_reset_hour } });
   check('staff: salvare le impostazioni (stessi valori)', same?.ok === true, JSON.stringify(same));
   const badDate = await staff('update_settings', { p_values: { attempts_per_day: 7, games_open_until: 'domani' } });
