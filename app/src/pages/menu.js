@@ -42,7 +42,8 @@ function dishMarkup(dish) {
   `;
 }
 
-function menuMarkup(categories) {
+function menuMarkup(allCategories) {
+  const categories = allCategories.filter((c) => c.dishes.length > 0); // categorie ancora vuote: non si vedono (D102)
   if (categories.length === 0) {
     return `
       <div class="notice">

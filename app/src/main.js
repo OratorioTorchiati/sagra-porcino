@@ -18,7 +18,7 @@ import { renderLogin } from './pages/login.js';
 import { renderPrivacy } from './pages/privacy.js';
 import { renderNotFound } from './pages/not-found.js';
 import { renderSectionOff } from './pages/section-off.js';
-import { sectionForPath, sectionOn, onConfigChange, refreshAppConfig, everyMinute } from './lib/app-config.js';
+import { sectionForPath, sectionOn, onConfigChange, refreshAppConfig } from './lib/app-config.js';
 import { currentPlayer, isStaffRole } from './lib/account.js';
 
 // Sezione spenta dall'Admin (D93): al posto della pagina, "non disponibile". Mod e Admin la vedono lo stesso (prove).
@@ -49,8 +49,9 @@ startRouter(document.getElementById('app'), {
   notFound: renderNotFound,
 });
 
-// Se l'Admin spegne la sezione che si sta guardando, la pagina diventa "non disponibile" con "Torna alla home"
-// (e torna normale se la riaccende). Chi è in partita la finisce: il punteggio conta lo stesso.
+// Le sezioni si ricontrollano all'apertura (o ricarica) e a ogni cambio di pagina: avanti, indietro, sottopagina.
+// Se quella che si apre è stata spenta, la pagina diventa "non disponibile" con "Torna alla home" (e torna normale
+// se viene riaccesa). Chi resta fermo su una pagina non viene disturbato; chi è in partita la finisce.
 onConfigChange(() => {
   const s = sectionForPath(currentPath());
   if (!s) return;
@@ -58,7 +59,7 @@ onConfigChange(() => {
   if (off !== Boolean(document.querySelector('#app .section-off'))) refreshPage();
 });
 refreshAppConfig();
-everyMinute(refreshAppConfig);
+window.addEventListener('hashchange', () => refreshAppConfig());
 
 startAppUpdates();
 startQueue(); // punteggi rimasti in sospeso (fatti senza rete)

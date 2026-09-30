@@ -12,6 +12,7 @@ import { characterById } from '../characters/characters.js';
 import avatarAnonimoSvg from '../assets/avatar-anonimo.svg?raw';
 import { playerStatsMarkup } from '../components/player-card.js';
 import { cachedMyCard, fetchPlayerCard } from '../lib/leaderboard.js';
+import { winnersCount } from '../lib/app-config.js';
 
 // Matita cicciotta, senza sfondo (bottone "cambia personaggio")
 const PENCIL_SVG = `<svg viewBox="0 0 40 40" aria-hidden="true">
@@ -69,10 +70,10 @@ function loggedMarkup(player, card) {
   `;
 }
 
-const guestMarkup = `
+const guestMarkup = () => `
   <div class="profile-card">
     <span class="profile-card__avatar" aria-hidden="true">${avatarAnonimoSvg}</span>
-    <p>Crea un account per giocare, fare punti e vincere un premio!</p>
+    <p>${winnersCount() > 0 ? 'Crea un account per giocare, fare punti e vincere un premio!' : 'Crea un account per giocare e fare punti!'}</p>
   </div>
   <div class="auth-choices">
     <a class="button button--play" href="#/registrati">Registrati</a>
@@ -93,7 +94,7 @@ export function renderProfile() {
 
   function render() {
     const player = currentPlayer();
-    body.innerHTML = player ? loggedMarkup(player, cachedMyCard()) : guestMarkup;
+    body.innerHTML = player ? loggedMarkup(player, cachedMyCard()) : guestMarkup();
   }
   render();
 

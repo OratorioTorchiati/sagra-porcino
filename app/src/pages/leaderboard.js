@@ -6,9 +6,19 @@
 import { html, escapeHtml, openDialog, closeDialog } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { cachedLeaderboard, watchLeaderboard, fetchPlayerCard, formatPoints } from '../lib/leaderboard.js';
-import { leaderboardView, PRIZE_POSITIONS } from '../lib/leaderboard-view.js';
+import { leaderboardView } from '../lib/leaderboard-view.js';
 import { avatarSvg, playerCardMarkup } from '../components/player-card.js';
 import { currentPlayer } from '../lib/account.js';
+import { prizeText, leaderboardPublic, refreshAppConfig } from '../lib/app-config.js';
+import { setAfterLogin } from './auth-messages.js';
+
+// Classifica solo per chi ha un account (D101)
+const lockedMarkup = `
+  <p class="leaderboard-note">🔒 La classifica è visibile solo a chi ha un account.</p>
+  <div class="auth-choices">
+    <a class="button button--play" href="#/registrati" data-after-login>Registrati</a>
+    <a class="button button--secondary" href="#/accedi" data-after-login>Ho già un account</a>
+  </div>`;
 
 const title = (closed) => (closed ? '🏆 Classifica finale' : '🏆 Classifica');
 
@@ -55,8 +65,9 @@ function boardMarkup(data) {
   } else if (!data.me && !currentPlayer()) {
     mine = '<p class="leaderboard-note"><a href="#/accedi">Accedi</a> per vedere la tua posizione.</p>';
   }
+  const prize = prizeText({ future: false, strong: false }); // numero di vincitori deciso dall'Admin (D101)
   return `
-    <p class="leaderboard-prize">🎁 I primi ${PRIZE_POSITIONS} vincono un premio!</p>
+    ${prize ? `<p class="leaderboard-prize">🎁 ${prize.charAt(0).toUpperCase()}${prize.slice(1)}</p>` : ''}
     <div class="podium">${podiumStep(podium[2], 2)}${podiumStep(podium[1], 1)}${podiumStep(podium[3], 3)}</div>
     <ul class="rank-list">${rows.map(rowMarkup).join('')}</ul>
     ${mine}`;
@@ -85,6 +96,15 @@ export function renderLeaderboard() {
   const dialog = element.querySelector('.player-dialog');
   const dialogBody = element.querySelector('.player-dialog__body');
 
+  const showLocked = () => {
+    body.innerHTML = lockedMarkup;
+    body.querySelectorAll('[data-after-login]').forEach((a) => a.addEventListener('click', () => setAfterLogin('/giochi/classifica')));
+  };
+  if (!leaderboardPublic() && !currentPlayer()) {
+    showLocked();
+    return { title: 'Classifica', element };
+  }
+
   const cached = cachedLeaderboard();
   if (cached) {
     body.innerHTML = boardMarkup(cached);
@@ -97,6 +117,11 @@ export function renderLeaderboard() {
     },
     onWindow: (state) => {
       heading.textContent = title(state === 'closed');
+    },
+    onLocked: () => {
+      stop?.();
+      refreshAppConfig();
+      showLocked();
     },
     onOnline: (online) => {
       offline.hidden = online;

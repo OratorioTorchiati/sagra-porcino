@@ -143,7 +143,7 @@ export function parseMenuCsv(text) {
 
     if (!categoryName) errors.push(`Riga ${line}: manca la categoria`);
     if (!name) errors.push(`Riga ${line}: manca il nome del piatto`);
-    if (!priceText) errors.push(`Riga ${line}: manca il prezzo di "${name}"`);
+    if (!priceText) errors.push(`Riga ${line}: manca il prezzo`);
     else if (price === null) errors.push(`Riga ${line}: prezzo non valido "${priceText}" (scrivere ad esempio 9,00)`);
 
     const symbols = [];

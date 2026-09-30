@@ -486,6 +486,20 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('quiz: un giocatore non vede le risposte', (await rpc('staff_quiz_list', { p_token: t5Token })).body?.error === 'NOT_STAFF');
   // Tentativi: da 0 (illimitati) a 99
   check('tentativi: 100 al giorno → rifiutato', (await staff('update_settings', { p_values: { attempts_per_day: 100 } }))?.error === 'ATTEMPTS_INVALID');
+  // Vincitori e classifica senza account (D101)
+  const sameWinners = await staff('update_settings', { p_values: { winners: settings.winners } });
+  check('Admin: numero vincitori salvato; l\'app lo legge senza account', Number.isInteger(settings.winners) && sameWinners?.ok && appConfig?.winners === settings.winners, JSON.stringify(appConfig));
+  check('vincitori: 100 → rifiutato', (await staff('update_settings', { p_values: { winners: 100 } }))?.error === 'WINNERS_INVALID');
+  // Per un attimo la classifica diventa solo per chi ha un account, poi torna com'era
+  await staff('update_settings', { p_values: { leaderboard_public: false } });
+  const lockedBoard = (await rpc('get_leaderboard', { p_token: null, p_version: null })).body;
+  const lockedCard = (await rpc('get_player_card', { p_nickname: t5Nick })).body;
+  const openBoard = (await rpc('get_leaderboard', { p_token: t5Token, p_version: null })).body;
+  const openCard = (await rpc('get_player_card', { p_nickname: t5Nick, p_token: t5Token })).body;
+  await staff('update_settings', { p_values: { leaderboard_public: settings.leaderboard_public } });
+  check('classifica solo con account: senza accesso → LOGIN_REQUIRED (classifica e scheda)', lockedBoard?.error === 'LOGIN_REQUIRED' && lockedCard?.error === 'LOGIN_REQUIRED');
+  check('classifica solo con account: con l\'accesso si vede', openBoard?.ok === true && openCard?.ok === true);
+  check('classifica: rimessa com\'era', (await rpc('get_app_config')).body?.leaderboard_public === settings.leaderboard_public);
   if (mine) {
     const rep = await staff('attempt_replay', { p_attempt_id: mine.id });
     check('staff: "Rivedi partita" riceve seme, azioni e durata', rep?.ok && rep.attempt.seed !== null && Array.isArray(rep.attempt.actions) && rep.attempt.actions.length > 5 && rep.attempt.stats.durationMs > 0);

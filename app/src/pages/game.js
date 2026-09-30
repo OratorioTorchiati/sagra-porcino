@@ -8,7 +8,7 @@ import { rpc, NetworkError } from '../lib/api.js';
 import { currentPlayer, sessionToken, refreshProfile, isStaffRole } from '../lib/account.js';
 import { enqueueScore, onSubmitResult, resultFor, isPending } from '../lib/queue.js';
 import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason, gameInfo, NO_ATTEMPTS_TEXT } from '../lib/games-state.js';
-import { everyMinute, refreshAppConfig } from '../lib/app-config.js';
+import { refreshAppConfig } from '../lib/app-config.js';
 import { withDuration, formatDuration } from '../games/duration.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { GAMES, PRACTICE_MODE } from '../games/registry.js';
@@ -84,7 +84,6 @@ export function renderGame({ gameId }) {
   let destroyed = false;
   let gamesState = cachedGamesState()?.state ?? null;
   let unsubscribe = null;
-  let stopRefresh = null;
   let busy = false;
 
   function loadGame() {
@@ -109,7 +108,6 @@ export function renderGame({ gameId }) {
 
   function showRules() {
     unsubscribe?.();
-    stopRefresh?.();
     busy = false;
     const view = html(rulesMarkup(game, gameInfo(gamesState, game.id)?.duration_s));
     bindTopBar(view);
@@ -224,26 +222,21 @@ export function renderGame({ gameId }) {
         renderPlayArea();
       });
 
-    // Tentativi rimasti aggiornati dal server (se c'è rete), e poi ogni minuto: se l'Admin spegne o chiude
-    // il gioco mentre si leggono le regole, al posto di GIOCA compare il motivo
+    // Tentativi rimasti aggiornati dal server (se c'è rete): se il gioco è stato spento o chiuso, al posto di
+    // GIOCA compare il motivo
     if (!PRACTICE_MODE && currentPlayer()) {
-      const refresh = () =>
-        fetchGamesState()
-          .then((state) => {
-            gamesState = state;
-            if (playArea.isConnected && !playArea.querySelector('[data-action="play"]:disabled')) renderPlayArea();
-          })
-          .catch(() => {});
-      refresh();
-      stopRefresh = everyMinute(refresh);
+      fetchGamesState()
+        .then((state) => {
+          gamesState = state;
+          if (playArea.isConnected && !playArea.querySelector('[data-action="play"]:disabled')) renderPlayArea();
+        })
+        .catch(() => {});
     }
   }
 
   // ---------- Partita ----------
 
   function startSession(start) {
-    stopRefresh?.();
-    stopRefresh = null;
     busy = true; // partita e poi risultato: niente ridisegni della pagina (vedi refreshPage)
     session?.destroy();
     const sessionAssets = start.questions ? { ...assets, pool: start.questions } : assets;
@@ -374,7 +367,6 @@ export function renderGame({ gameId }) {
     destroy() {
       destroyed = true;
       unsubscribe?.();
-      stopRefresh?.();
       session?.destroy();
     },
   };

@@ -83,6 +83,18 @@ function gamesBody(res) {
     <div class="config-group">
       <h4 class="config-group__title">Orari</h4>
       <div class="config-schedules"></div>
+    </div>
+    <div class="config-group">
+      <h4 class="config-group__title">Classifica</h4>
+      <label class="config-row">
+        <span class="config-row__label">Numero vincitori</span>
+        <input class="form-field__input config-row__number" name="winners" type="number" min="0" max="99" inputmode="numeric"
+          value="${res.winners ?? 10}" aria-label="Numero vincitori (da 0 a 99)">
+      </label>
+      <div class="config-row">
+        <span class="config-row__label">Visibile senza account</span>
+        ${switchMarkup('leaderboard_public', res.leaderboard_public !== false, 'Classifica visibile anche senza account')}
+      </div>
     </div>`;
 }
 
@@ -125,10 +137,16 @@ const menuPreview = (menu) => `
 
 /**
  * Controlla il testo CSV del menù (errori → elenco), mostra l'anteprima e pubblica.
- * `lineLabel` trasforma "Riga N" nei messaggi (nel file o nella tabella). Restituisce i piatti pubblicati o null.
+ * `lineLabel` trasforma "Riga N" nei messaggi (nel file o nella tabella). `categoryOrder` (dalla tabella): ordine delle
+ * categorie, comprese quelle ancora senza piatti. Restituisce i piatti pubblicati o null.
  */
-async function checkAndPublish(text, ctx, error, { errorsIntro, lineLabel = (n) => `Riga ${n}` } = {}) {
+async function checkAndPublish(text, ctx, error, { errorsIntro, lineLabel = (n) => `Riga ${n}`, categoryOrder } = {}) {
   const { menu, errors } = readMenuFile(text);
+  if (menu && categoryOrder) {
+    menu.categories = categoryOrder.map(
+      (name) => menu.categories.find((c) => c.name.toLowerCase() === name.toLowerCase()) ?? { name, dishes: [] },
+    );
+  }
   if (errors) {
     await askDialog({
       title: 'Ci sono degli errori',
@@ -148,29 +166,32 @@ async function checkAndPublish(text, ctx, error, { errorsIntro, lineLabel = (n) 
   return saved.dishes;
 }
 
-// ---------- ✏️ Modifica del menù in tabella (D98): una riga per piatto, come il file ----------
+// ---------- ✏️ Modifica del menù (D98, D102) ----------
+// Sopra la tabella delle categorie (trascina ⠿ per l'ordine, − per togliere, "Aggiungi categoria" in fondo);
+// sotto i piatti divisi per categoria (trascina ⠿ per l'ordine, anche da una categoria all'altra). Le categorie
+// senza piatti restano (vuote) ma nel menù dei clienti non si vedono.
 
-const EDIT_COLUMNS = [
-  ['categoria', 'Categoria'],
+const DISH_COLUMNS = [
   ['piatto', 'Piatto'],
   ['prezzo', 'Prezzo'],
   ['descrizione', 'Descrizione'],
   ['simboli', 'Simboli'],
   ['allergeni', 'Allergeni'],
 ];
+const EDIT_COLUMNS = [['categoria', 'Categoria'], ...DISH_COLUMNS];
 
-/** Righe della tabella dal menù attuale */
-function menuRows(menu) {
-  return menu.categories.flatMap((c) =>
-    c.dishes.map((d) => ({
-      categoria: c.name,
+/** Categorie con i loro piatti, come righe della tabella */
+function menuCategories(menu) {
+  return menu.categories.map((c) => ({
+    name: c.name,
+    dishes: c.dishes.map((d) => ({
       piatto: d.name,
       prezzo: d.price.toFixed(2).replace('.', ','),
       descrizione: d.description ?? '',
       simboli: d.symbols.join(', '),
       allergeni: d.allergens.join(', '),
     })),
-  );
+  }));
 }
 
 /** Righe → testo CSV (lo stesso formato del file, così i controlli sono identici) */
@@ -179,62 +200,212 @@ function rowsToCsv(rows) {
   return [EDIT_COLUMNS.map(([k]) => k).join(';'), ...rows.map((r) => EDIT_COLUMNS.map(([k]) => cell(r[k] ?? '')).join(';'))].join('\n');
 }
 
-const editRowMarkup = (row, i) => `
-  <tr data-row="${i}">
-    <td class="menu-edit__n">${i + 1}</td>
-    ${EDIT_COLUMNS.map(
-      ([k, label]) => `<td><input class="menu-edit__input menu-edit__input--${k}" name="${k}" value="${escapeHtml(row[k] ?? '')}" aria-label="${label}, riga ${i + 1}"${k === 'prezzo' ? ' inputmode="decimal"' : ''}></td>`,
-    ).join('')}
-    <td><button type="button" class="icon-button" data-remove="${i}" aria-label="Togli la riga ${i + 1}" title="Togli">🗑️</button></td>
+const DRAG_HANDLE = '<span class="drag-handle" data-drag aria-hidden="true" title="Trascina per spostare">⠿</span>';
+const COLS = DISH_COLUMNS.length + 2; // maniglia + colonne + 🗑️
+
+const catRowMarkup = (c) => `
+  <tr data-cat="${c.key}">
+    <td class="drag-cell">${DRAG_HANDLE}</td>
+    <td><input class="menu-edit__input menu-edit__input--categoria" name="categoria" value="${escapeHtml(c.name)}" aria-label="Nome della categoria" maxlength="60"></td>
+    <td><button type="button" class="icon-button icon-button--minus" data-cat-remove="${c.key}" aria-label="Togli la categoria" title="Togli">−</button></td>
   </tr>`;
 
+const dishRowMarkup = (d) => `
+  <tr class="menu-edit__dish">
+    <td class="drag-cell">${DRAG_HANDLE}</td>
+    ${DISH_COLUMNS.map(
+      ([k, label]) => `<td><input class="menu-edit__input menu-edit__input--${k}" name="${k}" value="${escapeHtml(d[k] ?? '')}" aria-label="${label}"${k === 'prezzo' ? ' inputmode="decimal"' : ''}></td>`,
+    ).join('')}
+    <td><button type="button" class="icon-button" data-dish-remove aria-label="Togli il piatto" title="Togli">🗑️</button></td>
+  </tr>`;
+
+const dishGroupMarkup = (c) => `
+  <tr class="menu-edit__cat" data-cat="${c.key}">
+    <th colspan="${COLS}"><span class="menu-edit__cat-name">
+      <span data-cat-label>${escapeHtml(c.name) || '<em>Senza nome</em>'}</span>
+      <button type="button" class="menu-edit__add" data-dish-add="${c.key}" aria-label="Aggiungi un piatto" title="Aggiungi un piatto">➕</button>
+    </span></th>
+  </tr>
+  ${c.dishes.length ? c.dishes.map(dishRowMarkup).join('') : `<tr class="menu-edit__empty" data-cat="${c.key}"><td colspan="${COLS}">Nessun piatto</td></tr>`}`;
+
+/**
+ * Trascinamento delle righe di una tabella con la maniglia ⠿ (dito o mouse). `canDrop(row, before)` dice se la riga
+ * può andare prima di `before` (null = in fondo); `onDrop()` quando la si lascia.
+ */
+function makeSortable(tbody, { canDrop = () => true, onDrop }) {
+  tbody.addEventListener('pointerdown', (event) => {
+    const handle = event.target.closest('[data-drag]');
+    if (!handle) return;
+    const row = handle.closest('tr');
+    event.preventDefault();
+    handle.setPointerCapture(event.pointerId);
+    row.classList.add('is-dragging');
+    const move = (e) => {
+      // Vicino ai bordi dello schermo la pagina scorre
+      if (e.clientY < 70) window.scrollBy(0, -12);
+      else if (e.clientY > window.innerHeight - 70) window.scrollBy(0, 12);
+      const over = document.elementFromPoint(e.clientX, e.clientY)?.closest('tr');
+      if (!over || over === row || over.parentElement !== tbody) return;
+      const box = over.getBoundingClientRect();
+      const before = e.clientY < box.top + box.height / 2 ? over : over.nextElementSibling;
+      if (before === row || before === row.nextElementSibling) return;
+      if (canDrop(row, before)) tbody.insertBefore(row, before);
+    };
+    const end = () => {
+      row.classList.remove('is-dragging');
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', end);
+      handle.removeEventListener('pointercancel', end);
+      onDrop();
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
+  });
+}
+
 function openMenuEditor(root, ctx) {
-  let rows = menuRows(currentMenu());
+  let nextKey = 0;
+  let cats = menuCategories(currentMenu()).map((c) => ({ ...c, key: String(nextKey++) }));
   root.innerHTML = `
     <div class="menu-edit">
       <button type="button" class="staff-link" data-edit-action="back">← Torna alle Configurazioni</button>
       <h3 class="config-card__title">✏️ Modifica il menù</h3>
-      <p class="staff-muted">Una riga per piatto. Prezzo con la virgola (9,00). Simboli: porcini, vegetariano, piccante. La tabella scorre di lato.</p>
+      <p class="staff-muted">Trascina ⠿ per cambiare l'ordine. Le categorie senza piatti non si vedono nel menù.</p>
       <div class="form-error" role="alert" hidden></div>
-      <div class="menu-edit__wrap"><table class="config-table menu-edit__table">
-        <thead><tr><th>#</th>${EDIT_COLUMNS.map(([, label]) => `<th>${label}</th>`).join('')}<th></th></tr></thead>
-        <tbody></tbody>
-      </table></div>
-      <button type="button" class="button button--secondary" data-edit-action="add">➕ Aggiungi piatto</button>
+      <div class="config-group">
+        <h4 class="config-group__title">Categorie</h4>
+        <table class="config-table menu-edit__cats"><tbody data-table="cats"></tbody></table>
+        <button type="button" class="button button--secondary" data-edit-action="add-cat">➕ Aggiungi categoria</button>
+      </div>
+      <div class="config-group">
+        <h4 class="config-group__title">Piatti</h4>
+        <p class="staff-muted">Prezzo con la virgola (9,00). Simboli: porcini, vegetariano, piccante. La tabella scorre di lato.</p>
+        <div class="menu-edit__wrap"><table class="config-table menu-edit__table">
+          <thead><tr><th></th>${DISH_COLUMNS.map(([, label]) => `<th>${label}</th>`).join('')}<th></th></tr></thead>
+          <tbody data-table="dishes"></tbody>
+        </table></div>
+      </div>
       <div class="config-save">
         <button type="button" class="button" data-edit-action="save">Salva e pubblica</button>
       </div>
     </div>`;
-  const tbody = root.querySelector('tbody');
+  const editor = root.querySelector('.menu-edit');
+  const catsBody = root.querySelector('[data-table="cats"]');
+  const dishesBody = root.querySelector('[data-table="dishes"]');
   const error = root.querySelector('.form-error');
-  const draw = () => (tbody.innerHTML = rows.map(editRowMarkup).join(''));
-  // I valori scritti restano nelle righe (anche aggiungendo o togliendo righe)
+
+  const draw = () => {
+    catsBody.innerHTML = cats.map(catRowMarkup).join('');
+    dishesBody.innerHTML = cats.map(dishGroupMarkup).join('');
+  };
+  // Quello che c'è scritto e l'ordine delle righe tornano nei dati (prima di ridisegnare o salvare)
   const read = () => {
-    rows = [...tbody.querySelectorAll('tr')].map((tr) => Object.fromEntries(EDIT_COLUMNS.map(([k]) => [k, tr.querySelector(`[name="${k}"]`).value.trim()])));
+    const names = Object.fromEntries([...catsBody.rows].map((tr) => [tr.dataset.cat, tr.querySelector('[name="categoria"]').value.trim()]));
+    const dishes = {};
+    let current = null;
+    for (const tr of dishesBody.rows) {
+      if (tr.classList.contains('menu-edit__cat')) current = tr.dataset.cat;
+      else if (tr.classList.contains('menu-edit__dish')) {
+        (dishes[current] ??= []).push(Object.fromEntries(DISH_COLUMNS.map(([k]) => [k, tr.querySelector(`[name="${k}"]`).value.trim()])));
+      }
+    }
+    cats = [...catsBody.rows].map((tr) => ({ key: tr.dataset.cat, name: names[tr.dataset.cat], dishes: dishes[tr.dataset.cat] ?? [] }));
   };
   draw();
 
-  root.querySelector('.menu-edit').addEventListener('click', async (event) => {
-    const remove = event.target.closest('[data-remove]')?.dataset.remove;
-    if (remove !== undefined) {
+  // Categorie: l'ordine cambia anche quello dei gruppi di piatti sotto
+  makeSortable(catsBody, {
+    onDrop: () => {
       read();
-      rows.splice(Number(remove), 1);
+      draw();
+    },
+  });
+  // Piatti: mai sopra la prima categoria
+  makeSortable(dishesBody, {
+    canDrop: (row, before) => before !== dishesBody.rows[0],
+    onDrop: () => {
+      read();
+      draw();
+    },
+  });
+
+  // Il nome scritto sopra compare subito nel gruppo dei piatti
+  catsBody.addEventListener('input', (event) => {
+    const key = event.target.closest('tr')?.dataset.cat;
+    const label = dishesBody.querySelector(`.menu-edit__cat[data-cat="${key}"] [data-cat-label]`);
+    if (label) label.innerHTML = escapeHtml(event.target.value.trim()) || '<em>Senza nome</em>';
+  });
+
+  editor.addEventListener('click', async (event) => {
+    const removeCat = event.target.closest('[data-cat-remove]')?.dataset.catRemove;
+    if (removeCat !== undefined) {
+      read();
+      const cat = cats.find((c) => c.key === removeCat);
+      if (cat.dishes.length) {
+        const ok = await askDialog({
+          title: 'Togliere la categoria?',
+          body: `<p>Con <strong>${escapeHtml(cat.name || 'la categoria')}</strong> si ${cat.dishes.length === 1 ? 'toglie anche il suo piatto' : `tolgono anche i suoi <strong>${cat.dishes.length}</strong> piatti`}.</p>`,
+          confirmLabel: 'Togli',
+          danger: true,
+        });
+        if (!ok) return;
+        read();
+      }
+      cats = cats.filter((c) => c.key !== removeCat);
       return draw();
+    }
+    if (event.target.closest('[data-dish-remove]')) {
+      event.target.closest('tr').remove();
+      read();
+      return draw();
+    }
+    const addTo = event.target.closest('[data-dish-add]')?.dataset.dishAdd;
+    if (addTo !== undefined) {
+      read();
+      cats.find((c) => c.key === addTo).dishes.push({});
+      draw();
+      const group = [...dishesBody.rows];
+      const start = group.findIndex((tr) => tr.classList.contains('menu-edit__cat') && tr.dataset.cat === addTo);
+      const next = group.findIndex((tr, i) => i > start && tr.classList.contains('menu-edit__cat'));
+      group[(next < 0 ? group.length : next) - 1]?.querySelector('[name="piatto"]')?.focus();
+      return;
     }
     const action = event.target.closest('[data-edit-action]')?.dataset.editAction;
     if (action === 'back') return renderConfigSection(root, ctx);
-    if (action === 'add') {
+    if (action === 'add-cat') {
       read();
-      rows.push({ categoria: rows.at(-1)?.categoria ?? '' });
+      cats.push({ key: String(nextKey++), name: '', dishes: [] });
       draw();
-      tbody.querySelector('tr:last-child [name="piatto"]')?.focus();
+      catsBody.querySelector('tr:last-child [name="categoria"]').focus();
       return;
     }
     if (action === 'save') {
       read();
+      error.hidden = true;
+      const names = cats.map((c) => c.name.toLowerCase());
+      const problem = cats.length === 0
+        ? 'Aggiungi almeno una categoria.'
+        : names.includes('')
+          ? 'Una categoria non ha il nome: scrivilo o togli la categoria.'
+          : names.find((n, i) => names.indexOf(n) !== i)
+            ? `Due categorie si chiamano "${cats[names.findIndex((n, i) => names.indexOf(n) !== i)].name}": cambia un nome.`
+            : null;
+      if (problem) {
+        error.textContent = problem;
+        error.hidden = false;
+        error.scrollIntoView({ block: 'center' });
+        return;
+      }
+      const rows = cats.flatMap((c) => c.dishes.map((d) => ({ categoria: c.name, ...d })));
       const dishes = await checkAndPublish(rowsToCsv(rows), ctx, error, {
-        errorsIntro: 'Correggi queste righe della tabella:',
-        lineLabel: (n) => `Riga ${n - 1}`, // riga 1 del testo = intestazione
+        errorsIntro: 'Correggi questi piatti:',
+        // riga 1 del testo = intestazione; negli errori categoria e piatto al posto del numero di riga
+        lineLabel: (n) => {
+          const row = rows[n - 2];
+          return row ? `${row.categoria} → ${row.piatto ? `«${row.piatto}»` : 'piatto senza nome'}` : `Riga ${n - 1}`;
+        },
+        categoryOrder: cats.map((c) => c.name),
       });
       if (dishes !== null) {
         renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), `✅ Menù pubblicato (${dishes} piatti).`));
@@ -369,8 +540,17 @@ export async function renderConfigSection(root, ctx) {
       form.attempts_per_day.focus();
       return;
     }
+    const winners = Number(form.winners.value);
+    if (form.winners.value.trim() === '' || !(Number.isInteger(winners) && winners >= 0 && winners <= 99)) {
+      error.textContent = 'Numero vincitori: scrivi un numero da 0 a 99 (0 = nessun premio).';
+      error.hidden = false;
+      form.winners.focus();
+      return;
+    }
     const values = {
       sections: Object.fromEntries(SECTIONS.map((s) => [s.id, form[`section_${s.id}`].checked])),
+      winners,
+      leaderboard_public: form.leaderboard_public.checked,
       attempts_per_day: perDay, // 0 = illimitati
       attempts_reset_hour: Number(form.attempts_reset_hour.value),
       games_open_from: schedule.games_open_from,

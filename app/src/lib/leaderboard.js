@@ -27,9 +27,10 @@ export async function fetchLeaderboard(version = null) {
 
 /**
  * Tiene aggiornata la classifica finché non si chiama la funzione restituita.
- * onData(data) a ogni classifica nuova; onWindow(window) sempre; onOnline(bool) quando cambia la connessione.
+ * onData(data) a ogni classifica nuova; onWindow(window) sempre; onOnline(bool) quando cambia la connessione;
+ * onLocked() se la classifica è solo per chi ha un account (D101) e l'accesso manca.
  */
-export function watchLeaderboard({ onData, onWindow, onOnline }) {
+export function watchLeaderboard({ onData, onWindow, onOnline, onLocked }) {
   let version = cachedLeaderboard()?.version ?? null;
   let timer = null;
   let stopped = false;
@@ -56,6 +57,8 @@ export function watchLeaderboard({ onData, onWindow, onOnline }) {
         if (data.ok && !data.unchanged) {
           version = data.version;
           onData(data);
+        } else if (data.error === 'LOGIN_REQUIRED') {
+          onLocked?.();
         }
       } catch {
         if (!stopped) setOnline(false);
@@ -79,7 +82,7 @@ export function watchLeaderboard({ onData, onWindow, onOnline }) {
 
 /** Scheda di un giocatore: { nickname, avatar, total, position, best: {gioco: punti}, extra_total, players } */
 export async function fetchPlayerCard(nickname) {
-  const res = await rpc('get_player_card', { p_nickname: nickname });
+  const res = await rpc('get_player_card', { p_nickname: nickname, p_token: sessionToken() });
   if (!res.ok) return null;
   if (nickname === myNickname()) writeJson(CARD_KEY, { card: res.player, nickname });
   return res.player;

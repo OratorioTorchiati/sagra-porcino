@@ -10,7 +10,7 @@ import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { GAMES, PRACTICE_MODE } from '../games/registry.js';
 import { currentPlayer, isStaffRole } from '../lib/account.js';
 import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason, gameInfo } from '../lib/games-state.js';
-import { everyMinute } from '../lib/app-config.js';
+import { prizeText, leaderboardPublic, onConfigChange } from '../lib/app-config.js';
 import { setAfterLogin } from './auth-messages.js';
 import gamepadSvg from '../assets/gamepad.svg?raw';
 
@@ -25,13 +25,14 @@ function howItWorksItems(state) {
   const perDay = state?.attempts_per_day ?? 3;
   const resetHour = state?.reset_hour ?? 9;
   const until = state?.open_until ? closeText(new Date(state.open_until)) : null;
+  const prize = prizeText(); // numero di vincitori deciso dall'Admin (D101); 0 = nessuna scritta sul premio
   return [
     `🎮 <strong>${perDay} tentativi al giorno</strong> per ogni gioco: alle ${resetHour}:00 si resettano`,
     '🚫 <strong>Non barare!</strong> Il tentativo si conta appena premi <strong>GIOCA</strong> e non ti conta il punteggio se chiudi il gioco in corso.',
     '🏅 Vale <strong>SOLO il punteggio migliore</strong>, per ogni gioco',
-    until
-      ? `⏰ Termine dei giochi: <strong>${until}</strong> → i <strong>primi 10</strong> vinceranno un premio!`
-      : '🎁 I <strong>primi 10</strong> vinceranno un premio!',
+    until && prize ? `⏰ Termine dei giochi: <strong>${until}</strong> → ${prize}` : null,
+    until && !prize ? `⏰ Termine dei giochi: <strong>${until}</strong>` : null,
+    !until && prize ? `🎁 ${prize.charAt(0).toUpperCase()}${prize.slice(1)}` : null,
     '👤 Serve un <strong>account</strong> per salvare il punteggio',
   ].filter(Boolean);
 }
@@ -76,7 +77,7 @@ export function renderGames() {
     <main class="page">
       ${topBarMarkup()}
       <h1 class="page-title"><span class="page-title__icon" aria-hidden="true">${gamepadSvg}</span>Minigiochi</h1>
-      ${PRACTICE_MODE ? '' : '<a class="button button--leaderboard" href="#/giochi/classifica">🏆 Classifica</a>'}
+      ${PRACTICE_MODE || (!leaderboardPublic() && !currentPlayer()) ? '' : '<a class="button button--leaderboard" href="#/giochi/classifica">🏆 Classifica</a>'}
       <div class="games-body"></div>
       <p class="games-updated" aria-live="polite"></p>
     </main>
@@ -132,8 +133,7 @@ export function renderGames() {
   }
 
   render();
-  let stop = null;
-  const refresh = () =>
+  if (!PRACTICE_MODE) {
     fetchGamesState()
       .then((fresh) => {
         state = fresh;
@@ -145,10 +145,10 @@ export function renderGames() {
         if (openDetails) body.querySelector('details')?.setAttribute('open', '');
       })
       .catch(() => {});
-  if (!PRACTICE_MODE) {
-    refresh();
-    stop = everyMinute(refresh); // giochi spenti, aperti o chiusi dall'Admin mentre si guarda la pagina
   }
 
-  return { title: 'Minigiochi', element, destroy: () => stop?.() };
+  // Vincitori cambiati dall'Admin (arrivano appena si apre la pagina): "Come funziona" si aggiorna
+  const stop = onConfigChange(() => render());
+
+  return { title: 'Minigiochi', element, destroy: stop };
 }

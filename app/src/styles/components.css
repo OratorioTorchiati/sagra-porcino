@@ -2171,6 +2171,87 @@ dialog:not([open]) {
   text-align: right;
 }
 
+/* Categorie (D102): nome largo quanto serve, − a destra */
+.menu-edit__cats td:nth-child(2) {
+  width: 100%;
+}
+
+.menu-edit__input--categoria {
+  width: 100%;
+}
+
+.icon-button--minus {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #b3261e;
+}
+
+/* Maniglia per trascinare le righe */
+.drag-cell {
+  width: 2.2rem;
+}
+
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  min-height: 44px;
+  font-size: 1.5rem;
+  color: var(--color-text-muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+tr.is-dragging {
+  opacity: 0.6;
+  outline: 3px dashed var(--color-focus);
+}
+
+tr.is-dragging .drag-handle {
+  cursor: grabbing;
+}
+
+/* Piatti divisi per categoria: la riga della categoria spicca e il nome resta visibile scorrendo di lato */
+.menu-edit__cat th {
+  padding: 0.5rem 0.4rem 0.3rem;
+  background: #efe6d6;
+  border-top: 3px solid var(--color-border);
+  text-align: left !important;
+}
+
+.menu-edit__cat-name {
+  position: sticky;
+  left: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.05rem;
+  color: var(--color-text);
+}
+
+.menu-edit__add {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.menu-edit__empty td {
+  color: var(--color-text-muted);
+  font-weight: 400 !important;
+  font-style: italic;
+}
+
+[data-table="dishes"] tr:nth-child(even) {
+  background: transparent;
+}
+
 .menu-edit__input--domanda {
   width: 18rem;
 }

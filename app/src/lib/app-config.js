@@ -21,11 +21,33 @@ export const FUTURE_SECTIONS = [
 
 const KEY = 'sagra-config';
 const listeners = new Set();
-let config = readJson(KEY, null); // { sections: { menu: true, ... } }
+let config = readJson(KEY, null); // { sections: { menu: true, ... }, winners, leaderboard_public }
 
 /** La sezione è accesa? (senza informazioni: sì) */
 export function sectionOn(id) {
   return config?.sections?.[id] !== false;
+}
+
+/** Quanti vincono un premio (D101): 0 = nessun premio. Senza informazioni: 10 */
+export function winnersCount() {
+  return Number.isInteger(config?.winners) ? config.winners : 10;
+}
+
+/** La classifica si vede anche senza account? (D101, senza informazioni: sì) */
+export function leaderboardPublic() {
+  return config?.leaderboard_public !== false;
+}
+
+/**
+ * Frase sui premi: "i primi 10 vinceranno un premio!", "il 1° vincerà un premio!", null se nessun premio.
+ * `future` = "vinceranno" (Come funziona) oppure "vincono" (classifica).
+ */
+export function prizeText({ future = true, strong = true } = {}) {
+  const n = winnersCount();
+  if (n <= 0) return null;
+  const b = (t) => (strong ? `<strong>${t}</strong>` : t);
+  if (n === 1) return `il ${b('1°')} ${future ? 'vincerà' : 'vince'} un premio!`;
+  return `i ${b(`primi ${n}`)} ${future ? 'vinceranno' : 'vincono'} un premio!`;
 }
 
 /** Sezione a cui appartiene un percorso ("/giochi/quiz" → giochi), o null */
@@ -39,31 +61,13 @@ export function onConfigChange(fn) {
   return () => listeners.delete(fn);
 }
 
-/**
- * Ripete `fn` ogni minuto finché l'app è in primo piano, e subito quando ci si torna (telefono sbloccato,
- * cambio di app). Così chi resta su una pagina si accorge se l'Admin spegne qualcosa. Restituisce "stop".
- */
-export function everyMinute(fn) {
-  const timer = setInterval(() => {
-    if (document.visibilityState === 'visible') fn();
-  }, 60_000);
-  const onVisible = () => {
-    if (document.visibilityState === 'visible') fn();
-  };
-  document.addEventListener('visibilitychange', onVisible);
-  return () => {
-    clearInterval(timer);
-    document.removeEventListener('visibilitychange', onVisible);
-  };
-}
-
 /** Aggiorna dal server (senza rete resta l'ultima copia). */
 export async function refreshAppConfig() {
   if (!serverConfigured) return config;
   try {
     const result = await rpc('get_app_config');
     if (!result.ok) return config;
-    const next = { sections: result.sections ?? {} };
+    const next = { sections: result.sections ?? {}, winners: result.winners, leaderboard_public: result.leaderboard_public };
     const changed = JSON.stringify(next) !== JSON.stringify(config);
     config = next;
     writeJson(KEY, next);
