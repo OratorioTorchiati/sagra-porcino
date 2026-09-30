@@ -186,6 +186,8 @@ const ACTIONS = {
   settings: 'ha cambiato le impostazioni',
   role: 'ha cambiato il ruolo di',
   menu: 'ha caricato un nuovo menù',
+  game: 'ha cambiato la durata di',
+  quiz: 'ha modificato le domande del quiz',
 };
 
 // Filtro "tipo di azione" → valore passato al server
@@ -201,6 +203,8 @@ const ACTION_FILTERS = [
   ['settings', 'Impostazioni'],
   ['role', 'Ruoli'],
   ['menu', 'Menù'],
+  ['game', 'Durata dei giochi'],
+  ['quiz', 'Domande del quiz'],
 ];
 
 export function renderLogSection(root, ctx) {

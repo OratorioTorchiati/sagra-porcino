@@ -8,6 +8,7 @@ import { GAMES } from '../games/registry.js';
 import { GameSession } from '../games/engine/session.js';
 import { noteLabel } from '../lib/staff.js';
 import { staffCall, askDialog } from './staff-ui.js';
+import { withDuration } from '../games/duration.js';
 
 /**
  * Apre il replay di una partita. `onDone(changed)` quando si torna all'elenco (changed = approvata/giocatore escluso).
@@ -46,7 +47,7 @@ export async function openReplay(attemptId, ctx, errorEl, onDone) {
     session?.destroy();
     session = new GameSession({
       root: container,
-      gameDef: { ...gameDef, name: game.name },
+      gameDef: { ...withDuration(gameDef, attempt.game_id ?? game.id, attempt.duration_s), name: game.name }, // durata della partita (D99)
       assets,
       seed: Number(attempt.seed),
       replay: { actions, durationMs },

@@ -2171,6 +2171,42 @@ dialog:not([open]) {
   text-align: right;
 }
 
+.menu-edit__input--domanda {
+  width: 18rem;
+}
+
+.menu-edit__input--giusta {
+  width: 4rem;
+}
+
+.menu-edit__check {
+  width: 1.4rem;
+  height: 1.4rem;
+  accent-color: var(--color-forest);
+}
+
+/* ⚙️ Impostazioni di un gioco (D99) */
+.config-badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.config-row__unit {
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+/* Impostazione non ancora disponibile ("In arrivo"): oscurata */
+.config-group.is-todo {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 /* Anteprima del menù prima di pubblicarlo; errori del file */
 .menu-preview {
   max-height: 45vh;

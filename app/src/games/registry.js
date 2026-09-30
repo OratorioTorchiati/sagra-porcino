@@ -14,7 +14,7 @@ export const GAMES = {
     icon: porcinoSvg,
     night: 1,
     rules: [
-      { icon: '⏱️', text: '1 minuto' },
+      { icon: '⏱️', text: '{durata}' }, // durata decisa dall'Admin (D99)
       { icon: '👆', text: 'Tocca i porcini per far crescere il moltiplicatore', gallery: 'good' },
       { icon: '☠️', text: 'Funghi velenosi: si riparte da ×1', gallery: 'poison' },
       { icon: '⏳', text: 'Evita anche questi: fanno perdere tempo', gallery: 'objects' },
@@ -42,7 +42,7 @@ export const GAMES = {
       { icon: '🧺', text: 'Muovi il cestino col dito' },
       { icon: porcinoSvg, text: 'Prendi i porcini che cadono', gallery: 'good' },
       { icon: '💣', text: 'Evita le bombe: hai 3 vite ❤️❤️❤️' },
-      { icon: '⏱️', text: 'Massimo 1 minuto' },
+      { icon: '⏱️', text: 'Massimo {durata}' },
     ],
     load: () => import('./cadono/index.js').then((m) => m.default),
   },

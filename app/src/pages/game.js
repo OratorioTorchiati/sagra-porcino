@@ -7,7 +7,8 @@ import { readJson, writeJson } from '../lib/storage.js';
 import { rpc, NetworkError } from '../lib/api.js';
 import { currentPlayer, sessionToken, refreshProfile, isStaffRole } from '../lib/account.js';
 import { enqueueScore, onSubmitResult, resultFor, isPending } from '../lib/queue.js';
-import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason, NO_ATTEMPTS_TEXT } from '../lib/games-state.js';
+import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason, gameInfo, NO_ATTEMPTS_TEXT } from '../lib/games-state.js';
+import { withDuration, formatDuration } from '../games/duration.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { GAMES, PRACTICE_MODE } from '../games/registry.js';
 import { GameSession } from '../games/engine/session.js';
@@ -33,7 +34,10 @@ try {
 
 // ---------- Markup ----------
 
-function rulesMarkup(game) {
+/** Testo di una regola: "{durata}" diventa la durata decisa dall'Admin ("1 minuto", "90 secondi"...) */
+const ruleText = (text, durationS) => text.replace('{durata}', formatDuration(durationS ?? 60));
+
+function rulesMarkup(game, durationS) {
   return `
     <main class="page game-page">
       ${topBarMarkup()}
@@ -45,7 +49,7 @@ function rulesMarkup(game) {
           <li class="rules__item">
             <span class="rules__icon" aria-hidden="true">${r.icon}</span>
             <span class="rules__body">
-              <span class="rules__text">${r.text}</span>
+              <span class="rules__text">${ruleText(r.text, durationS)}</span>
               ${r.gallery ? `<span class="rules__gallery" data-gallery="${r.gallery}" aria-hidden="true"></span>` : ''}
             </span>
           </li>`,
@@ -102,7 +106,7 @@ export function renderGame({ gameId }) {
 
   function showRules() {
     unsubscribe?.();
-    const view = html(rulesMarkup(game));
+    const view = html(rulesMarkup(game, gameInfo(gamesState, game.id)?.duration_s));
     bindTopBar(view);
     container.replaceChildren(view);
     window.scrollTo(0, 0);
@@ -177,6 +181,7 @@ export function renderGame({ gameId }) {
       if (result.ok) {
         return startSession({
           seed: Number(result.seed),
+          durationS: result.duration_s,
           attemptId: result.attempt_id,
           questions: result.questions,
           attemptsLeft: result.attempts_left,
@@ -231,7 +236,7 @@ export function renderGame({ gameId }) {
     const sessionAssets = start.questions ? { ...assets, pool: start.questions } : assets;
     session = new GameSession({
       root: container,
-      gameDef: { ...gameDef, name: game.name },
+      gameDef: { ...withDuration(gameDef, game.id, start.durationS), name: game.name },
       assets: sessionAssets,
       seed: start.seed,
       onFinish: (result) => showResult(result, start),

@@ -6,9 +6,10 @@
 import { escapeHtml } from '../lib/dom.js';
 import { GAMES } from '../games/registry.js';
 import { isoToRomeLocal, romeLocalToIso, downloadText } from '../lib/staff.js';
-import { currentMenu, uploadedMenu, refreshMenu, countDishes, readMenuFile, menuTemplate } from '../lib/menu-data.js';
+import { currentMenu, refreshMenu, countDishes, readMenuFile, menuTemplate } from '../lib/menu-data.js';
 import { SECTIONS, FUTURE_SECTIONS, refreshAppConfig } from '../lib/app-config.js';
 import { staffCall, askDialog, formatDate } from './staff-ui.js';
+import { openGameSettings } from './staff-game-settings.js';
 
 const gameName = (id) => GAMES[id]?.name ?? id;
 
@@ -88,16 +89,7 @@ function gamesBody(res) {
 // ---------- Menù (D96): modello da scaricare, file da caricare con controllo e anteprima ----------
 
 function menuBody() {
-  const up = uploadedMenu();
-  const dishes = countDishes(currentMenu());
-  const source = up
-    ? `Caricato da <strong>${escapeHtml(up.by ?? '')}</strong> ${formatDate(up.updated_at)}`
-    : 'Quello incluso nell\'app (nessun menù caricato dal pannello)';
   return `
-    <div class="config-group">
-      <h4 class="config-group__title">Menù attuale</h4>
-      <p>${source} · <strong>${dishes}</strong> piatti.</p>
-    </div>
     <div class="config-group">
       <h4 class="config-group__title">Aggiorna il menù</h4>
       <div class="config-row">
@@ -264,7 +256,7 @@ export async function renderConfigSection(root, ctx) {
   const error = root.querySelector('.form-error');
   const res = await staffCall(ctx, 'get_settings', {}, error);
   if (!res) return;
-  await refreshMenu(); // per "Menù attuale"
+  await refreshMenu(); // ✏️ Modifica parte dal menù più recente
   const schedule = { games_open_from: res.games_open_from, games_open_until: res.games_open_until };
 
   const box = root.querySelector('.staff-config');
@@ -371,12 +363,16 @@ export async function renderConfigSection(root, ctx) {
     if (edit) return askDate(edit);
     const game = event.target.closest('[data-game-settings]')?.dataset.gameSettings;
     if (game) {
-      await askDialog({
-        title: `⚙️ ${escapeHtml(gameName(game))}`,
-        body: '<p>Le impostazioni di questo gioco arriveranno presto.</p>',
-        confirmLabel: 'Chiudi',
-        infoOnly: true,
-      });
+      // ⚙️ Impostazioni del gioco (D99): schermata a parte, poi si torna qui (le modifiche non salvate qui restano da salvare)
+      openGameSettings(root, ctx, res.games.find((g) => g.id === game), (message) =>
+        renderConfigSection(root, ctx).then(() => {
+          const msg = message && root.querySelector('.staff-ok');
+          if (msg) {
+            msg.textContent = message;
+            msg.hidden = false;
+          }
+        }),
+      );
     }
   });
 

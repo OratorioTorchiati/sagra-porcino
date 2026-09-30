@@ -146,6 +146,7 @@ const acchiappaStartedAt = Date.now();
 check(`${perDay} tentativi al giorno concessi, con i rimasti che scendono`,
   starts.every((s) => s?.ok) && starts.map((s) => s.attempts_left).join(',') === [...Array(perDay).keys()].map((i) => perDay - 1 - i).join(','),
   starts.map((s) => s?.attempts_left).join(','));
+check('all\'avvio il server manda la durata della partita (decisa dall\'Admin)', Number.isInteger(starts[0]?.duration_s) && starts[0].duration_s > 0, JSON.stringify(starts[0]?.duration_s));
 const over = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'acchiappa' })).body;
 check(`${perDay + 1}° tentativo nello stesso giorno → rifiutato`, over?.error === 'NO_ATTEMPTS_LEFT', JSON.stringify(over));
 const stateAfter = (await rpc('get_games_state', { p_token: t5Token })).body;
@@ -474,6 +475,15 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const badMenu = await staff('set_menu', { p_menu: { categories: [{ name: 'Primi', dishes: [{ name: '', price: 'nove' }] }] } });
   check('menù: piatto senza nome e prezzo non numerico → rifiutato', badMenu?.error === 'MENU_INVALID', JSON.stringify(badMenu));
   check('menù: un giocatore non può caricarlo', (await rpc('staff_set_menu', { p_token: t5Token, p_menu: { categories: [] } })).body?.error === 'NOT_STAFF');
+  // Impostazioni dei giochi (024): durata (si salva la stessa, per non cambiare i giochi veri), domande del quiz
+  const memoryNow = settings.games.find((g) => g.id === 'memory');
+  const sameDuration = await staff('set_game', { p_game_id: 'memory', p_seconds: memoryNow.duration_s });
+  check('Admin: durata di un gioco salvata (stessi secondi)', sameDuration?.ok && sameDuration.duration_s === memoryNow.duration_s, JSON.stringify(sameDuration));
+  check('Admin: durata fuori limite → rifiutata', (await staff('set_game', { p_game_id: 'memory', p_seconds: 5 }))?.error === 'DURATION_INVALID');
+  const quizList = await staff('quiz_list');
+  check('Admin: vede le domande del quiz con la risposta giusta', quizList?.ok && quizList.questions.length > 0 && Number.isInteger(quizList.questions[0].correct));
+  check('quiz: domanda con 3 risposte → rifiutata', (await staff('quiz_save', { p_questions: [{ text: 'Domanda?', options: ['a', 'b', 'c'], correct: 0, active: true }] }))?.error === 'QUIZ_INVALID');
+  check('quiz: un giocatore non vede le risposte', (await rpc('staff_quiz_list', { p_token: t5Token })).body?.error === 'NOT_STAFF');
   // Tentativi: da 0 (illimitati) a 99
   check('tentativi: 100 al giorno → rifiutato', (await staff('update_settings', { p_values: { attempts_per_day: 100 } }))?.error === 'ATTEMPTS_INVALID');
   if (mine) {
