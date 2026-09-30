@@ -1,4 +1,4 @@
-// Campo PIN a 5 caselle (D90): ogni cifra scritta prende il posto del suo trattino (pallino se il PIN è nascosto),
+// Campo PIN a 5 caselle (D90, D91): ogni cifra scritta prende il posto del suo trattino e si vede in chiaro,
 // le cifre mancanti restano trattini e il cursore lampeggia sul trattino della prossima cifra.
 // Sotto c'è il vero <input>, invisibile ma sopra le caselle: tastiera numerica, incolla e riempimento automatico
 // funzionano come prima e il modulo legge il valore come sempre.
@@ -26,7 +26,7 @@ export function enhancePinInputs(root) {
       if (clean !== input.value) input.value = clean;
       slots.forEach((slot, i) => {
         const filled = i < clean.length;
-        slot.textContent = filled ? (input.type === 'password' ? '•' : clean[i]) : '–';
+        slot.textContent = filled ? clean[i] : '–'; // cifra in chiaro (D91)
         slot.classList.toggle('is-filled', filled);
         slot.classList.toggle('is-active', i === clean.length);
       });
