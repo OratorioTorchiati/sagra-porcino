@@ -156,4 +156,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 10 (contenuti) | In corso | 2026-09-29 | Memory: prime 3 foto vere (Comune, Monumento, Salvatore), foto disponibili offline (D89). Mancano: menù, domande del quiz, altre 5 foto, titolare privacy, date delle serate. |
 | 8 (ritocchi) | Completata | 2026-09-30 | Campo PIN a 5 caselle con cursore sul trattino della prossima cifra (D90). |
 | 10 (contenuti) | In corso | 2026-09-30 | Memory: foto appoggiate sul fondo della carta, Salvatore più grande (D92). |
-| 8 (ritocchi) | Completata | 2026-09-30 | Ruoli Mod/Admin, ⚙️ Configurazioni per sezione, sezioni della home accendibili (D93); migrazione 021. |
+| 8 (ritocchi) | Completata | 2026-09-30 | Migrazione 021 applicata. Ruoli Mod/Admin, ⚙️ Configurazioni per sezione, sezioni della home accendibili (D93). |
