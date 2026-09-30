@@ -61,6 +61,14 @@ export async function openGameSettings(root, ctx, game, back) {
                         <span class="config-row__hint">In arrivo</span></span>
                       <select class="form-field__input config-row__time" disabled><option>Normale</option></select>
                     </div>
+                  </div>
+                  <div class="config-group is-todo" aria-disabled="true">
+                    <h4 class="config-group__title">Contenuto</h4>
+                    <div class="config-row">
+                      <span class="config-row__label">${game.id === 'memory' ? 'Immagini' : 'Personaggi e oggetti'}
+                        <span class="config-row__hint">In arrivo</span></span>
+                      <button type="button" class="icon-button" disabled aria-label="In arrivo">✏️</button>
+                    </div>
                   </div>`
             }
           </div>

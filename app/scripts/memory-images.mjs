@@ -31,7 +31,8 @@ const CROPS = {
   // bottom = dove finisce il ritaglio, in frazione dell'altezza del soggetto (0.5 = tiene la metà alta)
   salvatore: { bottom: 0.42 }, // mezzo busto: testa con aureola, mano e globo (D72)
   monumento: { bottom: 0.82 }, // tolta la base sotto la ringhiera (D72)
-  comune: { left: 0.15, right: 0.85, bottom: 0.74 }, // Municipio e aiuola, un po' di zoom: senza lampioni e gran parte della piazza
+  municipio: { left: 0.15, right: 0.85, bottom: 0.74 }, // Municipio e aiuola, un po' di zoom: senza lampioni e gran parte della piazza
+  incoronata: { bottom: 0.62 }, // la parte alta: volti, corona e colomba (intera, sulla carta piccola, non si distingue)
 };
 
 /** Distanza di colore al quadrato */
