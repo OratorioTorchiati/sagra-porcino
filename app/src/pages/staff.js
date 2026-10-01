@@ -1,5 +1,5 @@
 // Pannello Admin (#/admin, prima #/staff; Tappa 8, D73, D94). Si entra con nickname + password di un account staff.
-// Ruoli (D93): Mod (ruolo "staff") = Giocatori, Da controllare, Telefoni, Classifica; Admin = in più Registro e
+// Ruoli (D93): Mod (ruolo "staff") = Giocatori, Da controllare, Telefoni, Classifica, Feedback (D113); Admin = in più Registro e
 // ⚙️ Configurazioni. Tutto passa dalle funzioni staff_* del server, che controllano il ruolo a ogni chiamata.
 
 import { html, escapeHtml } from '../lib/dom.js';
@@ -9,6 +9,7 @@ import { NetworkError } from '../lib/api.js';
 import { renderPlayersSection } from './staff-players.js';
 import { renderReviewSection, renderSuspiciousSection, renderLeaderboardSection, renderLogSection } from './staff-sections.js';
 import { renderConfigSection } from './staff-config.js';
+import { renderFeedbackSection } from './staff-feedback.js';
 
 // admin: true = solo per l'Admin
 const SECTIONS = [
@@ -16,6 +17,7 @@ const SECTIONS = [
   { id: 'controlli', label: '🚩 Da controllare', render: renderReviewSection },
   { id: 'sospetti', label: '📱 Telefoni', render: renderSuspiciousSection },
   { id: 'classifica', label: '🏆 Classifica', render: renderLeaderboardSection },
+  { id: 'feedback', label: '💬 Feedback', render: renderFeedbackSection },
   { id: 'registro', label: '📜 Registro', render: renderLogSection, admin: true },
 ];
 const CONFIG = { id: 'configurazioni', label: '⚙️ Configurazioni', render: renderConfigSection, admin: true };

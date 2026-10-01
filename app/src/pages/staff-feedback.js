@@ -1,5 +1,5 @@
-// Moderazione dei feedback (Mod e Admin, D108, D112): nella pagina Feedback della home, al posto del modulo e delle
-// nuvolette. I feedback dei giocatori a pagine da 20, i più recenti prima, con filtri
+// Pannello → 💬 Feedback (Mod e Admin, D108, D113): moderazione dei feedback. I feedback dei giocatori a pagine da 20,
+// i più recenti prima, con filtri
 // per nickname, giorno e stelle e la media dei voti. Ogni feedback: nickname con le stelle a destra, data e ora, testo
 // con 🗑️ a destra per cancellare un feedback volgare (con conferma; finisce nel registro).
 

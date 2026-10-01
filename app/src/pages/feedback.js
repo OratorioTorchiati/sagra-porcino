@@ -1,17 +1,16 @@
 // Pagina Feedback (#/feedback, D108): voto da 1 a 5 stelle e testo facoltativo. Con l'account, oppure anche senza se
 // l'Admin ha abilitato i feedback anonimi. Sotto il modulo (o sotto l'avviso di accedere) le 3 recensioni migliori,
 // come nuvolette di una chat. Uno al giorno: dopo l'invio la propria recensione scende tra le nuvolette; rientrando
-// si vedono solo le 3 migliori e il grazie al posto del modulo (D111). Mod e Admin non ne lasciano: qui vedono
-// l'elenco di tutti i feedback per moderarli (D110, D112).
+// si vedono solo le 3 migliori e il grazie al posto del modulo (D111). Mod e Admin non ne lasciano: qui vedono un
+// avviso e le 3 migliori; la moderazione è nel Pannello Admin → 💬 Feedback (D110, D113).
 
 import { html, escapeHtml } from '../lib/dom.js';
 import { rpc, NetworkError } from '../lib/api.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
-import { currentPlayer, sessionToken, isStaffRole } from '../lib/account.js';
+import { currentPlayer, sessionToken, isStaffRole, roleLabel } from '../lib/account.js';
 import { feedbackAnonymous, refreshAppConfig } from '../lib/app-config.js';
 import { avatarSvg } from '../components/player-card.js';
 import { setAfterLogin } from './auth-messages.js';
-import { renderFeedbackSection } from './staff-feedback.js';
 
 /** Lunghezza massima del commento (D109): 4–5 frasi bastano; il server accetta fino a 1000 */
 const MAX_TEXT = 500;
@@ -103,13 +102,12 @@ export function renderFeedback() {
   function render() {
     const player = currentPlayer();
     if (isStaffRole(player?.role)) {
-      // Mod e Admin: l'elenco di tutti i feedback per moderarli (D112), senza modulo né nuvolette
-      renderFeedbackSection(body, {
-        onNotStaff: () => {
-          body.innerHTML = '<p class="form-error">La sessione dello staff è scaduta: rientra dal Pannello Admin.</p>';
-        },
-      });
-      return;
+      // Mod e Admin non lasciano recensioni (D110): l'avviso e, sotto, le nuvolette come le vede un giocatore
+      body.innerHTML = `
+        <div class="notice">
+          <p class="notice__title">Sei dentro come ${roleLabel(player.role)}</p>
+          <p>Lo staff non può lasciare recensioni. I feedback dei giocatori sono nel Pannello Admin → 💬 Feedback.</p>
+        </div>`;
     } else if (!player && !feedbackAnonymous()) {
       // Solo con l'account: avviso, e le nuvolette sotto
       body.innerHTML = `
@@ -200,6 +198,6 @@ export function renderFeedback() {
   }
 
   render();
-  if (!isStaffRole(currentPlayer()?.role)) loadPage();
+  loadPage();
   return { title: 'Feedback', element, destroy: () => (destroyed = true) };
 }
