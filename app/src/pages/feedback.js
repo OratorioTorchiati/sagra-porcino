@@ -20,7 +20,7 @@ const CACHE_MS = 5 * 60 * 1000;
 // Arrivano tutte una alla volta, dalla prima, come in una chat di gruppo; la nuova compare IN CIMA (D123)
 const FIRST_MS = 500; // la prima "sta scrivendo…" parte quasi subito
 const TYPING_MS = 2300; // "sta scrivendo…" prima di ogni nuova nuvoletta
-const NEXT_MS = 4200; // pausa tra una nuvoletta e la successiva
+const NEXT_MS = 3200; // pausa tra una nuvoletta e il "sta scrivendo…" della successiva
 
 /** Lunghezza massima del commento (D109): 4–5 frasi bastano; il server accetta fino a 1000 */
 const MAX_TEXT = 500;
