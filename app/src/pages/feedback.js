@@ -10,7 +10,8 @@ import { feedbackAnonymous, refreshAppConfig } from '../lib/app-config.js';
 import { avatarSvg } from '../components/player-card.js';
 import { setAfterLogin } from './auth-messages.js';
 
-const MAX_TEXT = 1000;
+/** Lunghezza massima del commento (D109): 4–5 frasi bastano; il server accetta fino a 1000 */
+const MAX_TEXT = 500;
 
 const ERRORS = {
   LOGIN_REQUIRED: 'Per lasciare un feedback serve un account.',
@@ -50,7 +51,8 @@ function formMarkup(anonymous) {
       <label class="form-field">
         <span class="form-field__label">Il tuo commento <span class="feedback-form__optional">(facoltativo)</span></span>
         <textarea class="form-field__input feedback-form__text" name="text" rows="5" maxlength="${MAX_TEXT}"
-          placeholder="Il piatto più buono, il gioco più divertente, cosa cambieresti…"></textarea>
+          placeholder="Il piatto più buono, cosa ti ha stupito, cosa cambieresti…" aria-describedby="feedback-count"></textarea>
+        <span class="feedback-form__count" id="feedback-count" aria-live="polite">0/${MAX_TEXT}</span>
       </label>
       <div class="form-error" role="alert" hidden></div>
       <button type="submit" class="button">Invia</button>
@@ -114,6 +116,12 @@ export function renderFeedback() {
   function bindForm() {
     const form = body.querySelector('.feedback-form');
     const error = form.querySelector('.form-error');
+    // Caratteri scritti / massimo, sotto la casella
+    const count = form.querySelector('.feedback-form__count');
+    form.text.addEventListener('input', () => {
+      count.textContent = `${form.text.value.length}/${MAX_TEXT}`;
+      count.classList.toggle('is-full', form.text.value.length >= MAX_TEXT);
+    });
     const showError = (text) => {
       error.textContent = text;
       error.hidden = false;
