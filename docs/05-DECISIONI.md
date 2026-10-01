@@ -180,3 +180,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 10 (contenuti) | In corso | 2026-09-30 | Memory con le 8 foto vere, più leggere (D103, D105); quiz con 130 domande e numero di domande dal pannello (D104), migrazione 026 applicata: 135/135 controlli. |
 | 10 (contenuti) | In corso | 2026-10-01 | Nuovo punteggio del Memory (D106), migrazione 027 applicata: 135/135 controlli (la prova del database ora legge durata del Memory e domande del quiz impostate dall'Admin). |
 | 10 (contenuti) | In corso | 2026-10-01 | Memory in percentuale e step dei giochi dal server (D107), migrazione 028 applicata: 135/135 controlli (giochi riaperti su richiesta: la chiusura era alle 11:03 di oggi). |
+| 10 (contenuti) | In corso | 2026-10-01 | Configurazioni a tendina, Aspetto (ordine delle sezioni), sezione Feedback e pannello Feedback (D108); migrazione 029 applicata: 144/144 controlli. |
