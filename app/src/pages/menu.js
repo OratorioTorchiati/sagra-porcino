@@ -1,5 +1,5 @@
-// Menù della sagra: quello caricato dall'Admin dal pannello (D96) o, se non c'è, quello incluso nell'app
-// (contenuti/menu.csv, vedi scripts/menu-plugin.js). Resta sul telefono, quindi si legge anche senza rete.
+// Menù della sagra: quello pubblicato dall'Admin dal pannello (D96, D120). Resta sul telefono, quindi si legge anche
+// senza rete; finché non ce n'è uno, "In arrivo".
 // Piatti terminati (D119): un po' spenti, con "Terminato" in rosso; l'Admin li segna con il pulsantino sotto il piatto.
 
 import { currentMenu, uploadedMenu, onMenuChange, refreshMenu, setMenu } from '../lib/menu-data.js';
@@ -32,7 +32,7 @@ function nameWithSymbols(dish) {
   return `${head}<span class="nowrap">${escapeHtml(last)}${dish.symbols.map(symbolMarkup).join('')}</span>`;
 }
 
-// Il pulsantino si vede solo all'Admin e solo sul menù caricato dal pannello (quello incluso nell'app non è sul server)
+// Il pulsantino si vede solo all'Admin
 const canMarkSoldOut = () => isAdminRole(currentPlayer()?.role) && uploadedMenu() !== null;
 
 function dishMarkup(dish, category) {

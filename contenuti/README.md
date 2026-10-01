@@ -11,7 +11,7 @@ categoria;piatto;descrizione;prezzo;simboli;allergeni
 Primi;Tagliatelle ai porcini;Pasta fresca fatta a mano;9,00;porcini;glutine, uova
 ```
 
-`descrizione`, `simboli` (`porcini`, `vegetariano`, `piccante`...) e `allergeni` sono facoltativi. Le righe che iniziano con `#` sono commenti (in cima al file c'è il promemoria delle colonne). Durante la build uno script lo converte nel formato usato dall'app: non serve toccare altro.
+`descrizione`, `simboli` (`porcini`, `vegetariano`, `piccante`...) e `allergeni` sono facoltativi. Le righe che iniziano con `#` sono commenti (in cima al file c'è il promemoria delle colonne). Si pubblica dal Pannello Admin (Configurazioni → Menù → 📄 Carica file) oppure con `npm run menu:upload`: nell'app non è incluso.
 
 Per la prima consegna va bene anche un altro formato (PDF, foto del volantino, Word): verrà trascritto nel CSV.
 

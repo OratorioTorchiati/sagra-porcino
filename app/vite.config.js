@@ -1,7 +1,5 @@
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
-import { menuPlugin } from './scripts/menu-plugin.js';
 
 // Nome del repository GitHub: il sito è pubblicato su https://<proprietario>.github.io/<REPO_NAME>/
 const REPO_NAME = 'sagra-porcino';
@@ -13,8 +11,6 @@ export default defineConfig(({ command, isPreview }) => ({
     port: 5173,
   },
   plugins: [
-    // Percorso relativo a questo file, non alla cartella da cui si avvia Vite
-    menuPlugin({ csvPath: fileURLToPath(new URL('../contenuti/menu.csv', import.meta.url)) }),
     VitePWA({
       // L'aggiornamento lo applichiamo noi nel momento giusto (src/lib/app-update.js),
       // mai a metà di una partita

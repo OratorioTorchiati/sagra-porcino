@@ -13,6 +13,7 @@
     "test": "vitest run",
     "qr": "node scripts/make-qr.js",
     "test:db": "node scripts/test-db.mjs",
+    "menu:upload": "node scripts/upload-menu.mjs",
     "memory-images": "node scripts/memory-images.mjs"
   },
   "devDependencies": {

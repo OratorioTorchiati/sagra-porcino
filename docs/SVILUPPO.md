@@ -37,10 +37,10 @@ Per aggiornarla: scaricare il nuovo zip `node-vXX-win-x64.zip` da https://nodejs
 
 ## Menù
 
-- Si modifica **solo** `contenuti/menu.csv` (con Excel, salvando come "CSV UTF-8"): in cima al file c'è il promemoria delle colonne.
-- Il plugin `app/scripts/menu-plugin.js` lo converte durante la build (e in `npm run dev`, dove salvando il CSV la pagina si ricarica). Il menù finisce dentro l'app: si legge offline.
-- Se il CSV ha errori (prezzo non valido, piatto senza nome, simbolo sconosciuto...) la build **si ferma** con l'elenco delle righe da correggere: il sito resta alla versione precedente. Simboli ammessi: `porcini`, `vegetariano`, `piccante`.
-- Per pubblicare una correzione: modificare il CSV, commit e push. I telefoni prendono la versione nuova da soli (vedi sotto).
+- Il menù sta **solo nel database** (D120): nell'app non ce n'è uno incluso. Finché non viene pubblicato, la pagina Menù dice "In arrivo".
+- Si pubblica dal **Pannello Admin → Configurazioni → Menù** (📄 file CSV o ✏️ Modifica), oppure dal computer con `npm run menu:upload` (pubblica `contenuti/menu.csv`; `npm run menu:upload -- altro.csv` per un altro file). Lo script usa l'account Admin di `app/.env.local` e il database indicato lì.
+- `contenuti/menu.csv` resta la copia di lavoro (Excel, "CSV UTF-8"; in cima il promemoria delle colonne). `npm test` controlla che sia valido. Simboli ammessi: `porcini`, `vegetariano`, `piccante`.
+- I telefoni lo riscaricano solo quando cambia (D118); i piatti terminati restano tali ripubblicando (D119).
 
 ## Offline e aggiornamenti (service worker)
 

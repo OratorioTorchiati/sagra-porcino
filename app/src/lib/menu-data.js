@@ -1,7 +1,6 @@
-// Menù da mostrare (D96): quello caricato dall'Admin dal pannello (get_menu, con copia sul telefono per l'uso
-// offline) oppure, se non ne è mai stato caricato uno, quello incluso nell'app (contenuti/menu.csv, in build).
+// Menù da mostrare (D96): quello pubblicato dall'Admin dal pannello (get_menu, con copia sul telefono per l'uso
+// offline). Nell'app non c'è più un menù incluso (D120): finché non ne è pubblicato uno, la pagina dice "In arrivo".
 
-import bundledMenu from 'virtual:menu';
 import { rpc, serverConfigured } from './api.js';
 import { readJson, writeJson } from './storage.js';
 import { menuVersion, onConfigChange } from './app-config.js';
@@ -13,12 +12,14 @@ const KEY = 'sagra-menu';
 const listeners = new Set();
 let uploaded = readJson(KEY, null); // { categories, updated_at, by } oppure null
 
-/** Menù attuale: { categories } */
+const NO_MENU = { categories: [] };
+
+/** Menù attuale: { categories } (vuoto se non è ancora stato pubblicato) */
 export function currentMenu() {
-  return uploaded?.categories ? uploaded : bundledMenu;
+  return uploaded?.categories ? uploaded : NO_MENU;
 }
 
-/** Il menù caricato dal pannello (con data e autore), o null se si usa quello incluso nell'app */
+/** Il menù pubblicato dal pannello (con data e autore), o null se non ce n'è ancora uno */
 export function uploadedMenu() {
   return uploaded;
 }
