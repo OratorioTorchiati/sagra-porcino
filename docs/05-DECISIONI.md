@@ -176,3 +176,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 8 (ritocchi) | Completata | 2026-09-30 | Impostazioni dei singoli giochi: durata (a tempo / per domanda), difficoltà in arrivo, domande del quiz in tabella (D99). Migrazione 024 applicata: 126/126 controlli. |
 | 8 (ritocchi) | Completata | 2026-09-30 | Vincitori e classifica senza account dal pannello (D101), menù in due tabelle con trascinamento (D102), sezioni ricontrollate a ogni cambio di pagina (D100); migrazione 025 applicata: 131/131 controlli. |
 | 10 (contenuti) | In corso | 2026-09-30 | Memory con le 8 foto vere, più leggere (D103, D105); quiz con 130 domande e numero di domande dal pannello (D104), migrazione 026 applicata: 135/135 controlli. |
+| 10 (contenuti) | In corso | 2026-10-01 | Nuovo punteggio del Memory (D106), migrazione 027 applicata: 135/135 controlli (la prova del database ora legge durata del Memory e domande del quiz impostate dall'Admin). |
