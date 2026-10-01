@@ -71,6 +71,7 @@ const ERRORS = {
   REASON_REQUIRED: 'Scrivi il motivo.',
   ATTEMPTS_INVALID: 'Tentativi al giorno: da 1 a 99.',
   WINNERS_INVALID: 'Numero vincitori: da 0 a 99.',
+  ORDER_INVALID: 'Ordine delle sezioni non valido: ricarica la pagina e riprova.',
   QUESTIONS_INVALID: 'Numero di domande: da 3 a 20.',
   QUESTIONS_TOO_FEW: 'Non ci sono abbastanza domande attive per questo numero di domande.',
   HOUR_INVALID: "Ora del reset: da 0 a 23.",

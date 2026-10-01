@@ -3,16 +3,20 @@ import { EVENT_NAME } from '../config.js';
 import porcinoSvg from '../assets/porcino.svg?raw';
 import gamepadSvg from '../assets/gamepad.svg?raw';
 import { accountLinkMarkup } from '../components/account-link.js';
-import { sectionOn, onConfigChange, refreshAppConfig, winnersCount } from '../lib/app-config.js';
+import { sectionOn, onConfigChange, refreshAppConfig, winnersCount, orderedSections } from '../lib/app-config.js';
 
 // Riquadri della home: si vedono solo quelli delle sezioni accese dall'Admin (D93)
 const BOXES = [
   { section: 'menu', href: '#/menu', icon: '🍽️', title: 'Menù', text: 'Guarda i piatti e i prezzi' },
   { section: 'giochi', href: '#/giochi', icon: gamepadSvg, title: 'Minigiochi', text: () => (winnersCount() > 0 ? 'Gioca, fai punti e vinci un premio!' : 'Gioca e fai punti!') },
+  { section: 'feedback', href: '#/feedback', icon: '💬', title: 'Feedback', text: 'Dicci cosa ne pensi della sagra' },
 ];
 
 const boxesMarkup = () =>
-  BOXES.filter((box) => sectionOn(box.section))
+  // nell'ordine deciso dall'Admin (Aspetto, D108)
+  orderedSections()
+    .map((s) => BOXES.find((box) => box.section === s.id))
+    .filter((box) => box && sectionOn(box.section))
     .map(
       (box) => `
           <a class="home-box" href="${box.href}">

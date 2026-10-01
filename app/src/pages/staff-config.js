@@ -1,13 +1,16 @@
-// ⚙️ Configurazioni del pannello, solo per l'Admin (D93, D94). Una scheda per ogni sezione dell'app: interruttore
-// accanto al titolo; spenta, la scheda si chiude e resta solo il titolo; accesa, si riapre con le sue impostazioni
-// (Minigiochi: giochi con ⚙️ e interruttore, tentativi, reset, apertura e chiusura). In fondo le sezioni che
-// arriveranno. Un solo bottone Salva per tutto.
+// ⚙️ Configurazioni del pannello, solo per l'Admin (D93, D94, D108). Una scheda per ogni sezione dell'app, nell'ordine
+// deciso in Aspetto: a tendina (chiusa; toccando il titolo si apre), interruttore accanto al titolo; spenta, la scheda
+// resta chiusa. In fondo Aspetto (ordine delle sezioni, colori in arrivo) e le sezioni che arriveranno.
+// Un solo bottone Salva per tutto.
 
 import { escapeHtml } from '../lib/dom.js';
 import { GAMES } from '../games/registry.js';
 import { isoToRomeLocal, romeLocalToIso, downloadText } from '../lib/staff.js';
 import { currentMenu, refreshMenu, countDishes, readMenuFile, menuTemplate } from '../lib/menu-data.js';
 import { SECTIONS, FUTURE_SECTIONS, refreshAppConfig } from '../lib/app-config.js';
+
+/** Schede aperte (restano aperte anche quando la pagina si ridisegna, es. dopo Salva) */
+const openCards = new Set();
 import { staffCall, askDialog, formatDate, flashOk } from './staff-ui.js';
 import { openGameSettings } from './staff-game-settings.js';
 
@@ -414,7 +417,58 @@ function openMenuEditor(root, ctx) {
   });
 }
 
-const BODIES = { giochi: gamesBody, menu: menuBody };
+// ---------- Feedback (D108) ----------
+
+const feedbackBody = (res) => `
+  <div class="config-group">
+    <h4 class="config-group__title">Chi può scrivere</h4>
+    <div class="config-row">
+      <span class="config-row__label">Feedback anonimi
+        <span class="config-row__hint">Anche chi non ha un account può lasciare un feedback</span></span>
+      ${switchMarkup('feedback_anonymous', res.feedback_anonymous === true, 'Feedback anche senza account')}
+    </div>
+  </div>`;
+
+// ---------- Aspetto (D108): ordine delle sezioni, colori (in arrivo) ----------
+
+/** Sezioni nell'ordine salvato (quelle mancanti in fondo) */
+const sectionsInOrder = (order = []) =>
+  [...SECTIONS].sort((a, b) => {
+    const rank = (x) => (order.includes(x.id) ? order.indexOf(x.id) : order.length + SECTIONS.indexOf(x));
+    return rank(a) - rank(b);
+  });
+
+const aspectBody = (res) => `
+  <div class="config-group">
+    <h4 class="config-group__title">Ordine delle sezioni</h4>
+    <p class="config-row__hint">Trascina ⠿ per cambiare l'ordine nella home dei giocatori e in questa pagina.</p>
+    <table class="config-table config-order"><tbody data-table="order">${sectionsInOrder(res.sections_order)
+      .map((sec) => `<tr data-id="${sec.id}"><td class="drag-cell">${DRAG_HANDLE}</td><td>${sec.icon} ${sec.label}</td></tr>`)
+      .join('')}</tbody></table>
+  </div>
+  <div class="config-group is-todo" aria-disabled="true">
+    <h4 class="config-group__title">Colori</h4>
+    <div class="config-row">
+      <span class="config-row__label">Colori principali
+        <span class="config-row__hint">In arrivo</span></span>
+      <button type="button" class="icon-button" disabled aria-label="In arrivo">🎨</button>
+    </div>
+  </div>`;
+
+const BODIES = { giochi: gamesBody, menu: menuBody, feedback: feedbackBody };
+
+/** Scheda a tendina: titolo che apre e chiude, interruttore (se c'è), contenuto */
+const cardMarkup = ({ id, icon, label, toggle, body }) => `
+  <section class="config-card${openCards.has(id) ? ' is-open' : ''}" data-card="${id}">
+    <div class="config-card__head">
+      <button type="button" class="config-card__toggle" data-toggle="${id}" aria-expanded="${openCards.has(id)}">
+        <span class="config-card__chevron" aria-hidden="true">▸</span>
+        <span class="config-card__title">${icon} ${label}</span>
+      </button>
+      ${toggle ?? ''}
+    </div>
+    <div class="config-card__fold"><div class="config-card__body">${body}</div></div>
+  </section>`;
 
 export async function renderConfigSection(root, ctx) {
   root.innerHTML = '<div class="form-error" role="alert" hidden></div><div class="staff-config"><p class="leaderboard-note">Caricamento…</p></div>';
@@ -427,16 +481,16 @@ export async function renderConfigSection(root, ctx) {
   const box = root.querySelector('.staff-config');
   box.innerHTML = `
     <form class="config-form" novalidate>
-      ${SECTIONS.map(
-        (s) => `
-        <section class="config-card" data-card="${s.id}">
-          <div class="config-card__head">
-            <h3 class="config-card__title">${s.icon} ${s.label}</h3>
-            ${switchMarkup(`section_${s.id}`, res.sections?.[s.id] !== false, `${s.label}: visibile nell'app`)}
-          </div>
-          <div class="config-card__fold"><div class="config-card__body">${BODIES[s.id]?.(res) ?? ''}</div></div>
-        </section>`,
-      ).join('')}
+      ${sectionsInOrder(res.sections_order)
+        .map((s) =>
+          cardMarkup({
+            ...s,
+            toggle: switchMarkup(`section_${s.id}`, res.sections?.[s.id] === true || (res.sections?.[s.id] === undefined && s.defaultOn), `${s.label}: visibile nell'app`),
+            body: BODIES[s.id]?.(res) ?? '',
+          }),
+        )
+        .join('')}
+      ${cardMarkup({ id: 'aspetto', icon: '🎨', label: 'Aspetto', body: aspectBody(res) })}
       <section class="config-card config-card--future">
         <h3 class="config-card__title">In arrivo</h3>
         <ul class="config-future">${FUTURE_SECTIONS.map((s) => `<li>${s.icon} ${s.label}</li>`).join('')}</ul>
@@ -453,13 +507,24 @@ export async function renderConfigSection(root, ctx) {
   };
   renderSchedules();
 
-  // Scheda spenta: si chiude (resta il titolo); accesa: si riapre
+  // Scheda spenta: resta chiusa (si vede solo il titolo); accesa: si apre e si chiude toccando il titolo
   const syncCards = () => {
     for (const card of form.querySelectorAll('.config-card[data-card]')) {
-      card.classList.toggle('is-off', !form[`section_${card.dataset.card}`].checked);
+      const toggle = form[`section_${card.dataset.card}`];
+      card.classList.toggle('is-off', Boolean(toggle) && !toggle.checked);
     }
   };
   syncCards();
+  const setOpen = (card, open) => {
+    card.classList.toggle('is-open', open);
+    card.querySelector('[data-toggle]').setAttribute('aria-expanded', String(open));
+    if (open) openCards.add(card.dataset.card);
+    else openCards.delete(card.dataset.card);
+  };
+
+  // Aspetto: ordine delle sezioni trascinando ⠿ (si salva con Salva)
+  const orderBody = form.querySelector('[data-table="order"]');
+  makeSortable(orderBody, { onDrop: () => {} });
 
   async function askDate(key) {
     const values = await askDialog({
@@ -480,7 +545,11 @@ export async function renderConfigSection(root, ctx) {
   form.addEventListener('change', (event) => {
     const name = event.target.name ?? '';
     if (name === 'attempts_unlimited') return syncAttempts();
-    if (name.startsWith('section_')) return syncCards();
+    if (name.startsWith('section_')) {
+      // accesa: la scheda si apre, così si vede subito cosa configurare
+      if (event.target.checked) setOpen(event.target.closest('.config-card'), true);
+      return syncCards();
+    }
     if (name.startsWith('schedule_')) {
       const key = name.slice('schedule_'.length);
       if (event.target.checked) {
@@ -514,6 +583,12 @@ export async function renderConfigSection(root, ctx) {
   });
 
   form.addEventListener('click', async (event) => {
+    const toggle = event.target.closest('[data-toggle]');
+    if (toggle) {
+      const card = toggle.closest('.config-card');
+      if (!card.classList.contains('is-off')) setOpen(card, !card.classList.contains('is-open'));
+      return;
+    }
     const menuAction = event.target.closest('[data-menu]')?.dataset.menu;
     if (menuAction === 'template') return downloadText('menu-sagra-template.csv', menuTemplate());
     if (menuAction === 'upload') return menuFile.click();
@@ -556,6 +631,8 @@ export async function renderConfigSection(root, ctx) {
       games_open_from: schedule.games_open_from,
       games_open_until: schedule.games_open_until,
       games: Object.fromEntries(res.games.map((g) => [g.id, form[`game_${g.id}`].checked])),
+      feedback_anonymous: form.feedback_anonymous.checked,
+      sections_order: [...orderBody.rows].map((tr) => tr.dataset.id),
     };
     const off = SECTIONS.filter((s) => !values.sections[s.id]).map((s) => s.label);
     const confirmed = await askDialog({

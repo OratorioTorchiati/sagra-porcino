@@ -1,31 +1,48 @@
 // Sezioni dell'app accese o spente dall'Admin (D93). Il server le dice con get_app_config; l'ultima risposta
 // resta sul telefono, così la home è giusta anche senza rete. Senza nessuna risposta: tutto acceso.
-// Gli id devono coincidere con _section_ids() nel database (supabase/migrations/021_ruoli_e_sezioni.sql).
+// Gli id devono coincidere con _section_ids() nel database (supabase/migrations/029_feedback_e_aspetto.sql).
+// L'ordine delle sezioni (home e pannello) lo decide l'Admin in Configurazioni → Aspetto (D108).
 
 import { rpc, serverConfigured } from './api.js';
 import { readJson, writeJson } from './storage.js';
 
-/** Sezioni della home, nell'ordine in cui compaiono. `path` = la pagina (e le sue sottopagine). */
+/**
+ * Sezioni della home (ordine iniziale; poi quello deciso dall'Admin, vedi orderedSections). `path` = la pagina
+ * (e le sue sottopagine). `defaultOn`: accesa o spenta finché il server non dice niente.
+ */
 export const SECTIONS = [
-  { id: 'menu', label: 'Menù', icon: '🍽️', path: '/menu' },
-  { id: 'giochi', label: 'Minigiochi', icon: '🎮', path: '/giochi' },
+  { id: 'menu', label: 'Menù', icon: '🍽️', path: '/menu', defaultOn: true },
+  { id: 'giochi', label: 'Minigiochi', icon: '🎮', path: '/giochi', defaultOn: true },
+  { id: 'feedback', label: 'Feedback', icon: '💬', path: '/feedback', defaultOn: false },
 ];
 
 /** Sezioni che arriveranno (nelle Configurazioni si vedono come "in arrivo") */
 export const FUTURE_SECTIONS = [
   { label: 'Mappa', icon: '🗺️' },
-  { label: 'Feedback', icon: '💬' },
   { label: 'Calendario eventi', icon: '📅' },
   { label: 'Sponsor', icon: '🤝' },
 ];
 
 const KEY = 'sagra-config';
 const listeners = new Set();
-let config = readJson(KEY, null); // { sections: { menu: true, ... }, winners, leaderboard_public }
+let config = readJson(KEY, null); // { sections: { menu: true, ... }, winners, leaderboard_public, sections_order, feedback_anonymous }
 
-/** La sezione è accesa? (senza informazioni: sì) */
+/** La sezione è accesa? (senza informazioni: come da `defaultOn`) */
 export function sectionOn(id) {
-  return config?.sections?.[id] !== false;
+  const value = config?.sections?.[id];
+  return typeof value === 'boolean' ? value : SECTIONS.find((s) => s.id === id)?.defaultOn !== false;
+}
+
+/** Sezioni nell'ordine deciso dall'Admin (Aspetto, D108); quelle non nell'elenco in fondo */
+export function orderedSections() {
+  const order = Array.isArray(config?.sections_order) ? config.sections_order : [];
+  const rank = (s) => (order.includes(s.id) ? order.indexOf(s.id) : order.length + SECTIONS.indexOf(s));
+  return [...SECTIONS].sort((a, b) => rank(a) - rank(b));
+}
+
+/** Si possono lasciare feedback anche senza account? (D108, senza informazioni: no) */
+export function feedbackAnonymous() {
+  return config?.feedback_anonymous === true;
 }
 
 /** Quanti vincono un premio (D101): 0 = nessun premio. Senza informazioni: 10 */
@@ -67,7 +84,13 @@ export async function refreshAppConfig() {
   try {
     const result = await rpc('get_app_config');
     if (!result.ok) return config;
-    const next = { sections: result.sections ?? {}, winners: result.winners, leaderboard_public: result.leaderboard_public };
+    const next = {
+      sections: result.sections ?? {},
+      winners: result.winners,
+      leaderboard_public: result.leaderboard_public,
+      sections_order: result.sections_order,
+      feedback_anonymous: result.feedback_anonymous,
+    };
     const changed = JSON.stringify(next) !== JSON.stringify(config);
     config = next;
     writeJson(KEY, next);

@@ -188,6 +188,7 @@ const ACTIONS = {
   menu: 'ha caricato un nuovo menù',
   game: 'ha cambiato la durata di',
   quiz: 'ha modificato le domande del quiz',
+  feedback_delete: 'ha cancellato un feedback di',
 };
 
 // Filtro "tipo di azione" → valore passato al server
@@ -205,6 +206,7 @@ const ACTION_FILTERS = [
   ['menu', 'Menù'],
   ['game', 'Durata dei giochi'],
   ['quiz', 'Domande del quiz'],
+  ['feedback_delete', 'Feedback cancellati'],
 ];
 
 export function renderLogSection(root, ctx) {

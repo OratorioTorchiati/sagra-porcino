@@ -530,6 +530,33 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('classifica solo con account: senza accesso → LOGIN_REQUIRED (classifica e scheda)', lockedBoard?.error === 'LOGIN_REQUIRED' && lockedCard?.error === 'LOGIN_REQUIRED');
   check('classifica solo con account: con l\'accesso si vede', openBoard?.ok === true && openCard?.ok === true);
   check('classifica: rimessa com\'era', (await rpc('get_app_config')).body?.leaderboard_public === settings.leaderboard_public);
+  // Feedback (D108): per un attimo sezione accesa e solo con account, poi tutto com'era
+  await staff('update_settings', { p_values: { sections: { feedback: true }, feedback_anonymous: false } });
+  const fbAnon = (await rpc('submit_feedback', { p_token: null, p_stars: 5, p_text: 'prova' })).body;
+  const fbBad = (await rpc('submit_feedback', { p_token: t5Token, p_stars: 6, p_text: null })).body;
+  const fbText = `zz prova del database ${nick}: tutto molto buono`;
+  const fbOk = (await rpc('submit_feedback', { p_token: t5Token, p_stars: 5, p_text: fbText })).body;
+  await rpc('submit_feedback', { p_token: t5Token, p_stars: 4, p_text: null });
+  await rpc('submit_feedback', { p_token: t5Token, p_stars: 3, p_text: null });
+  const fbFourth = (await rpc('submit_feedback', { p_token: t5Token, p_stars: 2, p_text: null })).body;
+  const fbList = await staff('feedback_list', { p_nickname: t5Nick });
+  const fbMine = fbList?.entries?.find((f) => f.text === fbText);
+  const fbStars = await staff('feedback_list', { p_nickname: t5Nick, p_stars: 3 });
+  const fbPlayer = (await rpc('staff_feedback_list', { p_token: t5Token })).body;
+  check('feedback: senza account rifiutato se non sono abilitati gli anonimi', fbAnon?.error === 'LOGIN_REQUIRED', JSON.stringify(fbAnon));
+  check('feedback: stelle fuori da 1–5 rifiutate', fbBad?.error === 'STARS_INVALID', JSON.stringify(fbBad));
+  check('feedback: con l\'account si invia; al massimo 3 al giorno', fbOk?.ok === true && fbFourth?.error === 'TOO_MANY', JSON.stringify({ fbOk, fbFourth }));
+  check('feedback: lo staff li vede filtrati per nickname e stelle, con la media', fbList?.total === 3 && fbMine?.stars === 5 && fbStars?.total === 1 && fbList.average > 0, JSON.stringify({ total: fbList?.total, avg: fbList?.average }));
+  check('feedback: un giocatore non vede l\'elenco dello staff', fbPlayer?.error === 'NOT_STAFF');
+  const fbHigh = (await rpc('get_feedback_highlights')).body;
+  check('feedback: le 3 migliori hanno almeno 15 caratteri di testo', fbHigh?.ok && fbHigh.reviews.length <= 3 && fbHigh.reviews.every((r) => r.text.trim().length >= 15), JSON.stringify(fbHigh?.reviews?.length));
+  for (const f of fbList?.entries ?? []) await staff('feedback_delete', { p_id: f.id });
+  check('feedback: lo staff li cancella', (await staff('feedback_list', { p_nickname: t5Nick }))?.total === 0);
+  check('aspetto: ordine delle sezioni non valido → rifiutato', (await staff('update_settings', { p_values: { sections_order: ['menu', 'menu'] } }))?.error === 'ORDER_INVALID');
+  const sameOrder = await staff('update_settings', { p_values: { sections_order: settings.sections_order, sections: settings.sections, feedback_anonymous: settings.feedback_anonymous } });
+  const configAfter = (await rpc('get_app_config')).body;
+  check('aspetto e feedback rimessi com\'erano; l\'app legge ordine e feedback anonimi', sameOrder?.ok && JSON.stringify(configAfter?.sections_order) === JSON.stringify(settings.sections_order) &&
+    configAfter.sections?.feedback === settings.sections.feedback && configAfter.feedback_anonymous === settings.feedback_anonymous, JSON.stringify(configAfter));
   if (mine) {
     const rep = await staff('attempt_replay', { p_attempt_id: mine.id });
     check('staff: "Rivedi partita" riceve seme, azioni e durata', rep?.ok && rep.attempt.seed !== null && Array.isArray(rep.attempt.actions) && rep.attempt.actions.length > 5 && rep.attempt.stats.durationMs > 0);
