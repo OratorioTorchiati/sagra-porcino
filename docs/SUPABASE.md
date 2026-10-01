@@ -115,6 +115,7 @@ Mod e Admin hanno tentativi illimitati e non compaiono in classifica.
 Nel SQL Editor:
 
 ```sql
+delete from feedback where player_id in (select id from players where nickname like 'zz%');  -- prima dei giocatori: altrimenti resterebbero come anonimi
 delete from players where nickname like 'zz%';   -- giocatori di prova (sessioni, dispositivi, tentativi e riga in classifica si cancellano da soli)
 delete from login_failures;
 delete from login_blocks;
