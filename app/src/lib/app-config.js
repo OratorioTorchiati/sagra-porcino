@@ -83,9 +83,16 @@ export function onConfigChange(fn) {
   return () => listeners.delete(fn);
 }
 
-/** Aggiorna dal server (senza rete resta l'ultima copia). */
-export async function refreshAppConfig() {
+// Cambia di rado: dopo una risposta, per 1 minuto i cambi pagina non la richiedono (D122). Chi sa che è cambiata
+// (es. il server risponde SECTION_OFF, l'Admin ha appena salvato) passa `force`.
+const FRESH_MS = 60 * 1000;
+let checkedAt = 0;
+
+/** Aggiorna dal server (senza rete resta l'ultima copia); niente richiesta se l'ultima è di meno di un minuto fa. */
+export async function refreshAppConfig({ force = false } = {}) {
   if (!serverConfigured) return config;
+  if (!force && Date.now() - checkedAt < FRESH_MS) return config;
+  checkedAt = Date.now();
   try {
     const result = await rpc('get_app_config');
     if (!result.ok) return config;

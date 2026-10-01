@@ -642,7 +642,7 @@ export async function renderConfigSection(root, ctx) {
     });
     if (!confirmed) return;
     if (await staffCall(ctx, 'update_settings', { p_values: values }, error)) {
-      refreshAppConfig(); // anche la home di questo telefono si aggiorna
+      refreshAppConfig({ force: true }); // anche la home di questo telefono si aggiorna
       renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), '✅ Configurazioni salvate.'));
     }
   });

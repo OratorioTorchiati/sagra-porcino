@@ -120,7 +120,7 @@ export function renderLeaderboard() {
     },
     onLocked: () => {
       stop?.();
-      refreshAppConfig();
+      refreshAppConfig({ force: true });
       showLocked();
     },
     onOnline: (online) => {

@@ -197,7 +197,7 @@ export function renderGame({ gameId }) {
         startError = 'Devi rientrare nel tuo account.';
       } else if (result.error === 'SECTION_OFF') {
         startError = 'I minigiochi in questo momento non sono disponibili.';
-        refreshAppConfig(); // la pagina diventa "non disponibile", con Torna alla home
+        refreshAppConfig({ force: true }); // la pagina diventa "non disponibile", con Torna alla home
       } else if (result.error === 'QUIZ_EMPTY') {
         startError = 'Il quiz non è ancora pronto. Riprova più tardi.';
       }

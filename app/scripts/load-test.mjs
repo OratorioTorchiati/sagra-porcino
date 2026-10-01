@@ -160,7 +160,16 @@ async function player(index) {
   let feedbackDone = false;
 
   // Apertura dell'app: configurazione, menù (prima volta), stato dei giochi
-  const config = await rpc('get_app_config', {});
+  // Configurazione: al massimo una richiesta al minuto, come l'app (D122)
+  let config = await rpc('get_app_config', {});
+  let configAt = Date.now();
+  const pageConfig = async () => {
+    if (Date.now() - configAt >= 60000) {
+      config = (await rpc('get_app_config', {})) ?? config;
+      configAt = Date.now();
+    }
+    return config;
+  };
   let menuVersion = config?.menu_version ?? null;
   await rpc('get_menu', {});
   await sleep(rand(3000, 12000));
@@ -186,7 +195,7 @@ async function player(index) {
   while (Date.now() < END_AT) {
     await sleep(rand(4000, 20000)); // tempo per leggere / scegliere
     if (Date.now() >= END_AT) break;
-    const app = await rpc('get_app_config', {}); // a ogni cambio pagina
+    const app = await pageConfig(); // cambio pagina
     const r = Math.random();
     if (r < 0.15) {
       // Menù: si riscarica solo se è cambiata la versione (D118)
@@ -224,7 +233,7 @@ async function player(index) {
       // Dopo la partita: spesso si guarda la classifica
       if (Math.random() < 0.6) {
         await sleep(rand(2000, 6000));
-        await rpc('get_app_config', {});
+        await pageConfig();
         const board = await rpc('get_leaderboard', { p_token: token, p_version: leaderboardVersion });
         if (board?.ok && !board.unchanged) leaderboardVersion = board.version;
       }

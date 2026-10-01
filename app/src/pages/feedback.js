@@ -244,7 +244,7 @@ export function renderFeedback() {
         const text = form.text.value.trim();
         const res = await rpc('submit_feedback', { p_token: sessionToken(), p_stars: stars, p_text: text });
         if (!res.ok) {
-          if (res.error === 'LOGIN_REQUIRED') refreshAppConfig(); // l'Admin ha appena tolto i feedback anonimi
+          if (res.error === 'LOGIN_REQUIRED') refreshAppConfig({ force: true }); // l'Admin ha appena tolto i feedback anonimi
           if (res.error === 'TOO_MANY') {
             const cached = readJson(CACHE_KEY, null);
             if (cached?.owner === cacheOwner()) savePage({ ...cached.data, can_submit: false }, cached.savedAt);
