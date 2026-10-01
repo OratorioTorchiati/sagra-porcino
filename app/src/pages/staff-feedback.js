@@ -1,7 +1,8 @@
 // Pannello → 💬 Feedback (Mod e Admin, D108, D113): moderazione dei feedback. I feedback dei giocatori a pagine da 20,
 // i più recenti prima, con filtri
 // per nickname, giorno e stelle e la media dei voti. Ogni feedback: nickname con le stelle a destra, data e ora, testo
-// con 🗑️ a destra per cancellare un feedback volgare (con conferma; finisce nel registro).
+// con 🗑️ a destra per cancellare un feedback volgare (con conferma; finisce nel registro). In cima Attivi / Rimossi:
+// i rimossi restano nel database e si rivedono qui, con chi li ha rimossi e quando (D115).
 
 import { escapeHtml } from '../lib/dom.js';
 import { avatarSvg } from '../components/player-card.js';
@@ -18,14 +19,23 @@ const entryMarkup = (f) => `
     </p>
     <p class="staff-feedback__date">${formatDate(f.created_at)}</p>
     <div class="staff-feedback__row">
-      ${f.text ? `<p class="staff-feedback__text">${escapeHtml(f.text)}</p>` : '<p class="staff-feedback__text staff-muted">(solo il voto)</p>'}
-      <button type="button" class="icon-button icon-button--danger" data-delete="${f.id}" data-who="${escapeHtml(f.nickname ?? 'Anonimo')}"
-        aria-label="Cancella il feedback" title="Cancella">🗑️</button>
+      ${f.text ? `<p class="staff-feedback__text">${escapeHtml(f.text)}</p>` : '<p class="staff-feedback__text staff-muted">(nessun testo)</p>'}
+      ${
+        f.deleted_at
+          ? ''
+          : `<button type="button" class="icon-button icon-button--danger" data-delete="${f.id}" data-who="${escapeHtml(f.nickname ?? 'Anonimo')}"
+        aria-label="Cancella il feedback" title="Cancella">🗑️</button>`
+      }
     </div>
+    ${f.deleted_at ? `<p class="staff-feedback__removed">🗑️ Rimosso da <strong>${escapeHtml(f.deleted_by ?? 'staff')}</strong> · ${formatDate(f.deleted_at)}</p>` : ''}
   </li>`;
 
 export function renderFeedbackSection(root, ctx) {
   root.innerHTML = `
+    <div class="review-switch" role="tablist" aria-label="Feedback attivi o rimossi">
+      <button type="button" role="tab" class="review-switch__option is-active" aria-selected="true" data-removed="false">Attivi</button>
+      <button type="button" role="tab" class="review-switch__option" aria-selected="false" data-removed="true">Rimossi</button>
+    </div>
     <form class="staff-filters" role="search" novalidate>
       <label class="staff-filters__field staff-filters__field--wide"><span>Nickname</span>
         <input class="form-field__input" name="nickname" autocapitalize="off" spellcheck="false" placeholder="Tutti"></label>
@@ -43,13 +53,15 @@ export function renderFeedbackSection(root, ctx) {
   const error = root.querySelector('.form-error');
   const ok = root.querySelector('.staff-ok');
   const list = root.querySelector('.staff-results');
+  const switchEl = root.querySelector('.review-switch');
   let page = 0;
+  let removed = false; // Attivi (false) o Rimossi (true)
 
   async function load(p = page) {
     const res = await staffCall(
       ctx,
       'feedback_list',
-      { p_page: p, p_nickname: form.nickname.value.trim() || null, p_day: form.day.value || null, p_stars: form.stars.value ? Number(form.stars.value) : null },
+      { p_page: p, p_nickname: form.nickname.value.trim() || null, p_day: form.day.value || null, p_stars: form.stars.value ? Number(form.stars.value) : null, p_removed: removed },
       error,
     );
     if (!res) return;
@@ -57,8 +69,19 @@ export function renderFeedbackSection(root, ctx) {
     list.innerHTML = res.entries.length
       ? `<p class="staff-muted">${res.total} feedback · media <strong>${String(res.average).replace('.', ',')} ★</strong></p>
          <ul class="staff-feedback">${res.entries.map(entryMarkup).join('')}</ul>${pagerMarkup(res.page, res.total, res.page_size)}`
-      : '<p class="leaderboard-note">Nessun feedback con questi filtri.</p>';
+      : `<p class="leaderboard-note">${removed ? 'Nessun feedback rimosso' : 'Nessun feedback'} con questi filtri.</p>`;
   }
+
+  switchEl.addEventListener('click', (event) => {
+    const option = event.target.closest('[data-removed]');
+    if (!option) return;
+    removed = option.dataset.removed === 'true';
+    switchEl.querySelectorAll('[data-removed]').forEach((b) => {
+      b.classList.toggle('is-active', b === option);
+      b.setAttribute('aria-selected', String(b === option));
+    });
+    load(0);
+  });
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -75,14 +98,14 @@ export function renderFeedbackSection(root, ctx) {
     if (!del) return;
     const confirmed = await askDialog({
       title: 'Cancellare il feedback?',
-      body: `<p>Il feedback di <strong>${escapeHtml(del.dataset.who)}</strong> sparisce per sempre (resta solo nel registro).</p>`,
+      body: `<p>Il feedback di <strong>${escapeHtml(del.dataset.who)}</strong> sparisce dalla pagina Feedback e va nei <strong>Rimossi</strong>. Chi l'ha scritto non potrà lasciarne un altro oggi.</p>`,
       confirmLabel: 'Cancella',
       danger: true,
     });
     if (!confirmed) return;
     if (await staffCall(ctx, 'feedback_delete', { p_id: Number(del.dataset.delete) }, error)) {
       await load();
-      flashOk(ok, '✅ Feedback cancellato.');
+      flashOk(ok, '✅ Feedback rimosso (lo trovi nei Rimossi).');
     }
   });
 

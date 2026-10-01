@@ -3344,6 +3344,12 @@ tr.is-dragging .drag-handle {
   white-space: nowrap;
 }
 
+.staff-feedback__removed {
+  margin-top: 0.35rem !important;
+  font-size: 0.9rem;
+  color: #b3261e;
+}
+
 /* testo del commento con 🗑️ a destra */
 .staff-feedback__row {
   display: flex;

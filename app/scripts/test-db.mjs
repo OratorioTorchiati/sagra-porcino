@@ -556,6 +556,9 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('feedback: le 3 migliori hanno almeno 15 caratteri di testo', fbHigh?.ok && fbHigh.reviews.length <= 3 && fbHigh.reviews.every((r) => r.text.trim().length >= 15), JSON.stringify(fbHigh?.reviews?.length));
   for (const f of fbList?.entries ?? []) await staff('feedback_delete', { p_id: f.id });
   check('feedback: lo staff li cancella', (await staff('feedback_list', { p_nickname: t5Nick }))?.total === 0);
+  const fbRemoved = await staff('feedback_list', { p_nickname: t5Nick, p_removed: true });
+  const fbRemovedMine = fbRemoved?.entries?.find((f) => f.text === fbText);
+  check('feedback: i rimossi si rivedono col testo, chi li ha rimossi e quando (D115)', Boolean(fbRemovedMine?.deleted_at) && fbRemovedMine.deleted_by === staffLogin.player.nickname, JSON.stringify(fbRemovedMine));
   const fbAfterDelete = (await rpc('submit_feedback', { p_token: t5Token, p_stars: 5, p_text: 'riprovo dopo la cancellazione' })).body;
   const fbPageDeleted = (await rpc('get_feedback_page', { p_token: t5Token })).body;
   check('feedback: cancellato dallo staff, quel giorno non se ne può scrivere un altro (D114)', fbAfterDelete?.error === 'TOO_MANY' && fbPageDeleted?.can_submit === false, JSON.stringify({ fbAfterDelete, can: fbPageDeleted?.can_submit }));
