@@ -3190,8 +3190,15 @@ tr.is-dragging .drag-handle {
   border-radius: 12px;
 }
 
+.feedback-form .form-field__label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+/* contatore sulla stessa riga dell'etichetta, a destra */
 .feedback-form__count {
-  margin-left: 0.4rem;
+  margin-left: auto;
   font-size: 0.9rem;
   font-weight: 400;
   color: var(--color-text-muted);
