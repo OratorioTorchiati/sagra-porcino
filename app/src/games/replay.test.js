@@ -25,7 +25,7 @@ function play(create, config, seed, input) {
     game.update(STEP_S, t);
     input(game, t);
   }
-  return { result: game.result(), actions };
+  return { result: game.result({ durationMs: Math.round(t * 1000) }), actions };
 }
 
 /** Replay: stesso seme, nessun giocatore, solo le azioni registrate rifatte al loro passo */
@@ -43,7 +43,7 @@ function replay(create, config, seed, actions) {
       game.replayAction(type, data, t);
     }
   }
-  return game.result();
+  return game.result({ durationMs: Math.round(t * 1000) });
 }
 
 describe('Rivedi partita: il replay rifà la stessa partita', () => {

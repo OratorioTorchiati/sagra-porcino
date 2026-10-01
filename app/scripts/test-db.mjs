@@ -5,7 +5,9 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import acchiappaConfig from '../src/games/acchiappa/config.js';
-import { applyHit, gameEndMs, initialScoreState } from '../src/games/acchiappa/scoring.js';
+import { acchiappaScore, applyHit, applyMiss, gameEndMs, initialScoreState } from '../src/games/acchiappa/scoring.js';
+import memoryConfig from '../src/games/memory/config.js';
+import { memoryScore } from '../src/games/memory/logic.js';
 
 const env = Object.fromEntries(
   fs
@@ -161,10 +163,10 @@ const stateAfterFake = (await rpc('get_games_state', { p_token: t5Token })).body
 check('...e il tentativo resta usato', stateAfterFake?.games?.find((g) => g.id === 'acchiappa')?.attempts_used_today === perDay);
 check('tentativo inesistente → rifiutato', (await rpc('submit_score', { p_attempt_id: crypto.randomUUID(), p_raw_score: 0, p_stats: {}, p_actions: [] })).body?.error === 'ATTEMPT_UNKNOWN');
 
-// Memory: partita coerente (valida) e partita "perfetta" in 8 mosse (segnalata)
+// Memory: partita coerente (valida) e partita "perfetta" (tante mosse quante coppie: segnalata)
 function memoryActions(moves, lastMs) {
   const actions = [[0, 'start']];
-  const pairs = 8;
+  const pairs = memPairs;
   const mismatches = moves - pairs;
   let ms = 500;
   const step = (lastMs - 500) / (moves * 2);
@@ -178,29 +180,34 @@ function memoryActions(moves, lastMs) {
   }
   return actions;
 }
-// Durata del Memory e domande del quiz come le ha impostate l'Admin (D99, D104): i punteggi attesi si calcolano da qui
+// Durata e step (coppie, domande) come li ha impostati l'Admin (D99, D104, D107): niente numeri fissi, i punteggi
+// attesi si calcolano da qui con le stesse formule dell'app
 const gamesNow = (await rpc('get_games_state', { p_token: t5Token })).body.games;
-const memDur = gamesNow.find((g) => g.id === 'memory').duration_s;
+const memGame = gamesNow.find((g) => g.id === 'memory');
+const memDur = memGame.duration_s;
+const memPairs = memGame.steps;
 const quizGame = gamesNow.find((g) => g.id === 'quiz');
-const quizN = quizGame.questions ?? 5;
-/** Punteggio del Memory (D106): 100 × (coppie + precisione + tempo avanzato), con 8 coppie trovate */
-const memScore = (moves, lastMs) => Math.round(100 * (8 + 8 / (8 + (moves - 8) * 0.5) + Math.max(0, 1 - Math.round(lastMs / 100) / 10 / memDur)));
-const MEM_GOOD = memScore(10, 6000);
-const MEM_PERFECT = memScore(8, 6000);
+const quizN = quizGame.steps;
+// partita del Memory finita in 0,75 s a coppia (sopra il limite umano di 0,6 s a coppia)
+const MEM_MS = memPairs * 750;
+const memScore = (moves) =>
+  memoryScore({ completed: true, seconds: Math.round(MEM_MS / 100) / 10, moves, pairs: memPairs }, { ...memoryConfig, pairs: memPairs, durationS: memDur });
+const MEM_GOOD = memScore(memPairs + 2);
+const MEM_PERFECT = memScore(memPairs);
 const mem1 = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'memory' })).body;
 const mem2 = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'memory' })).body;
-const tooSoon = (await rpc('submit_score', { p_attempt_id: mem2.attempt_id, p_raw_score: MEM_GOOD, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) })).body;
+const tooSoon = (await rpc('submit_score', { p_attempt_id: mem2.attempt_id, p_raw_score: MEM_GOOD, p_stats: { durationMs: MEM_MS + 5000 }, p_actions: memoryActions(memPairs + 2, MEM_MS) })).body;
 check('partita inviata prima del tempo reale necessario → esclusa', tooSoon?.status === 'rejected', JSON.stringify(tooSoon));
-await sleep(6500);
-const good = (await rpc('submit_score', { p_attempt_id: mem1.attempt_id, p_raw_score: MEM_GOOD, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) })).body;
-check(`Memory coerente (10 mosse, 6 s su ${memDur}) → valida con punteggio ricalcolato ${MEM_GOOD}`, good?.status === 'valid' && good.raw_score === MEM_GOOD, JSON.stringify(good));
+await sleep(MEM_MS + 500);
+const good = (await rpc('submit_score', { p_attempt_id: mem1.attempt_id, p_raw_score: MEM_GOOD, p_stats: { durationMs: MEM_MS }, p_actions: memoryActions(memPairs + 2, MEM_MS) })).body;
+check(`Memory coerente (${memPairs + 2} mosse per ${memPairs} coppie, ${MEM_MS / 1000} s su ${memDur}) → valida con punteggio ricalcolato ${MEM_GOOD}`, good?.status === 'valid' && good.raw_score === MEM_GOOD, JSON.stringify(good));
 const mem3 = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'memory' })).body;
-await sleep(6500);
-const perfect = (await rpc('submit_score', { p_attempt_id: mem3.attempt_id, p_raw_score: MEM_PERFECT, p_stats: { durationMs: 6000 }, p_actions: memoryActions(8, 6000) })).body;
-check('Memory perfetto in 8 mosse → contato ma segnalato allo staff', perfect?.status === 'flagged' && perfect.raw_score === MEM_PERFECT, JSON.stringify(perfect));
+await sleep(MEM_MS + 500);
+const perfect = (await rpc('submit_score', { p_attempt_id: mem3.attempt_id, p_raw_score: MEM_PERFECT, p_stats: { durationMs: MEM_MS }, p_actions: memoryActions(memPairs, MEM_MS) })).body;
+check(`Memory perfetto (${memPairs} mosse) → contato ma segnalato allo staff`, perfect?.status === 'flagged' && perfect.raw_score === MEM_PERFECT, JSON.stringify(perfect));
 const wrongScore = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'cadono' })).body;
 const lie = (await rpc('submit_score', { p_attempt_id: wrongScore.attempt_id, p_raw_score: 999, p_stats: { durationMs: 1000 }, p_actions: [[500, 'catch', 'bomb', 100, 100], [700, 'catch', 'bomb', 100, 100], [900, 'catch', 'bomb', 100, 100]] })).body;
-check('Porcini che cadono: punteggio dichiarato diverso da quello delle azioni → escluso', lie?.status === 'rejected' && lie.raw_score === 0, JSON.stringify(lie));
+check('Porcini che cadono: punteggio dichiarato diverso da quello delle azioni → escluso', lie?.status === 'rejected', JSON.stringify(lie));
 check('vale il migliore tra i tentativi validi', perfect?.best === MEM_PERFECT);
 
 // Quiz: domande dal server SENZA risposta giusta; il punteggio lo calcola il server
@@ -224,25 +231,31 @@ if (starts[1]?.attempt_id && perDay >= 2) {
     taps.push([ms, i === 70 ? 'poison' : i === 18 || i === 40 ? 'object' : 'good']);
   }
   let state = initialScoreState();
-  let endMs = acchiappaConfig.durationS * 1000; // ogni oggetto toglie 2 s alla partita
+  let endMs = starts[1].duration_s * 1000; // durata decisa dall'Admin; ogni oggetto toglie 2 s alla partita
   const actions = [[0, 'start']];
   const KIND = { good: 'estivo', poison: 'riccio', object: 'castagna' };
   for (const [t, hit] of taps) {
     if (t >= endMs) break;
+    // ogni tanto un porcino sparisce senza essere toccato (persi: contano nella percentuale, D107)
+    if (actions.length % 6 === 5) {
+      state = applyMiss(state);
+      actions.push([t - 100, 'miss', 'estivo']);
+    }
     state = applyHit(state, hit, t, acchiappaConfig).state;
     if (hit === 'object') endMs = gameEndMs(endMs, t, acchiappaConfig);
     actions.push([t, 'tap', 100, 200, hit === 'good' ? 'good' : 'bad', KIND[hit], 420, 80, 5]);
   }
-  const wait = 61000 - (Date.now() - acchiappaStartedAt);
+  const wait = starts[1].duration_s * 1000 + 1000 - (Date.now() - acchiappaStartedAt);
   if (wait > 0) {
-    console.log(`(attendo ${Math.ceil(wait / 1000)} s: una partita di Acchiappa dura un minuto vero)`);
+    console.log(`(attendo ${Math.ceil(wait / 1000)} s: una partita di Acchiappa dura davvero ${starts[1].duration_s} s)`);
     await sleep(wait);
   }
-  const acc = (await rpc('submit_score', { p_attempt_id: starts[1].attempt_id, p_raw_score: state.score, p_stats: { durationMs: endMs }, p_actions: actions })).body;
-  check(`Acchiappa col moltiplicatore a tempo → valida, stesso punteggio dell'app (${state.score})`, acc?.status === 'valid' && acc.raw_score === state.score, JSON.stringify(acc));
+  const accScore = acchiappaScore(state, acchiappaConfig);
+  const acc = (await rpc('submit_score', { p_attempt_id: starts[1].attempt_id, p_raw_score: accScore, p_stats: { durationMs: endMs }, p_actions: actions })).body;
+  check(`Acchiappa (porcini presi, persi, moltiplicatore) → valida, stesso punteggio dell'app (${accScore})`, acc?.status === 'valid' && Math.abs(acc.raw_score - accScore) <= 1, JSON.stringify(acc));
   if (starts[2]?.attempt_id) {
     const centered = actions.map((a) => (a[1] === 'tap' ? [...a.slice(0, 8), 0] : a)); // distanza dal centro 0 px
-    const bot = (await rpc('submit_score', { p_attempt_id: starts[2].attempt_id, p_raw_score: state.score, p_stats: { durationMs: endMs }, p_actions: centered })).body;
+    const bot = (await rpc('submit_score', { p_attempt_id: starts[2].attempt_id, p_raw_score: accScore, p_stats: { durationMs: endMs }, p_actions: centered })).body;
     check('Acchiappa con tocchi sempre al centro esatto → segnalata (possibile bot)', bot?.status === 'flagged', JSON.stringify(bot));
   }
 }
@@ -340,8 +353,8 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const vDevice = crypto.randomUUID();
   const v = (await rpc('register', { p_nickname: vNick, p_avatar: 'riccio', p_pin: '31415', p_device_id: vDevice })).body;
   const vStart = (await rpc('start_attempt', { p_token: v.token, p_game_id: 'memory' })).body;
-  await sleep(6500);
-  await rpc('submit_score', { p_attempt_id: vStart.attempt_id, p_raw_score: MEM_GOOD, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) });
+  await sleep(MEM_MS + 500);
+  await rpc('submit_score', { p_attempt_id: vStart.attempt_id, p_raw_score: MEM_GOOD, p_stats: { durationMs: MEM_MS }, p_actions: memoryActions(memPairs + 2, MEM_MS) });
   const reset = await staff('reset_pin', { p_nickname: vNick, p_new_pin: '27182' });
   const oldSession = (await rpc('get_my_profile', { p_token: v.token })).body;
   const newLogin = (await rpc('login', { p_nickname: vNick, p_secret: '27182' })).body;
@@ -397,8 +410,8 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const xDevice = crypto.randomUUID();
   const x = (await rpc('register', { p_nickname: xNick, p_avatar: 'riccio', p_pin: '22122', p_device_id: xDevice })).body;
   const xStart = (await rpc('start_attempt', { p_token: x.token, p_game_id: 'memory' })).body;
-  await sleep(6500);
-  const xRes = (await rpc('submit_score', { p_attempt_id: xStart.attempt_id, p_raw_score: MEM_PERFECT, p_stats: { durationMs: 6000 }, p_actions: memoryActions(8, 6000) })).body;
+  await sleep(MEM_MS + 500);
+  const xRes = (await rpc('submit_score', { p_attempt_id: xStart.attempt_id, p_raw_score: MEM_PERFECT, p_stats: { durationMs: MEM_MS }, p_actions: memoryActions(memPairs, MEM_MS) })).body;
   const excluded = await staff('ban_player', { p_attempt_id: xStart.attempt_id });
   const xLogin = (await rpc('login', { p_nickname: xNick, p_secret: '22122' })).body;
   const xAgain = (await rpc('register', { p_nickname: `zzy${suffix}`, p_avatar: 'riccio', p_pin: '22122', p_device_id: xDevice })).body;
@@ -489,18 +502,20 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const sameDuration = await staff('set_game', { p_game_id: 'memory', p_seconds: memoryNow.duration_s });
   check('Admin: durata di un gioco salvata (stessi secondi)', sameDuration?.ok && sameDuration.duration_s === memoryNow.duration_s, JSON.stringify(sameDuration));
   check('Admin: durata fuori limite → rifiutata', (await staff('set_game', { p_game_id: 'memory', p_seconds: 5 }))?.error === 'DURATION_INVALID');
-  // Numero di domande del quiz (D104): per un attimo 7, poi com'era
+  // Numero di domande del quiz (D104): per un attimo un altro numero, poi com'era
   const quizNow = settings.games.find((g) => g.id === 'quiz');
-  const perQ = quizNow.duration_s / quizNow.questions;
-  const set7 = await staff('set_game', { p_game_id: 'quiz', p_seconds: perQ, p_questions: 7 });
+  const perQ = quizNow.duration_s / quizNow.steps;
+  // un numero di domande diverso da quello attuale (dentro i limiti 3–20)
+  const otherN = quizNow.steps < 20 ? quizNow.steps + 1 : quizNow.steps - 1;
+  const set7 = await staff('set_game', { p_game_id: 'quiz', p_seconds: perQ, p_steps: otherN });
   const quiz7 = (await rpc('start_attempt', { p_token: S, p_game_id: 'quiz' })).body;
-  const back5 = await staff('set_game', { p_game_id: 'quiz', p_seconds: perQ, p_questions: quizNow.questions });
-  check('quiz: con 7 domande la partita ne riceve 7, con la durata giusta', set7?.questions === 7 && quiz7?.questions?.length === 7 && quiz7.duration_s === perQ * 7, JSON.stringify({ set7, n: quiz7?.questions?.length, d: quiz7?.duration_s }));
-  check('quiz: numero di domande rimesso com\'era', back5?.questions === quizNow.questions && back5.duration_s === quizNow.duration_s, JSON.stringify(back5));
-  check('quiz: 2 domande → rifiutato', (await staff('set_game', { p_game_id: 'quiz', p_seconds: perQ, p_questions: 2 }))?.error === 'QUESTIONS_INVALID');
-  // Punteggio sulle 7 domande: nessuna risposta = 0 punti, e nessun controllo che la escluda
+  const back5 = await staff('set_game', { p_game_id: 'quiz', p_seconds: perQ, p_steps: quizNow.steps });
+  check(`quiz: con ${otherN} domande la partita ne riceve ${otherN}, con la durata giusta`, set7?.steps === otherN && quiz7?.questions?.length === otherN && quiz7.duration_s === perQ * otherN, JSON.stringify({ set7, n: quiz7?.questions?.length, d: quiz7?.duration_s }));
+  check('quiz: numero di domande rimesso com\'era', back5?.steps === quizNow.steps && back5.duration_s === quizNow.duration_s, JSON.stringify(back5));
+  check('quiz: 2 domande → rifiutato', (await staff('set_game', { p_game_id: 'quiz', p_seconds: perQ, p_steps: 2 }))?.error === 'QUESTIONS_INVALID');
+  // Punteggio su quelle domande: nessuna risposta = 0 punti, e nessun controllo che la escluda
   const sub7 = (await rpc('submit_score', { p_attempt_id: quiz7.attempt_id, p_raw_score: 0, p_stats: { durationMs: 700, answers: quiz7.questions.map((q) => ({ questionId: q.id, choice: null, ms: 100 })) }, p_actions: [] })).body;
-  check('quiz a 7 domande: partita inviata e ricalcolata dal server', sub7?.ok === true && sub7.status !== 'rejected', JSON.stringify(sub7));
+  check(`quiz a ${otherN} domande: partita inviata e ricalcolata dal server`, sub7?.ok === true && sub7.status !== 'rejected', JSON.stringify(sub7));
   const quizList = await staff('quiz_list');
   check('Admin: vede le domande del quiz con la risposta giusta', quizList?.ok && quizList.questions.length > 0 && Number.isInteger(quizList.questions[0].correct));
   check('quiz: domanda con 3 risposte → rifiutata', (await staff('quiz_save', { p_questions: [{ text: 'Domanda?', options: ['a', 'b', 'c'], correct: 0, active: true }] }))?.error === 'QUIZ_INVALID');

@@ -58,23 +58,34 @@ describe('createMemoryLogic', () => {
   });
 });
 
-describe('memoryScore (D106): 100 × coppie + 100 × precisione + 100 × tempo avanzato', () => {
-  const cfg = { ...config, durationS: 120 };
+describe('memoryScore (D107): percentuale di coppie, precisione, tempo avanzato', () => {
+  const w = config.scoreWeights;
+  const n = config.pairs;
+  const end = config.durationS;
 
-  it('ogni coppia vale una "centinaia": 1 coppia = 1xx, 4 coppie = 4xx', () => {
-    // 1 coppia al primo colpo: precisione piena → 200; dopo 99 errori → poco più di 100
-    expect(memoryScore({ completed: false, seconds: 120, moves: 1, pairs: 1 }, cfg)).toBe(200);
-    expect(memoryScore({ completed: false, seconds: 120, moves: 100, pairs: 1 }, cfg)).toBe(102);
-    // 4 coppie con 20 errori: 400 + 100 × 4 / (4 + 10)
-    expect(memoryScore({ completed: false, seconds: 120, moves: 24, pairs: 4 }, cfg)).toBe(429);
-    expect(memoryScore({ completed: false, seconds: 120, moves: 10, pairs: 0 }, cfg)).toBe(0);
+  it('ogni coppia trovata vale la sua parte: 1 coppia al primo colpo = una coppia + precisione piena', () => {
+    expect(memoryScore({ completed: false, seconds: end, moves: 1, pairs: 1 }, config)).toBe(Math.round(1000 * (w.pairs / n + w.precision)));
+    // dopo 99 errori la precisione quasi sparisce
+    const late = memoryScore({ completed: false, seconds: end, moves: 100, pairs: 1 }, config);
+    expect(late).toBeGreaterThanOrEqual(Math.round(1000 * w.pairs / n));
+    expect(late).toBeLessThan(Math.round(1000 * (w.pairs / n + w.precision / 10)));
+    expect(memoryScore({ completed: false, seconds: end, moves: 10, pairs: 0 }, config)).toBe(0);
   });
 
-  it('completato: conta anche il tempo avanzato', () => {
-    // 8 coppie in 15 mosse (7 errori) e 70 secondi su 120: 800 + 70 + 42
-    expect(memoryScore({ completed: true, seconds: 70, moves: 15, pairs: 8 }, cfg)).toBe(911);
-    // perfetto e istantaneo = 1000
-    expect(memoryScore({ completed: true, seconds: 0, moves: 8, pairs: 8 }, cfg)).toBe(1000);
+  it('metà delle coppie: metà della parte delle coppie (più la precisione)', () => {
+    const half = memoryScore({ completed: false, seconds: end, moves: n / 2, pairs: n / 2 }, config);
+    expect(half).toBe(Math.round(1000 * (w.pairs / 2 + w.precision)));
+  });
+
+  it('completato: conta anche il tempo avanzato, perfetto e istantaneo = 1000', () => {
+    expect(memoryScore({ completed: true, seconds: 0, moves: n, pairs: n }, config)).toBe(1000);
+    expect(memoryScore({ completed: true, seconds: end / 2, moves: n, pairs: n }, config)).toBe(Math.round(1000 * (w.pairs + w.precision + w.time / 2)));
+  });
+
+  it('il risultato non dipende dalla durata né dal numero di coppie, ma dalle percentuali', () => {
+    const a = memoryScore({ completed: true, seconds: 30, moves: 12, pairs: 8 }, { ...config, pairs: 8, durationS: 120 });
+    const b = memoryScore({ completed: true, seconds: 15, moves: 6, pairs: 4 }, { ...config, pairs: 4, durationS: 60 });
+    expect(a).toBe(b);
   });
 
   it('completare vale sempre più che non completare', () => {

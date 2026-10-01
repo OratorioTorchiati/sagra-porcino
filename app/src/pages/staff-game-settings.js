@@ -17,13 +17,13 @@ function showOk(root, text) {
 }
 
 /**
- * @param game  { id, duration_s, questions } dal server
+ * @param game  { id, duration_s, steps } dal server (steps = domande del quiz)
  * @param back  (message?) => torna alle Configurazioni (con un messaggio facoltativo)
  */
 export async function openGameSettings(root, ctx, game, back) {
   const steps = isStepGame(game.id);
   const name = GAMES[game.id]?.name ?? game.id;
-  const questions = game.questions ?? 5; // domande per partita (solo quiz)
+  const questions = game.steps; // domande per partita (solo quiz)
   const seconds = steps ? Math.round(game.duration_s / questions) : game.duration_s;
   root.innerHTML = `
     <div class="menu-edit">
@@ -137,10 +137,10 @@ export async function openGameSettings(root, ctx, game, back) {
       error.hidden = false;
       return;
     }
-    const saved = await staffCall(ctx, 'set_game', { p_game_id: game.id, p_seconds: s, ...(steps ? { p_questions: n } : {}) }, error);
+    const saved = await staffCall(ctx, 'set_game', { p_game_id: game.id, p_seconds: s, ...(steps ? { p_steps: n } : {}) }, error);
     if (saved) {
       back(steps
-        ? `✅ ${name}: ${saved.questions} domande, in tutto ${formatDuration(saved.duration_s)}.`
+        ? `✅ ${name}: ${saved.steps} domande, in tutto ${formatDuration(saved.duration_s)}.`
         : `✅ ${name}: durata salvata (${formatDuration(saved.duration_s)}).`);
     }
   });

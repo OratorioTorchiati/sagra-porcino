@@ -12,7 +12,7 @@ export default {
   config,
   hud: [
     { key: 'time', label: 'Tempo' },
-    { key: 'score', label: 'Punti' },
+    { key: 'score', label: 'Presi' },
     { key: 'multiplier', label: 'Serie', ring: true },
   ],
 
@@ -66,6 +66,7 @@ export default {
   summary(stats) {
     return [
       ['Porcini presi', stats.caught],
+      ['Porcini persi', stats.missed ?? '—'],
       ['Errori', stats.errors],
       ['Serie migliore', stats.maxStreak],
     ];

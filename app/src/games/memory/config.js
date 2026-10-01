@@ -12,12 +12,12 @@ export default {
   /** Una coppia trovata resta visibile per questo tempo, poi sparisce verso lo sfondo */
   matchShowS: 0.5,
 
-  // Punteggio (D106), da 0 a 1000:
-  //   pairPoints × coppie + pairPoints × precisione + pairPoints × tempo avanzato
+  // Punteggio da 0 a 1000 (D107), non dipende dalla durata né dal numero di coppie:
+  //   1000 × (pairs × coppie trovate / coppie + precision × precisione + time × tempo avanzato)
   //   precisione     = coppie / (coppie + errori × errorWeight)   (errori = mosse sbagliate; 0–1)
   //   tempo avanzato = 1 − secondi / durata, solo se si trovano tutte le coppie (0–1)
-  // 1 coppia = 1xx, 4 coppie = 4xx, 8 coppie = 8xx + precisione + tempo (fino a 1000).
+  // Con 8 coppie: ogni coppia vale 100 (1 coppia = 1xx … 8 coppie = 8xx), poi precisione e tempo fino a 1000.
   // errorWeight 0,5: all'inizio gli errori sono inevitabili (le carte non si sono ancora viste).
-  pairPoints: 100,
+  scoreWeights: { pairs: 0.8, precision: 0.1, time: 0.1 },
   errorWeight: 0.5,
 };

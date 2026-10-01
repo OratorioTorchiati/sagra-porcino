@@ -7,10 +7,13 @@ export default {
   durationS: 60,
   lives: 3,
 
-  pointsPorcino: 10,
-  pointsGolden: 50,
-  /** Bonus a chi arriva alla fine del minuto, per ogni vita rimasta */
-  survivalBonusPerLife: 50,
+  /** Un porcino d'oro vale come questi porcini normali (presi o caduti) */
+  goldenWeight: 5,
+  /**
+   * Punteggio da 0 a 1000 (D107), non dipende dalla durata:
+   *   1000 × (catch × porcini presi / porcini caduti in tutto + time × tempo resistito / durata + lives × vite rimaste / vite)
+   */
+  scoreWeights: { catch: 0.7, time: 0.2, lives: 0.1 },
 
   /** Dimensione degli elementi che cadono, px */
   itemSize: 60,

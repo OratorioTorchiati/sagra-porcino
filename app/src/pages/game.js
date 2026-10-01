@@ -9,7 +9,7 @@ import { currentPlayer, sessionToken, refreshProfile, isStaffRole } from '../lib
 import { enqueueScore, onSubmitResult, resultFor, isPending } from '../lib/queue.js';
 import { cachedGamesState, fetchGamesState, attemptsLeft, blockedReason, gameInfo, NO_ATTEMPTS_TEXT } from '../lib/games-state.js';
 import { refreshAppConfig } from '../lib/app-config.js';
-import { withDuration, formatDuration } from '../games/duration.js';
+import { withDuration } from '../games/duration.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { GAMES, PRACTICE_MODE } from '../games/registry.js';
 import { GameSession } from '../games/engine/session.js';
@@ -35,9 +35,8 @@ try {
 
 // ---------- Markup ----------
 
-/** Testo di una regola: "{durata}" e "{domande}" diventano quelli decisi dall'Admin ("1 minuto", "5"...) */
-const ruleText = (text, info) =>
-  text.replace('{durata}', formatDuration(info?.duration_s ?? 60)).replace('{domande}', String(info?.questions ?? 5));
+/** Testo di una regola: fisso, oppure calcolato da durata e step decisi dall'Admin (info = stato del gioco) */
+const ruleText = (text, info) => (typeof text === 'function' ? text(info) : text);
 
 function rulesMarkup(game, info) {
   return `
@@ -188,6 +187,7 @@ export function renderGame({ gameId }) {
           durationS: result.duration_s,
           attemptId: result.attempt_id,
           questions: result.questions,
+          steps: result.steps,
           attemptsLeft: result.attempts_left,
           unlimited: result.unlimited,
         });
@@ -243,7 +243,7 @@ export function renderGame({ gameId }) {
     const sessionAssets = start.questions ? { ...assets, pool: start.questions } : assets;
     session = new GameSession({
       root: container,
-      gameDef: { ...withDuration(gameDef, game.id, start.durationS, start.questions?.length), name: game.name },
+      gameDef: { ...withDuration(gameDef, game.id, start.durationS, start.steps ?? start.questions?.length), name: game.name },
       assets: sessionAssets,
       seed: start.seed,
       onFinish: (result) => showResult(result, start),

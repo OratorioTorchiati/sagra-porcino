@@ -1,0 +1,491 @@
+-- =====================================================================================
+-- 028 — Punteggi in percentuale per tutti i giochi (D107)
+--
+-- Ogni gioco vale da 0 a 1000 e il risultato non dipende dalla durata né dal numero di step (domande, coppie),
+-- ma da quanto si è completato:
+--   Acchiappa           1000 × (80% porcini presi / (presi + persi + tocchi sbagliati) + 20% moltiplicatore medio)
+--   Porcini che cadono  1000 × (70% porcini presi / caduti, l'oro vale 5 + 20% tempo resistito + 10% vite rimaste)
+--   Memory              1000 × (80% coppie trovate / coppie + 10% precisione + 10% tempo avanzato)
+--   Quiz                come prima (giuste / domande, con la velocità)
+-- - games.steps (domande del quiz, coppie del Memory) al posto di games.questions; ogni partita ricorda i suoi step.
+-- - Il tetto del punteggio è 1000 per tutti i giochi (prima Acchiappa e Porcini che cadono crescevano con la durata).
+-- - Acchiappa: il telefono registra anche i porcini spariti senza tocco ([ms, 'miss', tipo]).
+-- - Nuovo segnale per lo staff "pochi_porcini" (meno di mezzo porcino al secondo registrato).
+-- Le partite già giocate restano col loro punteggio.
+--
+-- Come applicarla: Supabase → SQL Editor → incolla tutto il file → Run. Si può rieseguire.
+-- =====================================================================================
+
+alter table public.games add column if not exists steps int;
+alter table public.attempts add column if not exists steps int;
+do $$ begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'games' and column_name = 'questions') then
+    update public.games set steps = coalesce(steps, questions) where id = 'quiz';
+  end if;
+end $$;
+update public.games set steps = coalesce(steps, 5) where id = 'quiz';
+update public.games set steps = coalesce(steps, 8) where id = 'memory';
+update public.games set max_raw_score = 1000;
+
+-- ---------- Partite ----------
+
+-- Come in 026, con gli step del gioco ricordati nella partita
+create or replace function public.start_attempt(p_token text, p_game_id text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_player players := _session_player(p_token);
+  v_game games;
+  v_staff boolean;
+  v_unlimited boolean;
+  v_used int;
+  v_per_day int := _attempts_per_day();
+  v_window text := _window_state();
+  v_qids int[];
+  v_seen int[];
+  v_attempt attempts;
+begin
+  if v_player.id is null then
+    return jsonb_build_object('ok', false, 'error', 'NOT_LOGGED_IN');
+  end if;
+  v_staff := v_player.role in ('staff', 'admin');
+  v_unlimited := v_staff or v_per_day = 0; -- 0 tentativi al giorno = illimitati per tutti (D97)
+  select * into v_game from games where id = p_game_id;
+  if v_game.id is null then
+    return jsonb_build_object('ok', false, 'error', 'GAME_UNKNOWN');
+  end if;
+  if not v_staff then
+    -- Sezione Minigiochi spenta dall'Admin (D93)
+    if not _section_on('giochi') then return jsonb_build_object('ok', false, 'error', 'SECTION_OFF'); end if;
+    if not v_game.enabled then return jsonb_build_object('ok', false, 'error', 'GAME_DISABLED'); end if;
+    if v_window = 'not_yet' then return jsonb_build_object('ok', false, 'error', 'GAMES_NOT_OPEN', 'open_from', _setting('games_open_from')); end if;
+    if v_window = 'closed' then return jsonb_build_object('ok', false, 'error', 'GAMES_CLOSED'); end if;
+  end if;
+
+  -- Un avvio alla volta per giocatore e gioco (niente doppio tocco che supera il limite)
+  perform pg_advisory_xact_lock(hashtext(v_player.id::text || ':' || p_game_id));
+  -- Tentativi usati oggi: dal contatore (le esclusioni confermate cancellano la partita, ma il tentativo resta usato)
+  select coalesce((select used from attempts_used where player_id = v_player.id and game_id = p_game_id and day = _today()), 0) into v_used;
+  if not v_unlimited and v_used >= v_per_day then
+    return jsonb_build_object('ok', false, 'error', 'NO_ATTEMPTS_LEFT', 'attempts_per_day', v_per_day);
+  end if;
+
+  if p_game_id = 'quiz' then
+    -- N domande a caso (N = step del gioco, deciso dall'Admin, D104), evitando quelle già capitate (se ce ne sono abbastanza)
+    select coalesce(array_agg(distinct q), '{}') into v_seen
+    from attempts a, unnest(a.quiz_question_ids) as q where a.player_id = v_player.id and a.game_id = 'quiz';
+    v_qids := array(select id from quiz_questions where active and not (id = any (v_seen)) order by random() limit v_game.steps);
+    if coalesce(array_length(v_qids, 1), 0) < v_game.steps then
+      v_qids := array(select id from quiz_questions where active order by random() limit v_game.steps);
+    end if;
+    if coalesce(array_length(v_qids, 1), 0) = 0 then
+      return jsonb_build_object('ok', false, 'error', 'QUIZ_EMPTY');
+    end if;
+  end if;
+
+  insert into attempts_used (player_id, game_id, day, used) values (v_player.id, p_game_id, _today(), 1)
+  on conflict (player_id, game_id, day) do update set used = attempts_used.used + 1;
+
+  -- la partita ricorda durata e step (domande del quiz, coppie del Memory); con meno domande di N (poche attive)
+  -- la durata scende in proporzione
+  insert into attempts (player_id, game_id, day, seed, quiz_question_ids, duration_s, steps)
+  values (v_player.id, p_game_id, _today(), floor(random() * 4294967296)::bigint, v_qids,
+          case when p_game_id = 'quiz' then v_game.duration_s / v_game.steps * array_length(v_qids, 1) else v_game.duration_s end,
+          case when p_game_id = 'quiz' then array_length(v_qids, 1) else v_game.steps end)
+  returning * into v_attempt;
+
+  return jsonb_build_object(
+    'ok', true,
+    'attempt_id', v_attempt.id,
+    'seed', v_attempt.seed,
+    'duration_s', v_attempt.duration_s, -- durata decisa dall'Admin (D99): il gioco la usa al posto della sua
+    'steps', v_attempt.steps, -- domande del quiz, coppie del Memory (D107)
+    'unlimited', v_unlimited,
+    'attempts_left', case when v_unlimited then null else v_per_day - v_used - 1 end,
+    'attempts_per_day', v_per_day,
+    -- Domande del quiz SENZA la risposta giusta
+    'questions', case when p_game_id = 'quiz' then (
+      select jsonb_agg(jsonb_build_object('id', q.id, 'text', q.text, 'options', to_jsonb(q.options))
+                       order by array_position(v_qids, q.id))
+      from quiz_questions q where q.id = any (v_qids)) end);
+end;
+$$;
+
+-- Come in 027, con tutti i punteggi in percentuale
+create or replace function public._check_attempt(p_attempt attempts, p_game games, p_raw int, p_stats jsonb, p_actions jsonb)
+returns jsonb language plpgsql stable set search_path = public as $$
+declare
+  v_notes text[] := '{}';
+  v_rejected boolean := false;
+  v_flagged boolean := false;
+  v_score int := 0;
+  v_correct int;
+  v_dur int := (p_stats ->> 'durationMs')::int;
+  v_elapsed_ms numeric := extract(epoch from (now() - p_attempt.started_at)) * 1000;
+  v_row jsonb;
+  -- Acchiappa
+  v_streak int := 0; v_good int := 0; v_fast int := 0; v_taps int := 0; v_center int := 0;
+  v_points int := 0; v_missed int := 0; v_bad int := 0; v_catch_part numeric; v_mult_part numeric; -- D107
+  v_level int := 1; v_ends int; v_tap_ms int;
+  v_end int := p_game.duration_s * 1000; -- fine della partita: ogni oggetto toccato la anticipa di 2 s (D81)
+  v_prev_ms int; v_int_n int := 0; v_int_sum numeric := 0; v_int_sq numeric := 0; v_std numeric;
+  -- Porcini che cadono
+  v_lives int := 3; v_catches int := 0; v_precise int := 0;
+  v_caught numeric := 0; v_fallen numeric := 0; v_items int := 0; -- D107 (porcino d'oro = 5)
+  -- Memory
+  v_moves int := 0; v_pairs int := 0; v_last_match_ms int; v_seconds numeric; v_extra int;
+  -- Quiz
+  v_q_ms int; -- tempo per domanda del quiz
+  v_nq int; -- domande della partita del quiz
+  v_steps int; -- step della partita: domande del quiz, coppie del Memory (D107)
+  v_errors int; v_precision numeric; v_time_left numeric; -- Memory (D106)
+  v_answer jsonb; v_q quiz_questions; v_ms int; v_seen int[] := '{}'; v_all_fast boolean := true; v_answered int := 0; v_sum_ms int := 0;
+begin
+  -- La durata con cui è stata giocata la partita (l'Admin può cambiarla, D99); per le vecchie partite quella del gioco
+  p_game.duration_s := coalesce(p_attempt.duration_s, p_game.duration_s);
+  v_end := p_game.duration_s * 1000;
+  -- step della partita (domande, coppie): quelli ricordati nella partita; per le vecchie partite quelli del gioco
+  v_steps := coalesce(p_attempt.steps, array_length(p_attempt.quiz_question_ids, 1), p_game.steps);
+  -- tempo per domanda: durata della partita diviso le sue domande
+  v_nq := v_steps;
+  v_q_ms := p_game.duration_s * 1000 / v_nq;
+  if p_actions is null or jsonb_typeof(p_actions) <> 'array' then
+    return jsonb_build_object('status', 'rejected', 'score', 0, 'notes', array['azioni_mancanti']);
+  end if;
+  if jsonb_array_length(p_actions) > 6000 then
+    return jsonb_build_object('status', 'rejected', 'score', 0, 'notes', array['troppe_azioni']);
+  end if;
+  if v_dur is null or v_dur < 0 then
+    return jsonb_build_object('status', 'rejected', 'score', 0, 'notes', array['durata_mancante']);
+  end if;
+  if now() > p_attempt.started_at + interval '6 hours' then
+    v_rejected := true; v_notes := array_append(v_notes, 'inviata_dopo_6_ore');
+  end if;
+  -- Il tempo di gioco non può superare il tempo reale passato dall'avvio
+  if v_dur > v_elapsed_ms + 2000 then
+    v_rejected := true; v_notes := array_append(v_notes, 'piu_veloce_dell_orologio');
+  end if;
+  if p_game.id <> 'quiz' and v_dur > p_game.duration_s * 1000 + 3000 then
+    v_rejected := true; v_notes := array_append(v_notes, 'durata_troppo_lunga');
+  end if;
+
+  if p_game.id = 'acchiappa' then
+    -- [ms, 'tap', x, y, esito, tipo, età_ms, dimensione, distanza] e [ms, 'miss', tipo] (porcino sparito senza tocco)
+    for v_row in select value from jsonb_array_elements(p_actions) loop
+      if v_row ->> 1 = 'miss' then v_missed := v_missed + 1; end if;
+      continue when v_row ->> 1 <> 'tap';
+      if (v_row ->> 0)::int > v_end + 500 then
+        v_rejected := true; v_notes := array_append(v_notes, 'tocco_oltre_la_fine');
+      end if;
+      -- Moltiplicatore a timer (come app/src/games/acchiappa/scoring.js, D84): timer a zero → giù di un livello
+      -- col timer al 50%; tornati a ×1 si riparte dalla serie
+      v_tap_ms := (v_row ->> 0)::int;
+      while v_level > 1 and v_tap_ms >= v_ends loop
+        v_level := v_level - 1;
+        v_ends := case when v_level > 1 then v_ends + _acchiappa_level_ms(v_level) / 2 end;
+        if v_level = 1 then v_streak := 0; end if;
+      end loop;
+      if v_row ->> 4 = 'good' then
+        v_points := v_points + 5 * v_level;
+        if v_level = 1 then
+          -- da ×1 a ×2 con 5 porcini di fila, timer al 25%
+          v_streak := v_streak + 1;
+          if v_streak >= 5 then
+            v_level := 2;
+            v_ends := v_tap_ms + _acchiappa_level_ms(2) / 4;
+          end if;
+        else
+          -- ogni porcino ricarica il timer; se supera il tempo pieno si sale, col timer al 25% (a ×4 si ferma al pieno)
+          v_ends := v_ends + _acchiappa_level_boost_ms(v_level);
+          if v_ends - v_tap_ms > _acchiappa_level_ms(v_level) then
+            if v_level < 4 then
+              v_level := v_level + 1;
+              v_ends := v_tap_ms + _acchiappa_level_ms(v_level) / 4;
+            else
+              v_ends := v_tap_ms + _acchiappa_level_ms(4);
+            end if;
+          end if;
+        end if;
+        v_good := v_good + 1;
+        if (v_row ->> 6)::int < 150 then v_fast := v_fast + 1; end if;
+        -- distanza del tocco dal centro del porcino (px): un dito quasi mai colpisce il centro esatto
+        if (v_row ->> 8)::int <= 2 then v_center := v_center + 1; end if;
+      elsif v_row ->> 4 = 'bad' and _acchiappa_is_poisonous(v_row ->> 5) then
+        -- fungo velenoso: si riparte da ×1
+        v_streak := 0; v_level := 1; v_ends := null;
+        v_bad := v_bad + 1;
+      elsif v_row ->> 4 = 'bad' then
+        -- oggetto: il moltiplicatore non cambia, la partita finisce 2 s prima (mai prima del tocco)
+        v_end := greatest(v_tap_ms, v_end - 2000);
+        v_bad := v_bad + 1;
+      end if;
+      if v_row ->> 4 in ('good', 'bad') then
+        v_taps := v_taps + 1;
+        if v_prev_ms is not null then
+          v_int_n := v_int_n + 1;
+          v_int_sum := v_int_sum + ((v_row ->> 0)::int - v_prev_ms);
+          v_int_sq := v_int_sq + ((v_row ->> 0)::int - v_prev_ms) ^ 2;
+        end if;
+        v_prev_ms := (v_row ->> 0)::int;
+      end if;
+    end loop;
+    if v_dur < v_end - 1000 then
+      v_rejected := true; v_notes := array_append(v_notes, 'partita_troppo_corta');
+    end if;
+    if v_dur > v_end + 1000 then
+      v_rejected := true; v_notes := array_append(v_notes, 'durata_troppo_lunga');
+    end if;
+    -- Punteggio (D107, come app/src/games/acchiappa/scoring.js): 1000 × (80% porcini presi su presi + persi + errori
+    -- + 20% moltiplicatore medio, da ×1 = 0 a ×4 = 1)
+    v_catch_part := case when v_good + v_missed + v_bad > 0 then v_good::numeric / (v_good + v_missed + v_bad) else 0 end;
+    v_mult_part := case when v_good > 0 then (v_points::numeric / (v_good * 5) - 1) / (4 - 1) else 0 end;
+    v_score := round(1000 * (0.8 * v_catch_part + 0.2 * v_mult_part))::int;
+    -- Porcini troppo pochi per la durata giocata: forse il telefono non ha registrato quelli persi
+    if (v_good + v_missed) < (least(v_dur, v_end) / 1000.0) * 0.5 then
+      v_flagged := true; v_notes := array_append(v_notes, 'pochi_porcini');
+    end if;
+    if v_good >= 10 and v_center > v_good * 0.5 then
+      v_flagged := true; v_notes := array_append(v_notes, 'tocchi_al_centro');
+    end if;
+    if v_good >= 10 and v_fast > v_good * 0.2 then
+      v_flagged := true; v_notes := array_append(v_notes, 'reazioni_troppo_rapide');
+    end if;
+    if v_int_n >= 20 then
+      v_std := sqrt(greatest(0, v_int_sq / v_int_n - (v_int_sum / v_int_n) ^ 2));
+      if v_std < 35 then v_flagged := true; v_notes := array_append(v_notes, 'tocchi_troppo_regolari'); end if;
+    end if;
+
+  elsif p_game.id = 'cadono' then
+    -- [ms, 'catch', tipo, x_elemento, x_cestino] e [ms, 'miss', tipo] (porcino caduto per terra)
+    for v_row in select value from jsonb_array_elements(p_actions) loop
+      if v_row ->> 1 = 'miss' and v_row ->> 2 in ('porcino', 'golden') then
+        v_fallen := v_fallen + case when v_row ->> 2 = 'golden' then 5 else 1 end;
+        v_items := v_items + 1;
+      end if;
+      continue when v_row ->> 1 <> 'catch';
+      v_catches := v_catches + 1;
+      if abs((v_row ->> 3)::numeric - (v_row ->> 4)::numeric) <= 1 then v_precise := v_precise + 1; end if;
+      if v_row ->> 2 = 'porcino' then v_caught := v_caught + 1; v_items := v_items + 1;
+      elsif v_row ->> 2 = 'golden' then v_caught := v_caught + 5; v_items := v_items + 1;
+      elsif v_row ->> 2 = 'bomb' then v_lives := greatest(0, v_lives - 1);
+      end if;
+    end loop;
+    -- Con vite rimaste si arriva per forza alla fine della partita
+    if v_lives > 0 and v_dur < p_game.duration_s * 1000 - 1000 then
+      v_rejected := true; v_notes := array_append(v_notes, 'finita_prima_con_vite');
+    end if;
+    -- Punteggio (D107, come app/src/games/cadono/scoring.js): 1000 × (70% porcini presi su quelli caduti, l'oro vale 5
+    -- + 20% tempo resistito sulla durata + 10% vite rimaste)
+    v_score := round(1000 * (
+      0.7 * case when v_caught + v_fallen > 0 then v_caught / (v_caught + v_fallen) else 0 end
+      + 0.2 * least(1, v_dur::numeric / (p_game.duration_s * 1000))
+      + 0.1 * v_lives / 3.0))::int;
+    if v_items < (least(v_dur, p_game.duration_s * 1000) / 1000.0) * 0.5 then
+      v_flagged := true; v_notes := array_append(v_notes, 'pochi_porcini');
+    end if;
+    if v_catches >= 20 and v_precise > v_catches * 0.8 then
+      v_flagged := true; v_notes := array_append(v_notes, 'prese_troppo_precise');
+    end if;
+
+  elsif p_game.id = 'memory' then
+    -- [ms, 'flip', indice, id_carta, esito]
+    for v_row in select value from jsonb_array_elements(p_actions) loop
+      continue when v_row ->> 1 <> 'flip';
+      if v_row ->> 4 = 'match' then
+        v_pairs := v_pairs + 1; v_moves := v_moves + 1; v_last_match_ms := (v_row ->> 0)::int;
+      elsif v_row ->> 4 = 'mismatch' then
+        v_moves := v_moves + 1;
+      end if;
+    end loop;
+    if v_pairs > v_steps then
+      v_rejected := true; v_notes := array_append(v_notes, 'troppe_coppie');
+    else
+      -- Punteggio (D107, come app/src/games/memory/logic.js): 1000 × (80% coppie trovate sul totale + 10% precisione
+      -- + 10% tempo avanzato, solo se si trovano tutte)
+      v_errors := greatest(0, v_moves - v_pairs);
+      v_precision := case when v_pairs > 0 then v_pairs / (v_pairs + v_errors * 0.5) else 0 end;
+      v_time_left := 0;
+      if v_pairs = v_steps then
+        v_seconds := round(v_last_match_ms / 100.0) / 10;
+        v_time_left := greatest(0, 1 - v_seconds / p_game.duration_s);
+        -- meno di 0,6 s a coppia: impossibile per una persona
+        if v_seconds < v_steps * 0.6 then v_rejected := true; v_notes := array_append(v_notes, 'troppo_veloce'); end if;
+        if v_moves = v_steps then v_flagged := true; v_notes := array_append(v_notes, 'memory_perfetto'); end if;
+      end if;
+      v_score := round(1000 * (0.8 * v_pairs / v_steps + 0.1 * v_precision + 0.1 * v_time_left))::int;
+    end if;
+
+  elsif p_game.id = 'quiz' then
+    -- Punteggio calcolato SOLO qui, dalle risposte: stats.answers = [{questionId, choice, ms}]
+    v_correct := 0;
+    for v_answer in select value from jsonb_array_elements(coalesce(p_stats -> 'answers', '[]'::jsonb)) loop
+      select * into v_q from quiz_questions
+      where id = (v_answer ->> 'questionId')::int and id = any (p_attempt.quiz_question_ids);
+      if v_q.id is null or v_q.id = any (v_seen) then
+        v_rejected := true; v_notes := array_append(v_notes, 'domanda_non_prevista');
+        continue;
+      end if;
+      v_seen := v_seen || v_q.id;
+      v_ms := least(greatest(coalesce((v_answer ->> 'ms')::int, v_q_ms), 0), v_q_ms);
+      v_sum_ms := v_sum_ms + v_ms;
+      if v_answer ->> 'choice' is not null then
+        v_answered := v_answered + 1;
+        if v_ms >= 800 then v_all_fast := false; end if;
+      end if;
+      if (v_answer ->> 'choice')::int = v_q.correct_index then
+        v_correct := v_correct + 1;
+        -- 1000 punti al massimo in tutto, qualunque sia il numero di domande (con 5: 150 + fino a 50 di velocità)
+        v_score := v_score + round((750 + 250 * (1 - v_ms / v_q_ms::numeric)) / v_nq)::int;
+      end if;
+    end loop;
+    if v_sum_ms > v_elapsed_ms + 3000 then
+      v_rejected := true; v_notes := array_append(v_notes, 'piu_veloce_dell_orologio');
+    end if;
+    v_score := least(v_score, 1000); -- gli arrotondamenti non superano il massimo
+    if v_answered >= ceil(v_nq * 0.8) and v_all_fast and v_correct >= ceil(v_nq * 0.8) then
+      v_flagged := true; v_notes := array_append(v_notes, 'risposte_troppo_rapide');
+    end if;
+  end if;
+
+  -- Il punteggio dichiarato dal telefono deve coincidere con quello ricalcolato (tranne il quiz); 1 punto di tolleranza
+  -- per gli arrotondamenti delle percentuali (3 nel Memory: i secondi sono arrotondati)
+  if p_game.id <> 'quiz' and abs(coalesce(p_raw, -1) - v_score) > (case when p_game.id = 'memory' then 3 else 1 end) then
+    v_rejected := true; v_notes := array_append(v_notes, 'punteggio_non_coerente');
+  end if;
+  if v_score > p_game.max_raw_score then
+    v_rejected := true; v_notes := array_append(v_notes, 'oltre_il_massimo');
+  end if;
+
+  return jsonb_build_object(
+    'status', case when v_rejected then 'rejected' when v_flagged then 'flagged' else 'valid' end,
+    'score', v_score, 'notes', v_notes, 'correct', v_correct);
+end;
+$$;
+
+-- Come in 026, con gli step al posto delle domande
+create or replace function public.get_games_state(p_token text default null)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_player players := case when p_token is null then null else _session_player(p_token) end;
+  v_today date := _today();
+begin
+  return jsonb_build_object(
+    'ok', true,
+    'server_time', now(),
+    'window', _window_state(),
+    'open_from', _setting('games_open_from'),
+    'open_until', _setting('games_open_until'),
+    'attempts_per_day', _attempts_per_day(),
+    'reset_hour', coalesce((_setting('attempts_reset_hour') #>> '{}')::int, 0),
+    'logged_in', v_player.id is not null,
+    'unlimited', coalesce(v_player.role in ('staff', 'admin'), false) or _attempts_per_day() = 0,
+    'games', (
+      select jsonb_agg(jsonb_build_object(
+        'id', g.id,
+        'enabled', g.enabled,
+        'duration_s', g.duration_s,
+        'steps', g.steps,
+        'attempts_used_today', case when v_player.id is null then null else
+          coalesce((select u.used from attempts_used u where u.player_id = v_player.id and u.game_id = g.id and u.day = v_today), 0) end,
+        'best', case when v_player.id is null then null else
+          (select max(a.raw_score) from attempts a where a.player_id = v_player.id and a.game_id = g.id and a.status in ('valid', 'flagged')) end
+      ) order by g.sort)
+      from games g));
+end;
+$$;
+
+-- Come in 024, con gli step della partita
+create or replace function public.staff_attempt_replay(p_token text, p_attempt_id uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_staff players := _staff_player(p_token);
+  v_attempt attempts;
+begin
+  if v_staff.id is null then return _staff_denied(); end if;
+  select * into v_attempt from attempts where id = p_attempt_id;
+  if v_attempt.id is null or v_attempt.submitted_at is null then
+    return jsonb_build_object('ok', false, 'error', 'NOT_FOUND');
+  end if;
+  return jsonb_build_object('ok', true, 'attempt', jsonb_build_object(
+    'id', v_attempt.id,
+    'nickname', (select nickname from players where id = v_attempt.player_id),
+    'game_id', v_attempt.game_id,
+    'status', v_attempt.status,
+    'seed', v_attempt.seed,
+    'duration_s', v_attempt.duration_s,
+    'steps', v_attempt.steps,
+    'raw_score', v_attempt.raw_score,
+    'client_score', v_attempt.client_score,
+    'notes', v_attempt.check_notes,
+    'stats', v_attempt.stats,
+    'actions', v_attempt.actions,
+    'submitted_at', v_attempt.submitted_at,
+    'questions', case when v_attempt.game_id = 'quiz' then (
+      select jsonb_agg(jsonb_build_object('id', q.id, 'text', q.text, 'options', to_jsonb(q.options), 'correct', q.correct_index)
+                       order by array_position(v_attempt.quiz_question_ids, q.id))
+      from quiz_questions q where q.id = any (v_attempt.quiz_question_ids)) end));
+end;
+$$;
+
+-- ---------- Pannello ----------
+
+-- Come in 026, con gli step al posto delle domande
+create or replace function public.staff_get_settings(p_token text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_staff players := _admin_player(p_token);
+begin
+  if v_staff.id is null then return _admin_denied(p_token); end if;
+  return jsonb_build_object('ok', true,
+    'attempts_per_day', _attempts_per_day(),
+    'attempts_reset_hour', coalesce((_setting('attempts_reset_hour') #>> '{}')::int, 0),
+    'games_open_from', _setting('games_open_from'),
+    'games_open_until', _setting('games_open_until'),
+    'window', _window_state(),
+    'sections', _sections(),
+    'winners', _winners(),
+    'leaderboard_public', _leaderboard_public(),
+    'games', (select jsonb_agg(jsonb_build_object('id', id, 'name', name, 'enabled', enabled, 'duration_s', duration_s, 'steps', steps) order by sort) from games));
+end;
+$$;
+
+-- Come in 026, con p_steps (domande del quiz) e senza far crescere il massimo con la durata
+drop function if exists public.staff_set_game(text, text, int, int);
+create or replace function public.staff_set_game(p_token text, p_game_id text, p_seconds int, p_steps int default null)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_admin players := _admin_player(p_token);
+  v_game games;
+  v_duration int;
+  v_questions int;
+begin
+  if v_admin.id is null then return _admin_denied(p_token); end if;
+  select * into v_game from games where id = p_game_id;
+  if v_game.id is null then return jsonb_build_object('ok', false, 'error', 'GAME_UNKNOWN'); end if;
+  if p_game_id = 'quiz' then
+    if p_seconds is null or p_seconds < 5 or p_seconds > 60 then return jsonb_build_object('ok', false, 'error', 'DURATION_INVALID'); end if;
+    -- Numero di domande (D104): da 3 a 20, non più di quelle attive
+    v_questions := coalesce(p_steps, v_game.steps);
+    if v_questions < 3 or v_questions > 20 then return jsonb_build_object('ok', false, 'error', 'QUESTIONS_INVALID'); end if;
+    if v_questions > (select count(*) from quiz_questions where active) then
+      return jsonb_build_object('ok', false, 'error', 'QUESTIONS_TOO_FEW');
+    end if;
+    v_duration := p_seconds * v_questions;
+  else
+    if p_seconds is null or p_seconds < 20 or p_seconds > 600 then return jsonb_build_object('ok', false, 'error', 'DURATION_INVALID'); end if;
+    v_duration := p_seconds;
+  end if;
+  update games set
+    duration_s = v_duration,
+    steps = coalesce(v_questions, steps)
+    -- il punteggio è sempre da 0 a 1000 (D107): la durata non cambia il massimo
+  where id = p_game_id;
+  perform _staff_log(v_admin, 'game', p_game_id, jsonb_build_object('duration_s', v_duration, 'steps', v_questions));
+  return jsonb_build_object('ok', true, 'duration_s', v_duration, 'steps', v_questions);
+end;
+$$;
+
+revoke execute on function public.staff_set_game(text, text, int, int) from public;
+grant execute on function public.staff_set_game(text, text, int, int) to anon, authenticated;
+
+-- La vecchia colonna non serve più (le funzioni che la usavano sono state tutte sostituite qui sopra)
+alter table public.games drop column if exists questions;

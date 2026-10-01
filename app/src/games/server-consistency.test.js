@@ -7,8 +7,6 @@ import acchiappaConfig from './acchiappa/config.js';
 import cadonoConfig from './cadono/config.js';
 import memoryConfig from './memory/config.js';
 import quizConfig from './quiz/config.js';
-import { maxRawScore as acchiappaMax } from './acchiappa/scoring.js';
-import { maxRawScore as cadonoMax } from './cadono/scoring.js';
 
 const migration = (name) => fs.readFileSync(new URL(`../../../supabase/migrations/${name}`, import.meta.url), 'utf8');
 const sql = migration('003_games_attempts.sql');
@@ -17,7 +15,7 @@ const sql006 = migration('006_acchiappa_tempi_piu_lunghi.sql'); // durate aggior
 const sql014 = migration('014_acchiappa_ricarica_tempo.sql'); // soglie, ricarica del tempo
 const sql015 = migration('015_acchiappa_oggetti_tempo.sql'); // oggetti che tolgono tempo alla partita, velenosi
 const sql019 = migration('019_acchiappa_livelli_a_timer.sql'); // livelli a timer (D84)
-const sql027 = migration('027_punteggio_memory.sql'); // punteggio del Memory (D106)
+const sql028 = migration('028_punteggi_in_percentuale.sql'); // punteggi in percentuale, step (D107)
 
 function gameRow(id) {
   const m = sql.match(new RegExp(`\\('${id}', '[^']+', \\d+, (\\d+), (\\d+)\\)`));
@@ -25,18 +23,17 @@ function gameRow(id) {
 }
 
 describe('allineamento con il database', () => {
-  it('Acchiappa: durata e tetto del punteggio', () => {
+  it('durate iniziali uguali a quelle dei config.js (poi le cambia l\'Admin), massimo 1000 per tutti (D107)', () => {
     expect(gameRow('acchiappa').durationS).toBe(acchiappaConfig.durationS);
-    expect(sql005).toContain(`set max_raw_score = ${acchiappaMax(acchiappaConfig)} where id = 'acchiappa'`);
+    expect(gameRow('cadono').durationS).toBe(cadonoConfig.durationS);
+    expect(gameRow('memory').durationS).toBe(memoryConfig.durationS);
+    expect(gameRow('quiz').durationS).toBe(quizConfig.questionsPerGame * quizConfig.timePerQuestionS);
+    expect(sql028).toContain('update public.games set max_raw_score = 1000;');
   });
 
-  it('Porcini che cadono: durata e tetto del punteggio', () => {
-    expect(gameRow('cadono')).toEqual({ durationS: cadonoConfig.durationS, maxRawScore: cadonoMax(cadonoConfig) });
-  });
-
-  it('Memory e Quiz: durata e massimo 1000', () => {
-    expect(gameRow('memory')).toEqual({ durationS: memoryConfig.durationS, maxRawScore: 1000 });
-    expect(gameRow('quiz')).toEqual({ durationS: quizConfig.questionsPerGame * quizConfig.timePerQuestionS, maxRawScore: 1000 });
+  it('step iniziali uguali a quelli dei config.js: domande del quiz, coppie del Memory', () => {
+    expect(sql028).toContain(`update public.games set steps = coalesce(steps, ${quizConfig.questionsPerGame}) where id = 'quiz';`);
+    expect(sql028).toContain(`update public.games set steps = coalesce(steps, ${memoryConfig.pairs}) where id = 'memory';`);
   });
 
   it('Acchiappa: punti e moltiplicatore a timer uguali a quelli del server (006, 015, 019)', () => {
@@ -60,11 +57,23 @@ describe('allineamento con il database', () => {
     expect(acchiappaConfig.multipliers.map((s) => s.multiplier)).toEqual([1, 2, 3, 4]);
   });
 
-  it('punti di Porcini che cadono e formula del Memory uguali a quelli del server', () => {
-    expect(sql).toContain(`'porcino' then v_score := v_score + ${cadonoConfig.pointsPorcino}`);
-    expect(sql).toContain(`'golden' then v_score := v_score + ${cadonoConfig.pointsGolden}`);
-    expect(sql).toContain(`v_lives * ${cadonoConfig.survivalBonusPerLife}`);
-    expect(sql027).toContain(`then v_pairs / (v_pairs + v_errors * ${memoryConfig.errorWeight}) else 0 end`);
-    expect(sql027).toContain(`v_score := round(${memoryConfig.pairPoints} * (v_pairs + v_precision + v_time_left))::int;`);
+  it('punteggi in percentuale uguali a quelli del server (D107)', () => {
+    // Acchiappa: pesi, punti per porcino e moltiplicatore massimo
+    const aw = acchiappaConfig.scoreWeights;
+    const maxMultiplier = Math.max(...acchiappaConfig.multipliers.map((s) => s.multiplier));
+    expect(sql028).toContain(`(v_points::numeric / (v_good * ${acchiappaConfig.pointsPerPorcino}) - 1) / (${maxMultiplier} - 1)`);
+    expect(sql028).toContain(`v_score := round(1000 * (${aw.catch} * v_catch_part + ${aw.multiplier} * v_mult_part))::int;`);
+    // Porcini che cadono: pesi, valore del porcino d'oro, vite
+    const cw = cadonoConfig.scoreWeights;
+    expect(sql028).toContain(`v_fallen := v_fallen + case when v_row ->> 2 = 'golden' then ${cadonoConfig.goldenWeight} else 1 end;`);
+    expect(sql028).toContain(`v_caught := v_caught + ${cadonoConfig.goldenWeight}; v_items`);
+    expect(sql028).toContain(`v_lives int := ${cadonoConfig.lives};`);
+    expect(sql028).toContain(`${cw.catch} * case when v_caught + v_fallen > 0`);
+    expect(sql028).toContain(`+ ${cw.time} * least(1, v_dur::numeric / (p_game.duration_s * 1000))`);
+    expect(sql028).toContain(`+ ${cw.lives} * v_lives / ${cadonoConfig.lives}.0))::int;`);
+    // Memory
+    const mw = memoryConfig.scoreWeights;
+    expect(sql028).toContain(`then v_pairs / (v_pairs + v_errors * ${memoryConfig.errorWeight}) else 0 end`);
+    expect(sql028).toContain(`v_score := round(1000 * (${mw.pairs} * v_pairs / v_steps + ${mw.precision} * v_precision + ${mw.time} * v_time_left))::int;`);
   });
 });

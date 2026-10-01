@@ -26,6 +26,11 @@ describe('durata decisa dall\'Admin (D99)', () => {
     expect(formatDuration(45)).toBe('45 secondi');
   });
 
+  it('Memory: il numero di coppie arriva dal server (D107)', () => {
+    const memory = { config: { pairs: 8, durationS: 120 } };
+    expect(withDuration(memory, 'memory', 90, 6).config).toEqual({ pairs: 6, durationS: 90 });
+  });
+
   it('quiz con 10 domande in 150 secondi: 15 secondi per domanda (D104)', () => {
     expect(withDuration(quiz, 'quiz', 150, 10).config).toMatchObject({ questionsPerGame: 10, timePerQuestionS: 15 });
   });

@@ -4,6 +4,11 @@ import { describe, expect, it } from 'vitest';
 import config from './config.js';
 import { createCadono } from './game.js';
 import { createRng } from '../engine/rng.js';
+import { cadonoScore } from './scoring.js';
+
+/** Punteggio atteso rifatto dalle statistiche della partita (come sul server) */
+const expectedScore = (stats, durationMs) =>
+  cadonoScore({ caught: stats.porcini + stats.golden * config.goldenWeight, fallen: stats.fallen, lives: stats.lives }, durationMs, config);
 
 const WIDTH = 390;
 const HEIGHT = 700;
@@ -32,7 +37,8 @@ function simulate(seed, aim) {
     const x = aim(snap);
     if (x !== null) game.onPointerMove(x);
   }
-  return { game, result: game.result(), actions, t, seen: [...seen.values()], endText: game.endText() };
+  const durationMs = Math.round(t * 1000);
+  return { game, result: game.result({ durationMs }), durationMs, actions, t, seen: [...seen.values()], endText: game.endText() };
 }
 
 // Giocatore bravo: va sotto il porcino più vicino al cestino tra quelli ancora in alto, evitando le bombe basse
@@ -56,36 +62,40 @@ const bombChaser = ({ items, rimY }) => items.filter((i) => i.type === 'bomb' &&
 
 describe('Porcini che cadono (simulazione)', () => {
   it('le bombe finiscono le vite e chiudono la partita prima dei 2 minuti', () => {
-    const { result, t, endText } = simulate(1, bombChaser);
+    const { result, t, endText, durationMs } = simulate(1, bombChaser);
     expect(result.stats.lives).toBe(0);
     expect(result.stats.bombs).toBe(config.lives);
     expect(t).toBeLessThan(config.durationS);
-    expect(result.stats.bonus).toBe(0);
     expect(endText).toBe('Hai finito le vite!');
+    // finita prima: la parte del tempo è solo quella resistita, niente vite rimaste
+    expect(result.rawScore).toBe(expectedScore(result.stats, durationMs));
+    expect(result.rawScore).toBeLessThan(1000 * (config.scoreWeights.catch + config.scoreWeights.time));
   });
 
-  it('giocatore bravo: molti porcini, punteggio coerente con quanto preso', () => {
-    const { result } = simulate(2, good);
-    expect(result.stats.porcini).toBeGreaterThan(80);
-    const { porcini, golden, bonus } = result.stats;
-    expect(result.rawScore).toBe(porcini * config.pointsPorcino + golden * config.pointsGolden + bonus);
+  it('giocatore bravo: quasi tutti i porcini presi, punteggio coerente con quanto preso', () => {
+    const { result, durationMs } = simulate(2, good);
+    const { porcini, golden, fallen } = result.stats;
+    const caught = porcini + golden * config.goldenWeight;
+    expect(caught / (caught + fallen)).toBeGreaterThan(0.8);
+    expect(result.rawScore).toBe(expectedScore(result.stats, durationMs));
+    expect(result.rawScore).toBeLessThanOrEqual(1000);
   });
 
-  it('chi arriva alla fine con vite rimaste prende il bonus', () => {
-    const { result, t, endText } = simulate(3, good);
+  it('chi arriva alla fine con vite rimaste ha tutta la parte del tempo e quella delle vite', () => {
+    const { result, t, endText, durationMs } = simulate(3, good);
     if (result.stats.lives > 0) {
       expect(t).toBeGreaterThanOrEqual(config.durationS);
-      expect(result.stats.bonus).toBe(result.stats.lives * config.survivalBonusPerLife);
       expect(endText).toBe('Tempo scaduto!');
+      expect(result.rawScore).toBe(expectedScore(result.stats, durationMs));
     }
   });
 
   it('ogni mazzo ha il suo porcino d\'oro e la quota di bombe prevista', () => {
     const { seen } = simulate(4, good);
-    expect(seen.length).toBeGreaterThanOrEqual(30);
-    const first30 = seen.slice(0, 30);
-    expect(first30.filter((t) => t === 'golden')).toHaveLength(1);
-    expect(first30.filter((t) => t === 'bomb').length).toBe(Math.round(config.bombShare[0] * 30));
+    expect(seen.length).toBeGreaterThanOrEqual(config.deckSize);
+    const firstDeck = seen.slice(0, config.deckSize);
+    expect(firstDeck.filter((t) => t === 'golden')).toHaveLength(config.goldenPerDeck);
+    expect(firstDeck.filter((t) => t === 'bomb').length).toBe(Math.round(config.bombShare[0] * config.deckSize));
   });
 
   it('registra il dito (solo quando si sposta), prese e porcini persi', () => {

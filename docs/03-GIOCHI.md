@@ -46,11 +46,13 @@ Regole comuni a tutti i giochi:
   A ogni cambio di livello piccola animazione; effetto 🔥 quando sale.
 - **Sfondo**: poco invasivo, a tema (sottobosco/prato di montagna sfocato, toni tenui), per non disturbare la lettura dei funghi.
 
-### Punteggio grezzo
-Somma dei punti. `stats`: porcini presi, errori, serie massima, durata effettiva.
+### Punteggio (D107), da 0 a 1000, non dipende dalla durata
+`1000 × (80% × presi / (presi + persi + tocchi sbagliati) + 20% × moltiplicatore medio)`; il moltiplicatore medio va da ×1 (0) a ×4 (1).
+I porcini spariti senza tocco si registrano (`[ms, 'miss', tipo]`). `stats`: porcini presi, persi, errori, serie massima, durata effettiva.
 
 ### Controlli di plausibilità (server)
-Durata ≈ 60 s (tolleranza per pause); punteggio ≤ `max_raw_score` calcolato come (massimo di spawn possibili × 10 × 4) con margine.
+Durata = quella della partita decisa dall'Admin (meno gli oggetti toccati); punteggio dichiarato = quello ricalcolato (±1);
+segnale "pochi_porcini" se presi + persi < mezzo porcino al secondo.
 
 ---
 
@@ -98,8 +100,9 @@ Poi, come tutti gli altri giochi, normalizzato rispetto al migliore.
 - **Durata massima 120 secondi.** Velocità di caduta e frequenza aumentano nel tempo.
 - **Bonus sopravvivenza**: se si arriva alla fine dei 2 minuti, +50 punti per ogni vita rimasta.
 
-### Punteggio grezzo
-Punti dei porcini + bonus sopravvivenza. `stats`: porcini presi, porcini d'oro, bombe prese, durata.
+### Punteggio (D107), da 0 a 1000, non dipende dalla durata
+`1000 × (70% × porcini presi / porcini caduti in tutto + 20% × tempo resistito / durata + 10% × vite rimaste / vite)`; il porcino d'oro vale 5 porcini (presi o caduti).
+`stats`: porcini presi, porcini d'oro, porcini caduti, bombe prese, vite rimaste, durata.
 
 ---
 
@@ -118,22 +121,24 @@ Punti dei porcini + bonus sopravvivenza. `stats`: porcini presi, porcini d'oro, 
 - Si gioca finché si trovano tutte le coppie, con un **tempo massimo di 3 minuti** (oltre, fine partita con le coppie trovate).
 - Finché le foto vere non ci sono, usare 8 illustrazioni segnaposto.
 
-### Punteggio grezzo (D106)
-- `100 × coppie + 100 × precisione + 100 × tempo avanzato`, da 0 a 1000. Una "mossa" è una coppia di carte girate.
-- precisione = `coppie / (coppie + errori × 0,5)` (errori = mosse sbagliate): 1 coppia al primo colpo → 200, dopo 100 tentativi → ~102.
+### Punteggio (D106, D107), da 0 a 1000, non dipende dalla durata né dal numero di coppie
+- `1000 × (80% × coppie trovate / coppie + 10% × precisione + 10% × tempo avanzato)`. Una "mossa" è una coppia di carte girate.
+- precisione = `coppie / (coppie + errori × 0,5)` (errori = mosse sbagliate).
 - tempo avanzato = `1 − secondi / durata`, solo se si trovano tutte le coppie (altrimenti il tempo è finito: 0).
-- Quindi 1 coppia = 1xx, 4 coppie = 4xx, 8 coppie = 8xx + precisione (verso 900) + tempo (verso 1000).
+- Con 8 coppie: 1 coppia = 1xx, 4 coppie = 4xx, 8 coppie = 8xx + precisione (verso 900) + tempo (verso 1000).
 - `stats`: mosse, secondi, coppie trovate.
 
 ---
 
 ## Riepilogo
 
-| Gioco | Sera | Durata | Punteggio grezzo |
+Tutti i giochi valgono da 0 a 1000 (D107); durata e step (domande, coppie) li decide l'Admin e non cambiano il massimo.
+
+| Gioco | Sera | Durata | Punteggio (× 1000) |
 |---|---|---|---|
-| Acchiappa il porcino | 1 | 60 s fissi | +5 × moltiplicatore (serie, a tempo) |
-| Quiz del paese | 1 | 5 × 20 s max | 150 + fino a 50 di velocità per risposta giusta (max 1000) |
-| Porcini che cadono | 2 | max 120 s, 3 vite | +10 porcino, +50 porcino d'oro, bonus vite |
-| Memory del paese | 2 | max 120 s (dal pannello) | 100 × coppie + 100 × precisione + 100 × tempo avanzato (max 1000) |
+| Acchiappa il porcino | 1 | dal pannello | 80% porcini presi / (presi + persi + errori) + 20% moltiplicatore medio |
+| Quiz del paese | 1 | domande × secondi (dal pannello) | per risposta giusta (75% + fino al 25% di velocità) / domande |
+| Porcini che cadono | 2 | dal pannello, 3 vite | 70% porcini presi / caduti (oro = 5) + 20% tempo resistito + 10% vite rimaste |
+| Memory del paese | 2 | dal pannello | 80% coppie trovate / coppie + 10% precisione + 10% tempo avanzato |
 
 Tutti poi **normalizzati a 0–1000 rispetto al record del gioco** (vedi `01-SPECIFICHE.md` §6.5).

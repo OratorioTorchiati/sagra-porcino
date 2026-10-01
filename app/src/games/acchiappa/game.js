@@ -2,7 +2,7 @@
 // si toccano i porcini e si evitano funghi velenosi e oggetti. Regole in docs/03-GIOCHI.md.
 
 import { GOOD, BAD_POISONOUS, BAD_OBJECTS } from './sprites.js';
-import { applyHit, currentMultiplier, expire, gameEndMs, initialScoreState, ringFraction } from './scoring.js';
+import { acchiappaScore, applyHit, applyMiss, currentMultiplier, expire, gameEndMs, initialScoreState, ringFraction } from './scoring.js';
 import { softBackground } from '../engine/background.js';
 import { warmUpSprites } from '../engine/sprites.js';
 
@@ -31,14 +31,14 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
   let nowMs = 0;
   let endMs = config.durationS * 1000; // gli oggetti toccati la anticipano (D81)
 
-  /** Avanzamento della difficoltà, da startProgress (al via) a 1 (alla fine del minuto) */
+  /** Avanzamento della difficoltà, da startProgress (al via) a 1 (alla fine della partita) */
   function progress(t) {
     const start = config.startProgress ?? 0;
     return Math.min(1, start + (1 - start) * (t / config.durationS));
   }
 
   function refreshHud() {
-    hud.set('score', score.score);
+    hud.set('score', score.caught);
     hud.set('multiplier', `×${currentMultiplier(score, config)}`);
     // a ×1 l'anello si riempie con la serie, dal ×2 si consuma come un orologio
     hud.ring?.('multiplier', ringFraction(score, nowMs, config));
@@ -173,6 +173,13 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
           if (e.x < -r || e.x > width + r || e.y < -r || e.y > height + r) e.gone = true;
         }
       }
+      // Porcini spariti senza essere toccati: contano nella percentuale (D107)
+      for (const e of entities) {
+        if (e.gone && e.good) {
+          score = applyMiss(score);
+          log('miss', e.kind);
+        }
+      }
       entities = entities.filter((e) => !e.gone);
 
       for (const fx of effects) fx.age += dt;
@@ -274,7 +281,7 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
 
       if (best.good) {
         addBurst(best.x, best.y, best.size, true);
-        addText(best.x, best.y, `+${points}`, '#2f6b33');
+        addText(best.x, best.y, points > config.pointsPerPorcino ? `+1 ×${points / config.pointsPerPorcino}` : '+1', '#2f6b33');
         const after = currentMultiplier(score, config);
         if (after > before) {
           hud.pulse('multiplier');
@@ -316,8 +323,8 @@ export function createAcchiappa({ rng, config, assets, hud, log, flash }) {
 
     result() {
       return {
-        rawScore: score.score,
-        stats: { caught: score.caught, errors: score.errors, maxStreak: score.maxStreak },
+        rawScore: acchiappaScore(score, config),
+        stats: { caught: score.caught, missed: score.missed, errors: score.errors, maxStreak: score.maxStreak },
       };
     },
   };

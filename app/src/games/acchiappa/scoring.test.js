@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import config from './config.js';
-import { applyHit, currentMultiplier, expire, gameEndMs, initialScoreState, maxRawScore, ringFraction, secondsLeft, timeLeftFraction } from './scoring.js';
+import { acchiappaScore, applyHit, applyMiss, currentMultiplier, expire, gameEndMs, initialScoreState, ringFraction, secondsLeft, timeLeftFraction } from './scoring.js';
 
 /** Gioca una sequenza di [ms, 'good'|'poison'|'object'] */
 function play(hits) {
@@ -142,10 +142,32 @@ describe('moltiplicatore a timer (D84)', () => {
   });
 });
 
-describe('maxRawScore', () => {
-  it('è molto sopra un punteggio realistico ma non infinito', () => {
-    const max = maxRawScore(config);
-    expect(max).toBeGreaterThan(3000);
-    expect(max).toBeLessThan(100000);
+describe('punteggio in percentuale (D107)', () => {
+  const w = config.scoreWeights;
+  const maxMultiplier = Math.max(...config.multipliers.map((m) => m.multiplier));
+
+  it('tutti presi sempre a ×1: solo la parte dei porcini presi', () => {
+    const state = { ...initialScoreState(), caught: 4, score: 4 * config.pointsPerPorcino };
+    expect(acchiappaScore(state, config)).toBe(Math.round(1000 * w.catch));
+  });
+
+  it('tutti presi sempre al moltiplicatore massimo: 1000', () => {
+    const state = { ...initialScoreState(), caught: 4, score: 4 * config.pointsPerPorcino * maxMultiplier };
+    expect(acchiappaScore(state, config)).toBe(1000);
+  });
+
+  it('metà dei porcini persa: metà della parte dei porcini presi', () => {
+    let state = { ...initialScoreState(), caught: 3, score: 3 * config.pointsPerPorcino };
+    for (let i = 0; i < 3; i++) state = applyMiss(state);
+    expect(acchiappaScore(state, config)).toBe(Math.round(1000 * w.catch * 0.5));
+  });
+
+  it('i tocchi sbagliati contano come porcini persi', () => {
+    const state = { ...initialScoreState(), caught: 3, errors: 1, score: 3 * config.pointsPerPorcino };
+    expect(acchiappaScore(state, config)).toBe(Math.round(1000 * w.catch * 0.75));
+  });
+
+  it('niente porcini: 0', () => {
+    expect(acchiappaScore(initialScoreState(), config)).toBe(0);
   });
 });

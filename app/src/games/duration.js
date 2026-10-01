@@ -1,5 +1,6 @@
-// Durata dei giochi decisa dall'Admin (D99). Il server la manda all'avvio della partita (e nel replay):
-// qui la si applica alla configurazione del gioco, al posto del numero scritto nel suo config.js.
+// Durata (D99) e step (D104, D107: domande del quiz, coppie del Memory) decisi dall'Admin. Il server li manda
+// all'avvio della partita (e nel replay): qui si applicano alla configurazione del gioco, al posto dei valori
+// scritti nel suo config.js (che restano solo per la modalità prova).
 //
 // Giochi a tempo (Acchiappa, Porcini che cadono, Memory): durata della partita in secondi.
 // Giochi a domande (Quiz): la durata è domande × secondi per domanda; anche il numero di domande lo decide
@@ -9,15 +10,19 @@
 export const isStepGame = (gameId) => gameId === 'quiz';
 
 /**
- * Configurazione del gioco con la durata (e, per il quiz, il numero di domande) decisi dall'Admin.
- * Senza durata: quella del config.js.
+ * Configurazione del gioco con durata e step decisi dall'Admin (senza: quelli del config.js).
+ * Quiz: step = domande, durata = domande × secondi per domanda. Memory: step = coppie.
  */
-export function withDuration(gameDef, gameId, durationS, questions = null) {
-  if (!durationS) return gameDef;
-  const questionsPerGame = questions || gameDef.config.questionsPerGame;
-  const config = isStepGame(gameId)
-    ? { ...gameDef.config, questionsPerGame, timePerQuestionS: durationS / questionsPerGame }
-    : { ...gameDef.config, durationS };
+export function withDuration(gameDef, gameId, durationS, steps = null) {
+  if (!durationS && !steps) return gameDef;
+  const config = { ...gameDef.config };
+  if (isStepGame(gameId)) {
+    config.questionsPerGame = steps || config.questionsPerGame;
+    if (durationS) config.timePerQuestionS = durationS / config.questionsPerGame;
+  } else {
+    if (durationS) config.durationS = durationS;
+    if (steps && 'pairs' in config) config.pairs = steps;
+  }
   return { ...gameDef, config };
 }
 

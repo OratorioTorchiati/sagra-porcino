@@ -1,33 +1,40 @@
-// Calcolo dei punti di "Porcini che cadono" (funzioni pure, con test).
+// Calcolo dei punti di "Porcini che cadono" (funzioni pure, con test). Il server rifà lo stesso calcolo (D107).
 
 export function initialState(config) {
-  return { score: 0, porcini: 0, golden: 0, bombs: 0, lives: config.lives };
+  return { caught: 0, fallen: 0, porcini: 0, golden: 0, bombs: 0, lives: config.lives };
 }
+
+/** Peso di un elemento nella percentuale: il porcino d'oro vale `goldenWeight` porcini */
+const weight = (type, config) => (type === 'golden' ? config.goldenWeight : 1);
 
 /**
  * Applica un elemento preso col cestino.
  * @param {'porcino'|'golden'|'bomb'} type
- * @returns {{state, points: number}}
+ * @returns {{state, points: number}} points = quanto conta nei porcini presi (0 per la bomba)
  */
 export function applyCatch(state, type, config) {
   if (type === 'bomb') {
     return { points: 0, state: { ...state, bombs: state.bombs + 1, lives: Math.max(0, state.lives - 1) } };
   }
-  if (type === 'golden') {
-    return { points: config.pointsGolden, state: { ...state, score: state.score + config.pointsGolden, golden: state.golden + 1 } };
-  }
-  return { points: config.pointsPorcino, state: { ...state, score: state.score + config.pointsPorcino, porcini: state.porcini + 1 } };
+  const points = weight(type, config);
+  const counter = type === 'golden' ? 'golden' : 'porcini';
+  return { points, state: { ...state, caught: state.caught + points, [counter]: state[counter] + 1 } };
 }
 
-/** Bonus sopravvivenza: solo se si arriva alla fine dei 2 minuti con almeno una vita. */
-export function survivalBonus(state, reachedEnd, config) {
-  return reachedEnd && state.lives > 0 ? state.lives * config.survivalBonusPerLife : 0;
+/** Un porcino caduto per terra (le bombe cadute non contano) */
+export function applyMiss(state, type, config) {
+  if (type === 'bomb') return state;
+  return { ...state, fallen: state.fallen + weight(type, config) };
 }
 
-/** Tetto di plausibilità del punteggio (per i controlli del server), con margine del 50%. */
-export function maxRawScore(config) {
-  const maxSpawns = Math.ceil(config.durationS / (Math.min(...config.spawnInterval) * 0.75));
-  const maxGolden = Math.ceil(maxSpawns / config.deckSize) * config.goldenPerDeck;
-  const best = (maxSpawns - maxGolden) * config.pointsPorcino + maxGolden * config.pointsGolden;
-  return Math.ceil((best + config.lives * config.survivalBonusPerLife) * 1.5);
+/**
+ * Punteggio finale da 0 a 1000 (D107): percentuale di porcini presi, tempo resistito sulla durata, vite rimaste.
+ * @param {number} durationMs tempo di gioco della partita (lo stesso che riceve il server)
+ */
+export function cadonoScore(state, durationMs, config) {
+  const w = config.scoreWeights;
+  const all = state.caught + state.fallen;
+  const catchPart = all > 0 ? state.caught / all : 0;
+  const timePart = Math.min(1, durationMs / (config.durationS * 1000));
+  return Math.round(1000 * (w.catch * catchPart + w.time * timePart + w.lives * (state.lives / config.lives)));
 }

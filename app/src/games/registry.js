@@ -6,6 +6,10 @@
 
 import porcinoSvg from '../assets/porcino.svg?raw';
 import { serverConfigured } from '../lib/api.js';
+import { formatDuration } from './duration.js';
+
+// Testi delle regole che dipendono da durata e step decisi dall'Admin (info = stato del gioco dal server)
+const durationRule = (prefix) => (info) => (info?.duration_s ? `${prefix}${formatDuration(info.duration_s)}` : 'Partita a tempo');
 
 export const GAMES = {
   acchiappa: {
@@ -14,7 +18,7 @@ export const GAMES = {
     icon: porcinoSvg,
     night: 1,
     rules: [
-      { icon: '⏱️', text: '{durata}' }, // durata decisa dall'Admin (D99)
+      { icon: '⏱️', text: durationRule('') }, // durata decisa dall'Admin (D99)
       { icon: '👆', text: 'Tocca i porcini per far crescere il moltiplicatore', gallery: 'good' },
       { icon: '☠️', text: 'Funghi velenosi: si riparte da ×1', gallery: 'poison' },
       { icon: '⏳', text: 'Evita anche questi: fanno perdere tempo', gallery: 'objects' },
@@ -27,7 +31,7 @@ export const GAMES = {
     icon: '❓',
     night: 1,
     rules: [
-      { icon: '❓', text: '{domande} domande sui funghi' },
+      { icon: '❓', text: (info) => (info?.steps ? `${info.steps} domande sui funghi` : 'Domande sui funghi') },
       { icon: '✅', text: 'Scegli la risposta giusta tra 4' },
       { icon: '⚡', text: 'Più sei veloce, più punti fai!' },
     ],
@@ -42,7 +46,7 @@ export const GAMES = {
       { icon: '🧺', text: 'Muovi il cestino col dito' },
       { icon: porcinoSvg, text: 'Prendi i porcini che cadono', gallery: 'good' },
       { icon: '💣', text: 'Evita le bombe: hai 3 vite ❤️❤️❤️' },
-      { icon: '⏱️', text: 'Massimo {durata}' },
+      { icon: '⏱️', text: durationRule('Massimo ') },
     ],
     load: () => import('./cadono/index.js').then((m) => m.default),
   },
@@ -53,7 +57,7 @@ export const GAMES = {
     night: 2,
     rules: [
       { icon: '🃏', text: 'Gira due carte alla volta' },
-      { icon: '🔍', text: 'Trova tutte le 8 coppie' },
+      { icon: '🔍', text: (info) => (info?.steps ? `Trova tutte le ${info.steps} coppie` : 'Trova tutte le coppie') },
       { icon: '⚡', text: 'Più sei veloce e preciso, più punti fai!' },
     ],
     load: () => import('./memory/index.js').then((m) => m.default),
