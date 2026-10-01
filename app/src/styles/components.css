@@ -3134,11 +3134,6 @@ tr.is-dragging .drag-handle {
   box-shadow: var(--shadow);
 }
 
-.feedback-form__intro {
-  margin: 0;
-  font-weight: 700;
-}
-
 .feedback-form__optional {
   font-weight: 400;
   color: var(--color-text-muted);
@@ -3160,13 +3155,6 @@ tr.is-dragging .drag-handle {
   margin: 0;
   padding: 0;
   border: 0;
-}
-
-.feedback-stars__legend {
-  width: 100%;
-  margin-bottom: 0.25rem;
-  font-weight: 700;
-  text-align: center;
 }
 
 .feedback-stars__star {

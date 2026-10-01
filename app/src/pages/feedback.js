@@ -38,9 +38,8 @@ function formMarkup(anonymous) {
         : ''
     }
     <form class="feedback-form" novalidate>
-      <p class="feedback-form__intro">Com'è andata la sagra? Raccontaci cosa ti è piaciuto di più e cosa possiamo fare meglio.</p>
       <fieldset class="feedback-stars">
-        <legend class="feedback-stars__legend">Il tuo voto</legend>
+        <legend class="visually-hidden">Il tuo voto, da 1 a 5 stelle</legend>
         ${[5, 4, 3, 2, 1] // al contrario: sullo schermo (row-reverse) da 1 a 5, e "~" accende quelle prima
           .map(
             (n) => `<label class="feedback-stars__star"><input type="radio" name="stars" value="${n}">
