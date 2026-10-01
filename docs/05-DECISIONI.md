@@ -190,3 +190,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 10 (contenuti) | In corso | 2026-10-01 | Configurazioni a tendina, Aspetto (ordine delle sezioni), sezione Feedback e pannello Feedback (D108); migrazione 029 applicata: 144/144 controlli. |
 | 10 (contenuti) | In corso | 2026-10-01 | Feedback: niente recensioni dallo staff (D110), uno al giorno e propria recensione tra le nuvolette (D111); migrazioni 030 e 031 applicate: 146/146 controlli. |
 | 10 (contenuti) | In corso | 2026-10-01 | Moderazione feedback di nuovo nel pannello (D113); feedback cancellati che tengono occupato il giorno (D114), migrazione 032 applicata: 147/147 controlli. |
+| 10 (contenuti) | In corso | 2026-10-01 | Feedback Attivi / Rimossi (D115), migrazione 033 applicata: 148/148 controlli. |
