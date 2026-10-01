@@ -42,7 +42,7 @@ export function authErrorMessage(result) {
 export const OFFLINE_MESSAGE = 'Serve un attimo di connessione. Riprova tra poco.';
 export const NOT_CONFIGURED_MESSAGE = 'Gli account non sono ancora attivi. Riprova più tardi.';
 
-/** Dove andare dopo registrazione o accesso (impostato da chi chiede di entrare, es. un gioco). */
+/** Dove andare dopo registrazione o accesso (impostato da chi chiede di entrare, es. un gioco); se no la home (D121). */
 const AFTER_KEY = 'sagra-dopo-accesso';
 
 export function setAfterLogin(path) {
@@ -57,8 +57,8 @@ export function takeAfterLogin() {
   try {
     const path = sessionStorage.getItem(AFTER_KEY);
     sessionStorage.removeItem(AFTER_KEY);
-    return path || '/profilo';
+    return path || '/';
   } catch {
-    return '/profilo';
+    return '/';
   }
 }
