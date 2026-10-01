@@ -1,6 +1,6 @@
-// Classifica dal server (supabase/migrations/007_classifica.sql), "live": finché la pagina è aperta e visibile
-// si richiede ogni pochi secondi passando l'ultima versione ricevuta; se non è cambiato nulla il server
-// risponde solo "invariata" (pochi byte). L'ultima classifica resta sul telefono per mostrarla senza rete.
+// Classifica dal server (supabase/migrations/007_classifica.sql): si chiede una volta all'apertura della pagina (D116),
+// passando l'ultima versione ricevuta; se non è cambiato nulla il server risponde solo "invariata" (pochi byte).
+// L'ultima classifica resta sul telefono per mostrarla subito e senza rete.
 
 import { rpc } from './api.js';
 import { readJson, writeJson } from './storage.js';
@@ -8,7 +8,6 @@ import { currentPlayer, sessionToken } from './account.js';
 
 const KEY = 'sagra-classifica';
 const CARD_KEY = 'sagra-mia-scheda';
-export const POLL_MS = 5000;
 
 const myNickname = () => currentPlayer()?.nickname ?? null;
 
@@ -26,57 +25,27 @@ export async function fetchLeaderboard(version = null) {
 }
 
 /**
- * Tiene aggiornata la classifica finché non si chiama la funzione restituita.
- * onData(data) a ogni classifica nuova; onWindow(window) sempre; onOnline(bool) quando cambia la connessione;
- * onLocked() se la classifica è solo per chi ha un account (D101) e l'accesso manca.
+ * Carica la classifica UNA volta, all'apertura della pagina (D116): niente aggiornamenti continui. Si rivede aggiornata
+ * riaprendo la pagina o ricaricando l'app. Se la versione è quella salvata sul telefono il server risponde solo
+ * "invariata" (pochi byte) e resta quella salvata.
+ * onData(data) se arriva una classifica nuova; onWindow(window); onOnline(bool) com'è andata la richiesta;
+ * onLocked() se la classifica è solo per chi ha un account (D101) e l'accesso manca. Restituisce "stop" (pagina chiusa).
  */
-export function watchLeaderboard({ onData, onWindow, onOnline, onLocked }) {
-  let version = cachedLeaderboard()?.version ?? null;
-  let timer = null;
+export function loadLeaderboard({ onData, onWindow, onOnline, onLocked }) {
   let stopped = false;
-  let online = null;
-  let first = true; // la prima richiesta si fa sempre; le successive solo con la pagina visibile
-
-  function setOnline(value) {
-    if (value !== online) {
-      online = value;
-      onOnline?.(value);
-    }
-  }
-
-  async function poll() {
-    clearTimeout(timer);
-    if (stopped) return;
-    if (first || document.visibilityState !== 'hidden') {
-      first = false;
-      try {
-        const data = await fetchLeaderboard(version);
-        if (stopped) return;
-        setOnline(true);
-        onWindow?.(data.window);
-        if (data.ok && !data.unchanged) {
-          version = data.version;
-          onData(data);
-        } else if (data.error === 'LOGIN_REQUIRED') {
-          onLocked?.();
-        }
-      } catch {
-        if (!stopped) setOnline(false);
-      }
-    }
-    if (!stopped) timer = setTimeout(poll, POLL_MS);
-  }
-
-  const wake = () => document.visibilityState !== 'hidden' && poll();
-  document.addEventListener('visibilitychange', wake);
-  window.addEventListener('online', wake);
-  poll();
-
+  fetchLeaderboard(cachedLeaderboard()?.version ?? null)
+    .then((data) => {
+      if (stopped) return;
+      onOnline?.(true);
+      onWindow?.(data.window);
+      if (data.ok && !data.unchanged) onData(data);
+      else if (data.error === 'LOGIN_REQUIRED') onLocked?.();
+    })
+    .catch(() => {
+      if (!stopped) onOnline?.(false);
+    });
   return () => {
     stopped = true;
-    clearTimeout(timer);
-    document.removeEventListener('visibilitychange', wake);
-    window.removeEventListener('online', wake);
   };
 }
 

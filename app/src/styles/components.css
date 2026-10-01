@@ -3413,3 +3413,73 @@ tr.is-dragging .drag-handle {
     animation: none;
   }
 }
+
+/* Recensioni che arrivano una alla volta, come in una chat di gruppo (D117) */
+.feedback-bubble--arriving {
+  animation: feedback-arrive 0.55s cubic-bezier(0.22, 1.25, 0.36, 1) both;
+}
+
+@keyframes feedback-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.feedback-bubble--typing {
+  animation: feedback-arrive 0.3s ease-out both;
+}
+
+.feedback-bubble--typing .feedback-bubble__avatar {
+  opacity: 0.6;
+}
+
+.feedback-bubble--typing .feedback-bubble__body {
+  flex: none;
+  padding: 0.8rem 1.1rem;
+  background: #f1ece4;
+}
+
+.typing-dots {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.typing-dots span {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #9a8670;
+  animation: typing-dot 1s ease-in-out infinite;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typing-dot {
+  0%, 60%, 100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback-bubble--arriving,
+  .feedback-bubble--typing,
+  .typing-dots span {
+    animation: none;
+  }
+}

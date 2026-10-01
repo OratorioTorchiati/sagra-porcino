@@ -38,6 +38,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/020_personaggi_velenosi.sql` | 8 | 4 personaggi velenosi, cambio del personaggio dal profilo |
 | `supabase/migrations/022_ruoli_dal_pannello.sql` | 8 | l'Admin promuove e declassa (superadmin = account "staff") |
 | `supabase/migrations/023_menu_dal_pannello.sql` | 8 | menù caricato dal pannello (file CSV con anteprima), tentativi da 0 (illimitati) a 99 |
+| `supabase/migrations/034_cinque_recensioni.sql` | 18 | le recensioni migliori diventano 5 |
 | `supabase/migrations/033_feedback_rimossi.sql` | 17 | feedback rimossi: il testo resta, chi li ha rimossi e quando; elenco Attivi / Rimossi |
 | `supabase/migrations/032_feedback_cancellati.sql` | 16 | feedback cancellati dallo staff: restano segnati (senza testo), il giorno resta usato |
 | `supabase/migrations/031_un_feedback_al_giorno.sql` | 15 | un feedback al giorno; get_feedback_page (3 migliori + si può ancora scrivere oggi?) |

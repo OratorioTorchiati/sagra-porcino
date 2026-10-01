@@ -553,7 +553,7 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('feedback: lo staff li vede filtrati per nickname e stelle, con la media', fbList?.total === 1 && fbMine?.stars === 5 && fbStars?.total === 1 && fbNoStars?.total === 0 && fbList.average === 5, JSON.stringify({ total: fbList?.total, avg: fbList?.average }));
   check('feedback: un giocatore non vede l\'elenco dello staff', fbPlayer?.error === 'NOT_STAFF');
   const fbHigh = (await rpc('get_feedback_highlights')).body;
-  check('feedback: le 3 migliori hanno almeno 15 caratteri di testo', fbHigh?.ok && fbHigh.reviews.length <= 3 && fbHigh.reviews.every((r) => r.text.trim().length >= 15), JSON.stringify(fbHigh?.reviews?.length));
+  check('feedback: le migliori (fino a 5, D117) hanno almeno 15 caratteri di testo', fbHigh?.ok && fbHigh.reviews.length <= 5 && fbHigh.reviews.every((r) => r.text.trim().length >= 15), JSON.stringify(fbHigh?.reviews?.length));
   for (const f of fbList?.entries ?? []) await staff('feedback_delete', { p_id: f.id });
   check('feedback: lo staff li cancella', (await staff('feedback_list', { p_nickname: t5Nick }))?.total === 0);
   const fbRemoved = await staff('feedback_list', { p_nickname: t5Nick, p_removed: true });

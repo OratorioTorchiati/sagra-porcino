@@ -1,8 +1,9 @@
 // Pagina Feedback (#/feedback, D108): voto da 1 a 5 stelle e testo facoltativo. Con l'account, oppure anche senza se
-// l'Admin ha abilitato i feedback anonimi. Sotto il modulo (o sotto l'avviso di accedere) le 3 recensioni migliori,
-// come nuvolette di una chat. Uno al giorno: dopo l'invio la propria recensione scende tra le nuvolette; rientrando
-// si vedono solo le 3 migliori e il grazie al posto del modulo (D111). Mod e Admin non ne lasciano: qui vedono un
-// avviso e le 3 migliori; la moderazione è nel Pannello Admin → 💬 Feedback (D110, D113).
+// l'Admin ha abilitato i feedback anonimi. Sotto il modulo (o sotto l'avviso di accedere) le recensioni migliori, come
+// nuvolette di una chat: sono 5, 3 subito e le altre arrivano una alla volta come in una chat di gruppo; restano sul
+// telefono per 5 minuti (D117). Uno al giorno: dopo l'invio la propria recensione scende tra le nuvolette; rientrando
+// si vedono solo le migliori e il grazie al posto del modulo (D111). Mod e Admin non ne lasciano: qui vedono un avviso
+// e le migliori; la moderazione è nel Pannello Admin → 💬 Feedback (D110, D113).
 
 import { html, escapeHtml } from '../lib/dom.js';
 import { rpc, NetworkError } from '../lib/api.js';
@@ -11,6 +12,15 @@ import { currentPlayer, sessionToken, isStaffRole, roleLabel } from '../lib/acco
 import { feedbackAnonymous, refreshAppConfig } from '../lib/app-config.js';
 import { avatarSvg } from '../components/player-card.js';
 import { setAfterLogin } from './auth-messages.js';
+import { readJson, writeJson } from '../lib/storage.js';
+
+// Le recensioni migliori (5) e "si può scrivere oggi?" restano sul telefono per 5 minuti (D117): meno richieste
+const CACHE_KEY = 'sagra-feedback-pagina';
+const CACHE_MS = 5 * 60 * 1000;
+// Se ne vedono subito 3; le altre arrivano una alla volta, come in una chat di gruppo
+const FIRST_SHOWN = 3;
+const TYPING_MS = 1300; // "sta scrivendo…" prima di ogni nuova nuvoletta
+const NEXT_MS = 2200; // pausa tra una nuvoletta e la successiva
 
 /** Lunghezza massima del commento (D109): 4–5 frasi bastano; il server accetta fino a 1000 */
 const MAX_TEXT = 500;
@@ -61,9 +71,12 @@ function formMarkup(anonymous) {
     </form>`;
 }
 
-/** Una nuvoletta: avatar in basso a sinistra, nickname e stelle in alto, testo sotto. `mine` = la propria appena scritta */
-const bubbleMarkup = (r, mine = false) => `
-  <li class="feedback-bubble${mine ? ' feedback-bubble--mine' : ''}">
+/**
+ * Una nuvoletta: avatar in basso a sinistra, nickname e stelle in alto, testo sotto.
+ * `mine` = la propria appena scritta; `arriving` = arriva ora nella chat (scende con un'animazione)
+ */
+const bubbleMarkup = (r, mine = false, arriving = false) => `
+  <li class="feedback-bubble${mine ? ' feedback-bubble--mine' : ''}${arriving ? ' feedback-bubble--arriving' : ''}">
     <span class="feedback-bubble__avatar" aria-hidden="true">${avatarSvg(r.avatar)}</span>
     <div class="feedback-bubble__body">
       <p class="feedback-bubble__head">
@@ -74,10 +87,17 @@ const bubbleMarkup = (r, mine = false) => `
     </div>
   </li>`;
 
-/** Le 3 recensioni migliori, come nuvolette di una chat */
+/** Le recensioni migliori, come nuvolette di una chat */
 const bubblesMarkup = (reviews) => `
   <h2 class="feedback-chat__title">Cosa dicono gli altri</h2>
   <ul class="feedback-chat">${reviews.map((r) => bubbleMarkup(r)).join('')}</ul>`;
+
+/** "Sta scrivendo…": tre puntini in una nuvoletta, prima che arrivi il messaggio */
+const typingMarkup = `
+  <li class="feedback-bubble feedback-bubble--typing" aria-hidden="true">
+    <span class="feedback-bubble__avatar">${avatarSvg(null)}</span>
+    <div class="feedback-bubble__body"><span class="typing-dots"><span></span><span></span><span></span></span></div>
+  </li>`;
 
 const doneTodayMarkup = `
   <div class="notice feedback-thanks">
@@ -98,6 +118,55 @@ export function renderFeedback() {
   const body = element.querySelector('.feedback-body');
   const highlights = element.querySelector('.feedback-highlights');
   let destroyed = false;
+  let timers = []; // arrivo delle nuvolette dopo le prime 3
+  let pending = []; // recensioni ancora da far arrivare
+
+  const clearTimers = () => {
+    timers.forEach(clearTimeout);
+    timers = [];
+  };
+
+  /** Mostra subito le prime 3, poi le altre arrivano una alla volta (puntini, poi la nuvoletta che scende) */
+  function showReviews(reviews) {
+    clearTimers();
+    if (!reviews.length) {
+      highlights.innerHTML = '';
+      return;
+    }
+    highlights.innerHTML = bubblesMarkup(reviews.slice(0, FIRST_SHOWN));
+    const list = highlights.querySelector('.feedback-chat');
+    pending = reviews.slice(FIRST_SHOWN);
+    const next = () => {
+      if (destroyed || !pending.length) return;
+      list.insertAdjacentHTML('beforeend', typingMarkup);
+      const typing = list.lastElementChild;
+      timers.push(
+        setTimeout(() => {
+          typing.remove();
+          list.insertAdjacentHTML('beforeend', bubbleMarkup(pending.shift(), false, true));
+          timers.push(setTimeout(next, NEXT_MS));
+        }, TYPING_MS),
+      );
+    };
+    timers.push(setTimeout(next, NEXT_MS));
+  }
+
+  /** Fa comparire subito quelle che dovevano ancora arrivare (es. prima della propria nuvoletta) */
+  function flushReviews() {
+    clearTimers();
+    const list = highlights.querySelector('.feedback-chat');
+    list?.querySelector('.feedback-bubble--typing')?.remove();
+    if (list) list.insertAdjacentHTML('beforeend', pending.map((r) => bubbleMarkup(r)).join(''));
+    pending = [];
+  }
+
+  /** Pagina salvata sul telefono (stesso account, meno di 5 minuti fa) */
+  const cacheOwner = () => currentPlayer()?.nickname ?? null;
+  function cachedPage() {
+    const cached = readJson(CACHE_KEY, null);
+    return cached && cached.owner === cacheOwner() && Date.now() - cached.savedAt < CACHE_MS ? cached.data : null;
+  }
+  const savePage = (data, savedAt = Date.now()) => writeJson(CACHE_KEY, { owner: cacheOwner(), savedAt, data });
 
   function render() {
     const player = currentPlayer();
@@ -137,6 +206,10 @@ export function renderFeedback() {
       .finished.catch(() => {});
     if (destroyed) return;
     body.innerHTML = doneTodayMarkup;
+    flushReviews();
+    // sul telefono: oggi non si può più scrivere (le recensioni restano quelle di prima, senza la propria)
+    const cached = readJson(CACHE_KEY, null);
+    if (cached?.owner === cacheOwner()) savePage({ ...cached.data, can_submit: false }, cached.savedAt);
     let list = highlights.querySelector('.feedback-chat');
     if (!list) {
       highlights.innerHTML = bubblesMarkup([]);
@@ -172,7 +245,11 @@ export function renderFeedback() {
         const res = await rpc('submit_feedback', { p_token: sessionToken(), p_stars: stars, p_text: text });
         if (!res.ok) {
           if (res.error === 'LOGIN_REQUIRED') refreshAppConfig(); // l'Admin ha appena tolto i feedback anonimi
-          if (res.error === 'TOO_MANY') return (body.innerHTML = doneTodayMarkup);
+          if (res.error === 'TOO_MANY') {
+            const cached = readJson(CACHE_KEY, null);
+            if (cached?.owner === cacheOwner()) savePage({ ...cached.data, can_submit: false }, cached.savedAt);
+            return (body.innerHTML = doneTodayMarkup);
+          }
           return showError(ERRORS[res.error] ?? 'Qualcosa non ha funzionato. Riprova tra poco.');
         }
         const player = currentPlayer();
@@ -185,19 +262,30 @@ export function renderFeedback() {
     });
   }
 
-  /** Le 3 migliori e se oggi si può ancora scrivere (se no, al posto del modulo il grazie) */
+  /** Le migliori e se oggi si può ancora scrivere (se no, al posto del modulo il grazie); dal telefono se recenti */
   async function loadPage() {
-    try {
-      const res = await rpc('get_feedback_page', { p_token: sessionToken() });
-      if (destroyed || !res.ok) return;
-      highlights.innerHTML = res.reviews.length ? bubblesMarkup(res.reviews) : '';
-      if (res.can_submit === false && body.querySelector('.feedback-form')) body.innerHTML = doneTodayMarkup;
-    } catch {
-      // senza rete niente nuvolette: non è indispensabile
+    let res = cachedPage();
+    if (!res) {
+      try {
+        res = await rpc('get_feedback_page', { p_token: sessionToken() });
+        if (res.ok) savePage(res);
+      } catch {
+        return; // senza rete niente nuvolette: non è indispensabile
+      }
     }
+    if (destroyed || !res.ok) return;
+    showReviews(res.reviews);
+    if (res.can_submit === false && body.querySelector('.feedback-form')) body.innerHTML = doneTodayMarkup;
   }
 
   render();
   loadPage();
-  return { title: 'Feedback', element, destroy: () => (destroyed = true) };
+  return {
+    title: 'Feedback',
+    element,
+    destroy: () => {
+      destroyed = true;
+      clearTimers();
+    },
+  };
 }

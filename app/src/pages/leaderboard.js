@@ -1,11 +1,11 @@
 // Classifica (#/giochi/classifica, Tappa 6, D71): podio per i primi 3, poi le righe fino al 20°,
 // primi 10 in "zona premi", la mia riga sempre evidenziata (a parte se sono oltre il 20°).
-// Live: si aggiorna da sola finché la pagina è aperta (lib/leaderboard.js). Toccando un giocatore
+// Si carica una volta all'apertura (D116, lib/leaderboard.js): per rivederla aggiornata si riapre. Toccando un giocatore
 // si apre la sua scheda punti (la stessa del profilo).
 
 import { html, escapeHtml, openDialog, closeDialog } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
-import { cachedLeaderboard, watchLeaderboard, fetchPlayerCard, formatPoints } from '../lib/leaderboard.js';
+import { cachedLeaderboard, loadLeaderboard, fetchPlayerCard, formatPoints } from '../lib/leaderboard.js';
 import { leaderboardView } from '../lib/leaderboard-view.js';
 import { avatarSvg, playerCardMarkup } from '../components/player-card.js';
 import { currentPlayer } from '../lib/account.js';
@@ -111,7 +111,7 @@ export function renderLeaderboard() {
     heading.textContent = title(cached.window === 'closed');
   }
 
-  const stop = watchLeaderboard({
+  const stop = loadLeaderboard({
     onData: (data) => {
       body.innerHTML = boardMarkup(data);
     },
