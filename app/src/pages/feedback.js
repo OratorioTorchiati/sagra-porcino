@@ -1,6 +1,7 @@
 // Pagina Feedback (#/feedback, D108): voto da 1 a 5 stelle e testo facoltativo. Con l'account, oppure anche senza se
-// l'Admin ha abilitato i feedback anonimi; Mod e Admin non possono lasciarne (D110). Sotto (o sotto l'avviso di accedere) le 3 recensioni migliori, come
-// nuvolette di una chat.
+// l'Admin ha abilitato i feedback anonimi; Mod e Admin non possono lasciarne (D110). Sotto (o sotto l'avviso di
+// accedere) le 3 recensioni migliori, come nuvolette di una chat. Uno al giorno: dopo l'invio la propria recensione
+// scende tra le nuvolette; rientrando si vedono solo le 3 migliori e il grazie al posto del modulo (D111).
 
 import { html, escapeHtml } from '../lib/dom.js';
 import { rpc, NetworkError } from '../lib/api.js';
@@ -17,7 +18,7 @@ const ERRORS = {
   LOGIN_REQUIRED: 'Per lasciare un feedback serve un account.',
   STARS_INVALID: 'Scegli da 1 a 5 stelle.',
   TEXT_TOO_LONG: `Il testo è troppo lungo (al massimo ${MAX_TEXT} caratteri).`,
-  TOO_MANY: 'Hai già lasciato 3 feedback oggi: grazie! Puoi scriverne altri domani.',
+  TOO_MANY: 'Oggi hai già lasciato il tuo feedback: potrai scriverne un altro domani.',
   SECTION_OFF: 'I feedback in questo momento non sono disponibili.',
   STAFF_NOT_ALLOWED: 'Mod e Admin non possono lasciare recensioni.',
 };
@@ -59,29 +60,29 @@ function formMarkup(anonymous) {
     </form>`;
 }
 
+/** Una nuvoletta: avatar in basso a sinistra, nickname e stelle in alto, testo sotto. `mine` = la propria appena scritta */
+const bubbleMarkup = (r, mine = false) => `
+  <li class="feedback-bubble${mine ? ' feedback-bubble--mine' : ''}">
+    <span class="feedback-bubble__avatar" aria-hidden="true">${avatarSvg(r.avatar)}</span>
+    <div class="feedback-bubble__body">
+      <p class="feedback-bubble__head">
+        <span class="feedback-bubble__name">${r.nickname ? escapeHtml(r.nickname) : 'Anonimo'}${mine ? ' <span class="me-tag">Tu</span>' : ''}</span>
+        <span class="feedback-bubble__stars" aria-label="${r.stars} stelle su 5">${starsText(r.stars)}</span>
+      </p>
+      ${r.text ? `<p class="feedback-bubble__text">${escapeHtml(r.text)}</p>` : ''}
+    </div>
+  </li>`;
+
 /** Le 3 recensioni migliori, come nuvolette di una chat */
-function bubblesMarkup(reviews) {
-  if (!reviews.length) return '';
-  return `
-    <h2 class="feedback-chat__title">Cosa dicono gli altri</h2>
-    <ul class="feedback-chat">
-      ${reviews
-        .map(
-          (r) => `
-        <li class="feedback-bubble">
-          <span class="feedback-bubble__avatar" aria-hidden="true">${avatarSvg(r.avatar)}</span>
-          <div class="feedback-bubble__body">
-            <p class="feedback-bubble__head">
-              <span class="feedback-bubble__name">${r.nickname ? escapeHtml(r.nickname) : 'Anonimo'}</span>
-              <span class="feedback-bubble__stars" aria-label="${r.stars} stelle su 5">${starsText(r.stars)}</span>
-            </p>
-            <p class="feedback-bubble__text">${escapeHtml(r.text)}</p>
-          </div>
-        </li>`,
-        )
-        .join('')}
-    </ul>`;
-}
+const bubblesMarkup = (reviews) => `
+  <h2 class="feedback-chat__title">Cosa dicono gli altri</h2>
+  <ul class="feedback-chat">${reviews.map((r) => bubbleMarkup(r)).join('')}</ul>`;
+
+const doneTodayMarkup = `
+  <div class="notice feedback-thanks">
+    <p class="notice__title">Grazie del tuo feedback! 🙏</p>
+    <p>Oggi l'hai già lasciato: potrai scriverne un altro domani.</p>
+  </div>`;
 
 export function renderFeedback() {
   const element = html(`
@@ -95,6 +96,7 @@ export function renderFeedback() {
   bindTopBar(element);
   const body = element.querySelector('.feedback-body');
   const highlights = element.querySelector('.feedback-highlights');
+  let destroyed = false;
 
   function render() {
     const player = currentPlayer();
@@ -120,10 +122,34 @@ export function renderFeedback() {
     body.querySelectorAll('[data-after-login]').forEach((a) => a.addEventListener('click', () => setAfterLogin('/feedback')));
   }
 
+  /** La propria recensione scende tra le altre nuvolette (D111): il modulo si chiude, la nuvoletta arriva con un rimbalzo */
+  async function showMine(review) {
+    const form = body.querySelector('.feedback-form');
+    await form
+      ?.animate(
+        [
+          { opacity: 1, transform: 'translateY(0) scale(1)' },
+          { opacity: 0, transform: 'translateY(60px) scale(0.92)' },
+        ],
+        { duration: 320, easing: 'ease-in' },
+      )
+      .finished.catch(() => {});
+    if (destroyed) return;
+    body.innerHTML = doneTodayMarkup;
+    let list = highlights.querySelector('.feedback-chat');
+    if (!list) {
+      highlights.innerHTML = bubblesMarkup([]);
+      list = highlights.querySelector('.feedback-chat');
+    }
+    list.insertAdjacentHTML('beforeend', bubbleMarkup(review, true));
+    const mine = list.lastElementChild;
+    mine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   function bindForm() {
     const form = body.querySelector('.feedback-form');
     const error = form.querySelector('.form-error');
-    // Caratteri scritti / massimo, sotto la casella
+    // Caratteri scritti / massimo, accanto all'etichetta
     const count = form.querySelector('.feedback-form__count');
     form.text.addEventListener('input', () => {
       count.textContent = `${form.text.value.length}/${MAX_TEXT}`;
@@ -141,18 +167,15 @@ export function renderFeedback() {
       const button = form.querySelector('button[type="submit"]');
       button.disabled = true;
       try {
-        const res = await rpc('submit_feedback', { p_token: sessionToken(), p_stars: stars, p_text: form.text.value });
+        const text = form.text.value.trim();
+        const res = await rpc('submit_feedback', { p_token: sessionToken(), p_stars: stars, p_text: text });
         if (!res.ok) {
           if (res.error === 'LOGIN_REQUIRED') refreshAppConfig(); // l'Admin ha appena tolto i feedback anonimi
+          if (res.error === 'TOO_MANY') return (body.innerHTML = doneTodayMarkup);
           return showError(ERRORS[res.error] ?? 'Qualcosa non ha funzionato. Riprova tra poco.');
         }
-        body.innerHTML = `
-          <div class="notice feedback-thanks">
-            <p class="notice__title">Grazie! 🙏</p>
-            <p>Il tuo feedback è arrivato agli organizzatori.</p>
-          </div>`;
-        window.scrollTo(0, 0);
-        loadHighlights();
+        const player = currentPlayer();
+        showMine({ nickname: player?.nickname ?? null, avatar: player?.avatar ?? null, stars, text });
       } catch (err) {
         showError(err instanceof NetworkError ? 'Serve la connessione per inviare il feedback.' : 'Qualcosa non ha funzionato. Riprova tra poco.');
       } finally {
@@ -161,16 +184,19 @@ export function renderFeedback() {
     });
   }
 
-  async function loadHighlights() {
+  /** Le 3 migliori e se oggi si può ancora scrivere (se no, al posto del modulo il grazie) */
+  async function loadPage() {
     try {
-      const res = await rpc('get_feedback_highlights', {});
-      if (res.ok) highlights.innerHTML = bubblesMarkup(res.reviews);
+      const res = await rpc('get_feedback_page', { p_token: sessionToken() });
+      if (destroyed || !res.ok) return;
+      highlights.innerHTML = res.reviews.length ? bubblesMarkup(res.reviews) : '';
+      if (res.can_submit === false && body.querySelector('.feedback-form')) body.innerHTML = doneTodayMarkup;
     } catch {
       // senza rete niente nuvolette: non è indispensabile
     }
   }
 
   render();
-  loadHighlights();
-  return { title: 'Feedback', element };
+  loadPage();
+  return { title: 'Feedback', element, destroy: () => (destroyed = true) };
 }

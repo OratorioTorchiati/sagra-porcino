@@ -3373,3 +3373,33 @@ tr.is-dragging .drag-handle {
   overflow-wrap: anywhere;
   white-space: pre-line;
 }
+
+/* La propria recensione appena inviata (D111): scende tra le altre con un piccolo rimbalzo */
+.feedback-chat .feedback-bubble--mine .feedback-bubble__body {
+  background: #dff0ff;
+  box-shadow: 0 0 0 2px #9cc7ef, 0 6px 14px rgba(43, 29, 18, 0.1);
+}
+
+.feedback-bubble--mine {
+  animation: feedback-drop 0.7s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+}
+
+@keyframes feedback-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-140px) scale(0.85);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback-bubble--mine {
+    animation: none;
+  }
+}
