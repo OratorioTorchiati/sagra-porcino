@@ -165,7 +165,7 @@ async function checkAndPublish(text, ctx, error, { errorsIntro, lineLabel = (n) 
   if (!ok) return null;
   const saved = await staffCall(ctx, 'set_menu', { p_menu: { categories: menu.categories } }, error);
   if (!saved) return null;
-  await refreshMenu();
+  await refreshMenu({ force: true });
   return saved.dishes;
 }
 
@@ -475,7 +475,7 @@ export async function renderConfigSection(root, ctx) {
   const error = root.querySelector('.form-error');
   const res = await staffCall(ctx, 'get_settings', {}, error);
   if (!res) return;
-  await refreshMenu(); // ✏️ Modifica parte dal menù più recente
+  await refreshMenu({ force: true }); // ✏️ Modifica parte dal menù più recente
   const schedule = { games_open_from: res.games_open_from, games_open_until: res.games_open_until };
 
   const box = root.querySelector('.staff-config');

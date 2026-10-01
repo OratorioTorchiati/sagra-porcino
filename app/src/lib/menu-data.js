@@ -7,6 +7,9 @@ import { readJson, writeJson } from './storage.js';
 import { parseMenuCsv, SYMBOLS } from '../../scripts/menu-csv.js';
 
 const KEY = 'sagra-menu';
+// Il menù cambia di rado: per 1 ora dall'ultima richiesta si usa la copia sul telefono senza chiedere al server (D118)
+const CHECKED_KEY = 'sagra-menu-controllato';
+const FRESH_MS = 60 * 60 * 1000;
 const listeners = new Set();
 let uploaded = readJson(KEY, null); // { categories, updated_at, by } oppure null
 
@@ -25,9 +28,14 @@ export function onMenuChange(fn) {
   return () => listeners.delete(fn);
 }
 
-/** Aggiorna dal server (senza rete resta l'ultima copia) */
-export async function refreshMenu() {
+/**
+ * Aggiorna dal server (senza rete resta l'ultima copia). Se l'ultima richiesta è di meno di un'ora fa non chiede
+ * nulla; `force` (pannello staff: prima di modificare e dopo aver pubblicato) chiede sempre.
+ */
+export async function refreshMenu({ force = false } = {}) {
   if (!serverConfigured) return currentMenu();
+  const checkedAt = readJson(CHECKED_KEY, 0);
+  if (!force && Date.now() - checkedAt < FRESH_MS && Date.now() >= checkedAt) return currentMenu();
   try {
     const result = await rpc('get_menu');
     if (!result.ok) return currentMenu();
@@ -35,6 +43,7 @@ export async function refreshMenu() {
     const changed = JSON.stringify(next) !== JSON.stringify(uploaded);
     uploaded = next;
     writeJson(KEY, next);
+    writeJson(CHECKED_KEY, Date.now());
     if (changed) listeners.forEach((fn) => fn(currentMenu()));
   } catch {
     // senza rete: va bene l'ultima copia
