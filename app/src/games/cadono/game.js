@@ -3,7 +3,7 @@
 
 import { PORCINI } from '../shared/porcini.js';
 import { BASKET_ASPECT, BASKET_RIM } from './sprites.js';
-import { applyCatch, applyMiss, cadonoScore, initialState } from './scoring.js';
+import { applyCatch, initialState, survivalBonus } from './scoring.js';
 import { softBackground } from '../engine/background.js';
 
 const PORCINO_KINDS = Object.keys(PORCINI);
@@ -27,13 +27,14 @@ export function createCadono({ rng, config, assets, hud, log, flash, shake }) {
   let nextId = 1;
   let spawnTimer = 0.5;
   let state = initialState(config);
+  let reachedEnd = false;
   const basket = { x: 0, targetX: null, width: config.basketWidth, height: config.basketWidth / BASKET_ASPECT };
 
   const basketTop = () => height - config.basketBottomMargin - basket.height;
   const rimY = () => basketTop() + basket.height * BASKET_RIM;
 
   function refreshHud() {
-    hud.set('score', state.caught);
+    hud.set('score', state.score);
     hud.set('lives', '❤️'.repeat(state.lives) + '🤍'.repeat(config.lives - state.lives));
   }
   refreshHud();
@@ -122,10 +123,7 @@ export function createCadono({ rng, config, assets, hud, log, flash, shake }) {
           refreshHud();
         } else if (item.y - config.itemSize / 2 > height) {
           item.gone = true;
-          if (item.type !== 'bomb') {
-            state = applyMiss(state, item.type, config);
-            log('miss', item.type, Math.round(item.x));
-          }
+          if (item.type !== 'bomb') log('miss', item.type, Math.round(item.x));
         }
       }
       items = items.filter((i) => !i.gone);
@@ -133,6 +131,7 @@ export function createCadono({ rng, config, assets, hud, log, flash, shake }) {
       for (const fx of effects) fx.age += dt;
       effects = effects.filter((fx) => fx.age < EFFECT_S);
 
+      if (t >= config.durationS && state.lives > 0) reachedEnd = true;
     },
 
     draw(ctx) {
@@ -216,11 +215,11 @@ export function createCadono({ rng, config, assets, hud, log, flash, shake }) {
       return { items: items.map((i) => ({ ...i })), basket: { ...basket }, rimY: rimY(), state: { ...state } };
     },
 
-    /** @param {{durationMs: number}} end tempo di gioco della partita (dal motore) */
-    result({ durationMs }) {
+    result() {
+      const bonus = survivalBonus(state, reachedEnd, config);
       return {
-        rawScore: cadonoScore(state, durationMs, config),
-        stats: { porcini: state.porcini, golden: state.golden, fallen: state.fallen, bombs: state.bombs, lives: state.lives },
+        rawScore: state.score + bonus,
+        stats: { porcini: state.porcini, golden: state.golden, bombs: state.bombs, lives: state.lives, bonus },
       };
     },
   };

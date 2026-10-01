@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import config from './config.js';
 import { createAcchiappa } from './game.js';
 import { createRng } from '../engine/rng.js';
-import { acchiappaScore, applyHit, applyMiss, initialScoreState } from './scoring.js';
+import { applyHit, initialScoreState } from './scoring.js';
 
 const WIDTH = 390;
 const HEIGHT = 700;
@@ -42,7 +42,7 @@ function simulate(seed, choose) {
     const target = choose(entities, t);
     if (target) game.onPointerDown(target.x, target.y, t);
   }
-  return { result: game.result({ durationMs: Math.round(t * 1000) }), actions, hudValues, maxOnScreen, sizes, popOutOfBounds, t };
+  return { result: game.result(), actions, hudValues, maxOnScreen, sizes, popOutOfBounds, t };
 }
 
 // Giocatore bravo: tocca ogni porcino dopo 0,4 s dalla comparsa, se è sullo schermo
@@ -68,30 +68,17 @@ describe('Acchiappa il porcino (simulazione)', () => {
     expect(popOutOfBounds).toBe(0); // chi spunta all'interno resta sempre toccabile
   });
 
-  it('giocatore bravo: nessun errore, quasi tutti i porcini presi, serie lunga', () => {
+  it('giocatore bravo: nessun errore, serie lunga, moltiplicatore massimo', () => {
     const { result, hudValues, actions } = simulate(3, perfect);
-    const { caught, missed, errors } = result.stats;
-    expect(errors).toBe(0);
-    expect(caught / (caught + missed)).toBeGreaterThan(0.9);
-    expect(result.stats.maxStreak).toBe(caught);
-    expect(hudValues.score).toBe(caught); // nell'HUD i porcini presi
-    // Il punteggio si rifà dal registro di tocchi e porcini persi (come sul server)
+    expect(result.stats.errors).toBe(0);
+    expect(result.stats.caught / config.durationS).toBeGreaterThan(0.6); // porcini al secondo
+    expect(result.stats.maxStreak).toBe(result.stats.caught);
+    expect(hudValues.score).toBe(result.rawScore);
+    // Il punteggio si rifà dal registro dei tocchi (come sul server)
     let state = initialScoreState();
-    for (const a of actions) {
-      if (a[1] === 'tap' && a[4] !== 'none') state = applyHit(state, a[4], a[0], config).state;
-      if (a[1] === 'miss') state = applyMiss(state);
-    }
-    expect(acchiappaScore(state, config)).toBe(result.rawScore);
-    // Il moltiplicatore conta: più della sola parte dei porcini presi
-    expect(result.rawScore).toBeGreaterThan(Math.round(1000 * config.scoreWeights.catch * (caught / (caught + missed))));
-    expect(result.rawScore).toBeLessThanOrEqual(1000);
-  });
-
-  it('i porcini spariti senza tocco vengono registrati come persi', () => {
-    const { result, actions } = simulate(7, () => null);
-    expect(result.stats.missed).toBeGreaterThan(0);
-    expect(actions.filter((a) => a[1] === 'miss')).toHaveLength(result.stats.missed);
-    expect(result.rawScore).toBe(0);
+    for (const [ms, , , , hit] of actions.filter((a) => a[1] === 'tap' && a[4] !== 'none')) state = applyHit(state, hit, ms, config).state;
+    expect(state.score).toBe(result.rawScore);
+    expect(result.rawScore).toBeGreaterThan(result.stats.caught * config.pointsPerPorcino * 2);
   });
 
   it('giocatore distratto: errori e serie azzerate', () => {

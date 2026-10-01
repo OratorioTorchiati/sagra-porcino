@@ -38,7 +38,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/020_personaggi_velenosi.sql` | 8 | 4 personaggi velenosi, cambio del personaggio dal profilo |
 | `supabase/migrations/022_ruoli_dal_pannello.sql` | 8 | l'Admin promuove e declassa (superadmin = account "staff") |
 | `supabase/migrations/023_menu_dal_pannello.sql` | 8 | menù caricato dal pannello (file CSV con anteprima), tentativi da 0 (illimitati) a 99 |
-| `supabase/migrations/028_punteggi_in_percentuale.sql` | 12 | tutti i punteggi da 0 a 1000 in percentuale (non dipendono da durata e step); `games.steps` e `attempts.steps` |
+| `supabase/migrations/028_memory_in_percentuale.sql` | 12 | Memory in percentuale sulle coppie; `games.steps` e `attempts.steps` (domande del quiz, coppie del Memory) |
 | `supabase/migrations/027_punteggio_memory.sql` | 11 | nuovo punteggio del Memory: 100 × coppie + precisione + tempo |
 | `supabase/migrations/026_domande_del_quiz.sql` | 10 | numero di domande del quiz deciso dall'Admin (punteggio sempre al massimo 1000) |
 | `supabase/migrations/025_vincitori_e_classifica.sql` | 9 | numero vincitori e classifica visibile anche senza account, decisi dall'Admin |

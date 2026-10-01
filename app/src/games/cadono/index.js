@@ -11,7 +11,7 @@ export default {
   config,
   hud: [
     { key: 'time', label: 'Tempo' },
-    { key: 'score', label: 'Presi' },
+    { key: 'score', label: 'Punti' },
     { key: 'lives', label: 'Vite' },
   ],
 
@@ -36,8 +36,7 @@ export default {
       ['Porcini presi', stats.porcini],
       ['Porcini d\'oro', stats.golden],
       ['Bombe prese', stats.bombs],
-      ['Porcini caduti', stats.fallen ?? '—'],
-      ['Vite rimaste', stats.lives],
+      ['Bonus vite rimaste', stats.bonus ? `+${stats.bonus}` : '—'],
     ];
   },
 };

@@ -9,7 +9,7 @@
 //   resize(width, height)  dimensioni dell'area di gioco
 //   isOver(t)              true quando la partita è finita
 //   timeLeft?(t)           secondi rimasti per il tempo nell'HUD (default: config.durationS - t)
-//   result({durationMs})   { rawScore, stats } (durationMs = tempo di gioco, lo stesso mandato al server)
+//   result()               { rawScore, stats }
 //   endText?()             scritta di fine partita (default "Fine partita!")
 //   start?()               chiamata al "VIA!" (es. il quiz mostra la prima domanda)
 //   destroy?()             pulizia (timer del gioco) quando la sessione viene chiusa
@@ -210,11 +210,10 @@ export class GameSession {
       this.timers.push(setTimeout(() => this.onFinish?.(null), 400));
       return;
     }
-    const durationMs = Math.round(this.gameTime * 1000);
-    const { rawScore, stats } = this.game.result({ durationMs });
+    const { rawScore, stats } = this.game.result();
     const result = {
       rawScore,
-      stats: { ...stats, durationMs, pauses: this.pauses },
+      stats: { ...stats, durationMs: Math.round(this.gameTime * 1000), pauses: this.pauses },
       actions: this.actions,
       seed: this.seed,
     };

@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import acchiappaConfig from '../src/games/acchiappa/config.js';
-import { acchiappaScore, applyHit, applyMiss, gameEndMs, initialScoreState } from '../src/games/acchiappa/scoring.js';
+import { applyHit, gameEndMs, initialScoreState } from '../src/games/acchiappa/scoring.js';
 import memoryConfig from '../src/games/memory/config.js';
 import { memoryScore } from '../src/games/memory/logic.js';
 
@@ -207,7 +207,7 @@ const perfect = (await rpc('submit_score', { p_attempt_id: mem3.attempt_id, p_ra
 check(`Memory perfetto (${memPairs} mosse) → contato ma segnalato allo staff`, perfect?.status === 'flagged' && perfect.raw_score === MEM_PERFECT, JSON.stringify(perfect));
 const wrongScore = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'cadono' })).body;
 const lie = (await rpc('submit_score', { p_attempt_id: wrongScore.attempt_id, p_raw_score: 999, p_stats: { durationMs: 1000 }, p_actions: [[500, 'catch', 'bomb', 100, 100], [700, 'catch', 'bomb', 100, 100], [900, 'catch', 'bomb', 100, 100]] })).body;
-check('Porcini che cadono: punteggio dichiarato diverso da quello delle azioni → escluso', lie?.status === 'rejected', JSON.stringify(lie));
+check('Porcini che cadono: punteggio dichiarato diverso da quello delle azioni → escluso', lie?.status === 'rejected' && lie.raw_score === 0, JSON.stringify(lie));
 check('vale il migliore tra i tentativi validi', perfect?.best === MEM_PERFECT);
 
 // Quiz: domande dal server SENZA risposta giusta; il punteggio lo calcola il server
@@ -236,11 +236,6 @@ if (starts[1]?.attempt_id && perDay >= 2) {
   const KIND = { good: 'estivo', poison: 'riccio', object: 'castagna' };
   for (const [t, hit] of taps) {
     if (t >= endMs) break;
-    // ogni tanto un porcino sparisce senza essere toccato (persi: contano nella percentuale, D107)
-    if (actions.length % 6 === 5) {
-      state = applyMiss(state);
-      actions.push([t - 100, 'miss', 'estivo']);
-    }
     state = applyHit(state, hit, t, acchiappaConfig).state;
     if (hit === 'object') endMs = gameEndMs(endMs, t, acchiappaConfig);
     actions.push([t, 'tap', 100, 200, hit === 'good' ? 'good' : 'bad', KIND[hit], 420, 80, 5]);
@@ -250,12 +245,11 @@ if (starts[1]?.attempt_id && perDay >= 2) {
     console.log(`(attendo ${Math.ceil(wait / 1000)} s: una partita di Acchiappa dura davvero ${starts[1].duration_s} s)`);
     await sleep(wait);
   }
-  const accScore = acchiappaScore(state, acchiappaConfig);
-  const acc = (await rpc('submit_score', { p_attempt_id: starts[1].attempt_id, p_raw_score: accScore, p_stats: { durationMs: endMs }, p_actions: actions })).body;
-  check(`Acchiappa (porcini presi, persi, moltiplicatore) → valida, stesso punteggio dell'app (${accScore})`, acc?.status === 'valid' && Math.abs(acc.raw_score - accScore) <= 1, JSON.stringify(acc));
+  const acc = (await rpc('submit_score', { p_attempt_id: starts[1].attempt_id, p_raw_score: state.score, p_stats: { durationMs: endMs }, p_actions: actions })).body;
+  check(`Acchiappa col moltiplicatore a tempo → valida, stesso punteggio dell'app (${state.score})`, acc?.status === 'valid' && acc.raw_score === state.score, JSON.stringify(acc));
   if (starts[2]?.attempt_id) {
     const centered = actions.map((a) => (a[1] === 'tap' ? [...a.slice(0, 8), 0] : a)); // distanza dal centro 0 px
-    const bot = (await rpc('submit_score', { p_attempt_id: starts[2].attempt_id, p_raw_score: accScore, p_stats: { durationMs: endMs }, p_actions: centered })).body;
+    const bot = (await rpc('submit_score', { p_attempt_id: starts[2].attempt_id, p_raw_score: state.score, p_stats: { durationMs: endMs }, p_actions: centered })).body;
     check('Acchiappa con tocchi sempre al centro esatto → segnalata (possibile bot)', bot?.status === 'flagged', JSON.stringify(bot));
   }
 }

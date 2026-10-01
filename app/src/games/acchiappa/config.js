@@ -11,15 +11,8 @@ export default {
    */
   startProgress: 0.25,
 
-  /** Punti per porcino (moltiplicati per il moltiplicatore): servono a misurare il moltiplicatore medio */
+  /** Punti per porcino (moltiplicati per il moltiplicatore). 29/09: da 10 a 5 (medie oltre i 2000) */
   pointsPerPorcino: 5,
-
-  /**
-   * Punteggio da 0 a 1000 (D107), non dipende dalla durata:
-   *   1000 × (catch × porcini presi / (presi + persi + tocchi sbagliati) + multiplier × moltiplicatore medio)
-   * moltiplicatore medio: da ×1 (0) al massimo (1). Persi = porcini spariti senza essere toccati.
-   */
-  scoreWeights: { catch: 0.8, multiplier: 0.2 },
 
   /**
    * Moltiplicatore a timer (D84, vedi scoring.js): da ×1 a ×2 con `firstLevelStreak` porcini di fila; poi ogni

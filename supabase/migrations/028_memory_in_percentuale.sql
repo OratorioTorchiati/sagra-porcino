@@ -1,17 +1,12 @@
 -- =====================================================================================
--- 028 — Punteggi in percentuale per tutti i giochi (D107)
+-- 028 — Memory in percentuale e step dei giochi (D107)
 --
--- Ogni gioco vale da 0 a 1000 e il risultato non dipende dalla durata né dal numero di step (domande, coppie),
--- ma da quanto si è completato:
---   Acchiappa           1000 × (80% porcini presi / (presi + persi + tocchi sbagliati) + 20% moltiplicatore medio)
---   Porcini che cadono  1000 × (70% porcini presi / caduti, l'oro vale 5 + 20% tempo resistito + 10% vite rimaste)
---   Memory              1000 × (80% coppie trovate / coppie + 10% precisione + 10% tempo avanzato)
---   Quiz                come prima (giuste / domande, con la velocità)
--- - games.steps (domande del quiz, coppie del Memory) al posto di games.questions; ogni partita ricorda i suoi step.
--- - Il tetto del punteggio è 1000 per tutti i giochi (prima Acchiappa e Porcini che cadono crescevano con la durata).
--- - Acchiappa: il telefono registra anche i porcini spariti senza tocco ([ms, 'miss', tipo]).
--- - Nuovo segnale per lo staff "pochi_porcini" (meno di mezzo porcino al secondo registrato).
--- Le partite già giocate restano col loro punteggio.
+-- - Memory: 1000 × (80% coppie trovate / coppie + 10% precisione + 10% tempo avanzato): il risultato non dipende
+--   dalla durata né dal numero di coppie (con 8 coppie è identico alla 027).
+-- - games.steps (domande del quiz, coppie del Memory) al posto di games.questions; ogni partita ricorda i suoi step
+--   e li manda all'app (regole "Trova tutte le N coppie", "N domande sui funghi").
+-- - "Troppo veloce" del Memory: meno di 0,6 s a coppia (prima: 5 secondi fissi).
+-- Acchiappa e Porcini che cadono: invariati.
 --
 -- Come applicarla: Supabase → SQL Editor → incolla tutto il file → Run. Si può rieseguire.
 -- =====================================================================================
@@ -25,7 +20,6 @@ do $$ begin
 end $$;
 update public.games set steps = coalesce(steps, 5) where id = 'quiz';
 update public.games set steps = coalesce(steps, 8) where id = 'memory';
-update public.games set max_raw_score = 1000;
 
 -- ---------- Partite ----------
 
@@ -110,7 +104,7 @@ begin
 end;
 $$;
 
--- Come in 027, con tutti i punteggi in percentuale
+-- Come in 027, con il Memory in percentuale sulle coppie della partita
 create or replace function public._check_attempt(p_attempt attempts, p_game games, p_raw int, p_stats jsonb, p_actions jsonb)
 returns jsonb language plpgsql stable set search_path = public as $$
 declare
@@ -124,13 +118,11 @@ declare
   v_row jsonb;
   -- Acchiappa
   v_streak int := 0; v_good int := 0; v_fast int := 0; v_taps int := 0; v_center int := 0;
-  v_points int := 0; v_missed int := 0; v_bad int := 0; v_catch_part numeric; v_mult_part numeric; -- D107
   v_level int := 1; v_ends int; v_tap_ms int;
   v_end int := p_game.duration_s * 1000; -- fine della partita: ogni oggetto toccato la anticipa di 2 s (D81)
   v_prev_ms int; v_int_n int := 0; v_int_sum numeric := 0; v_int_sq numeric := 0; v_std numeric;
   -- Porcini che cadono
   v_lives int := 3; v_catches int := 0; v_precise int := 0;
-  v_caught numeric := 0; v_fallen numeric := 0; v_items int := 0; -- D107 (porcino d'oro = 5)
   -- Memory
   v_moves int := 0; v_pairs int := 0; v_last_match_ms int; v_seconds numeric; v_extra int;
   -- Quiz
@@ -169,9 +161,8 @@ begin
   end if;
 
   if p_game.id = 'acchiappa' then
-    -- [ms, 'tap', x, y, esito, tipo, età_ms, dimensione, distanza] e [ms, 'miss', tipo] (porcino sparito senza tocco)
+    -- [ms, 'tap', x, y, esito, tipo, età_ms, dimensione, distanza]
     for v_row in select value from jsonb_array_elements(p_actions) loop
-      if v_row ->> 1 = 'miss' then v_missed := v_missed + 1; end if;
       continue when v_row ->> 1 <> 'tap';
       if (v_row ->> 0)::int > v_end + 500 then
         v_rejected := true; v_notes := array_append(v_notes, 'tocco_oltre_la_fine');
@@ -185,7 +176,7 @@ begin
         if v_level = 1 then v_streak := 0; end if;
       end loop;
       if v_row ->> 4 = 'good' then
-        v_points := v_points + 5 * v_level;
+        v_score := v_score + 5 * v_level;
         if v_level = 1 then
           -- da ×1 a ×2 con 5 porcini di fila, timer al 25%
           v_streak := v_streak + 1;
@@ -212,11 +203,9 @@ begin
       elsif v_row ->> 4 = 'bad' and _acchiappa_is_poisonous(v_row ->> 5) then
         -- fungo velenoso: si riparte da ×1
         v_streak := 0; v_level := 1; v_ends := null;
-        v_bad := v_bad + 1;
       elsif v_row ->> 4 = 'bad' then
         -- oggetto: il moltiplicatore non cambia, la partita finisce 2 s prima (mai prima del tocco)
         v_end := greatest(v_tap_ms, v_end - 2000);
-        v_bad := v_bad + 1;
       end if;
       if v_row ->> 4 in ('good', 'bad') then
         v_taps := v_taps + 1;
@@ -234,15 +223,6 @@ begin
     if v_dur > v_end + 1000 then
       v_rejected := true; v_notes := array_append(v_notes, 'durata_troppo_lunga');
     end if;
-    -- Punteggio (D107, come app/src/games/acchiappa/scoring.js): 1000 × (80% porcini presi su presi + persi + errori
-    -- + 20% moltiplicatore medio, da ×1 = 0 a ×4 = 1)
-    v_catch_part := case when v_good + v_missed + v_bad > 0 then v_good::numeric / (v_good + v_missed + v_bad) else 0 end;
-    v_mult_part := case when v_good > 0 then (v_points::numeric / (v_good * 5) - 1) / (4 - 1) else 0 end;
-    v_score := round(1000 * (0.8 * v_catch_part + 0.2 * v_mult_part))::int;
-    -- Porcini troppo pochi per la durata giocata: forse il telefono non ha registrato quelli persi
-    if (v_good + v_missed) < (least(v_dur, v_end) / 1000.0) * 0.5 then
-      v_flagged := true; v_notes := array_append(v_notes, 'pochi_porcini');
-    end if;
     if v_good >= 10 and v_center > v_good * 0.5 then
       v_flagged := true; v_notes := array_append(v_notes, 'tocchi_al_centro');
     end if;
@@ -255,32 +235,21 @@ begin
     end if;
 
   elsif p_game.id = 'cadono' then
-    -- [ms, 'catch', tipo, x_elemento, x_cestino] e [ms, 'miss', tipo] (porcino caduto per terra)
+    -- [ms, 'catch', tipo, x_elemento, x_cestino]
     for v_row in select value from jsonb_array_elements(p_actions) loop
-      if v_row ->> 1 = 'miss' and v_row ->> 2 in ('porcino', 'golden') then
-        v_fallen := v_fallen + case when v_row ->> 2 = 'golden' then 5 else 1 end;
-        v_items := v_items + 1;
-      end if;
       continue when v_row ->> 1 <> 'catch';
       v_catches := v_catches + 1;
       if abs((v_row ->> 3)::numeric - (v_row ->> 4)::numeric) <= 1 then v_precise := v_precise + 1; end if;
-      if v_row ->> 2 = 'porcino' then v_caught := v_caught + 1; v_items := v_items + 1;
-      elsif v_row ->> 2 = 'golden' then v_caught := v_caught + 5; v_items := v_items + 1;
-      elsif v_row ->> 2 = 'bomb' then v_lives := greatest(0, v_lives - 1);
+      if v_row ->> 2 = 'porcino' then v_score := v_score + 10;
+      elsif v_row ->> 2 = 'golden' then v_score := v_score + 50;
+      elsif v_row ->> 2 = 'bomb' then v_lives := v_lives - 1;
       end if;
     end loop;
-    -- Con vite rimaste si arriva per forza alla fine della partita
-    if v_lives > 0 and v_dur < p_game.duration_s * 1000 - 1000 then
+    -- Bonus sopravvivenza: arrivati alla fine del minuto con vite rimaste
+    if v_lives > 0 and v_dur >= p_game.duration_s * 1000 - 1000 then
+      v_score := v_score + v_lives * 50;
+    elsif v_lives > 0 then
       v_rejected := true; v_notes := array_append(v_notes, 'finita_prima_con_vite');
-    end if;
-    -- Punteggio (D107, come app/src/games/cadono/scoring.js): 1000 × (70% porcini presi su quelli caduti, l'oro vale 5
-    -- + 20% tempo resistito sulla durata + 10% vite rimaste)
-    v_score := round(1000 * (
-      0.7 * case when v_caught + v_fallen > 0 then v_caught / (v_caught + v_fallen) else 0 end
-      + 0.2 * least(1, v_dur::numeric / (p_game.duration_s * 1000))
-      + 0.1 * v_lives / 3.0))::int;
-    if v_items < (least(v_dur, p_game.duration_s * 1000) / 1000.0) * 0.5 then
-      v_flagged := true; v_notes := array_append(v_notes, 'pochi_porcini');
     end if;
     if v_catches >= 20 and v_precise > v_catches * 0.8 then
       v_flagged := true; v_notes := array_append(v_notes, 'prese_troppo_precise');
@@ -346,9 +315,8 @@ begin
     end if;
   end if;
 
-  -- Il punteggio dichiarato dal telefono deve coincidere con quello ricalcolato (tranne il quiz); 1 punto di tolleranza
-  -- per gli arrotondamenti delle percentuali (3 nel Memory: i secondi sono arrotondati)
-  if p_game.id <> 'quiz' and abs(coalesce(p_raw, -1) - v_score) > (case when p_game.id = 'memory' then 3 else 1 end) then
+  -- Il punteggio dichiarato dal telefono deve coincidere con quello ricalcolato (tranne il quiz)
+  if p_game.id <> 'quiz' and abs(coalesce(p_raw, -1) - v_score) > (case when p_game.id = 'memory' then 3 else 0 end) then
     v_rejected := true; v_notes := array_append(v_notes, 'punteggio_non_coerente');
   end if;
   if v_score > p_game.max_raw_score then
@@ -448,7 +416,7 @@ begin
 end;
 $$;
 
--- Come in 026, con p_steps (domande del quiz) e senza far crescere il massimo con la durata
+-- Come in 026, con p_steps (domande del quiz)
 drop function if exists public.staff_set_game(text, text, int, int);
 create or replace function public.staff_set_game(p_token text, p_game_id text, p_seconds int, p_steps int default null)
 returns jsonb language plpgsql volatile security definer set search_path = public as $$
@@ -476,8 +444,9 @@ begin
   end if;
   update games set
     duration_s = v_duration,
-    steps = coalesce(v_questions, steps)
-    -- il punteggio è sempre da 0 a 1000 (D107): la durata non cambia il massimo
+    steps = coalesce(v_questions, steps),
+    -- più tempo = più punti possibili (Quiz e Memory hanno sempre 1000 al massimo)
+    max_raw_score = case when id in ('acchiappa', 'cadono') then ceil(max_raw_score::numeric * v_duration / duration_s)::int else max_raw_score end
   where id = p_game_id;
   perform _staff_log(v_admin, 'game', p_game_id, jsonb_build_object('duration_s', v_duration, 'steps', v_questions));
   return jsonb_build_object('ok', true, 'duration_s', v_duration, 'steps', v_questions);

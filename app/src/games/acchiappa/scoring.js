@@ -13,7 +13,7 @@
 const fullMs = (level, config) => config.multipliers[level].durationS * 1000;
 
 export function initialScoreState() {
-  return { score: 0, streak: 0, level: 0, levelEndsMs: null, run: 0, maxStreak: 0, caught: 0, errors: 0, missed: 0 };
+  return { score: 0, streak: 0, level: 0, levelEndsMs: null, run: 0, maxStreak: 0, caught: 0, errors: 0 };
 }
 
 /** Moltiplicatore attuale (vale per il prossimo porcino preso) */
@@ -111,20 +111,13 @@ export function gameEndMs(endMs, nowMs, config) {
   return Math.max(nowMs, endMs - config.objectPenaltyS * 1000);
 }
 
-/** Un porcino è sparito senza essere toccato (non cambia serie né moltiplicatore) */
-export function applyMiss(state) {
-  return { ...state, missed: state.missed + 1 };
-}
-
 /**
- * Punteggio finale da 0 a 1000 (D107, uguale nel server): percentuale di porcini presi e moltiplicatore medio.
- * `state.score` sono i punti col moltiplicatore: divisi per i porcini presi danno il moltiplicatore medio.
+ * Tetto di plausibilità del punteggio (per i controlli del server): tutte le comparse possibili
+ * fossero porcini presi al moltiplicatore massimo, con un margine del 50%.
  */
-export function acchiappaScore(state, config) {
-  const w = config.scoreWeights;
-  const total = state.caught + state.missed + state.errors;
-  const catchPart = total > 0 ? state.caught / total : 0;
+export function maxRawScore(config) {
+  const minInterval = Math.min(...config.spawnInterval) * 0.7;
+  const maxSpawns = Math.ceil(config.durationS / minInterval) + Math.max(...config.maxOnScreen);
   const maxMultiplier = Math.max(...config.multipliers.map((m) => m.multiplier));
-  const multiplierPart = state.caught > 0 ? (state.score / (state.caught * config.pointsPerPorcino) - 1) / (maxMultiplier - 1) : 0;
-  return Math.round(1000 * (w.catch * catchPart + w.multiplier * multiplierPart));
+  return Math.ceil(maxSpawns * config.pointsPerPorcino * maxMultiplier * 1.5);
 }
