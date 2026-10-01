@@ -1,7 +1,7 @@
 // Moderazione dei feedback (Mod e Admin, D108, D112): nella pagina Feedback della home, al posto del modulo e delle
 // nuvolette. I feedback dei giocatori a pagine da 20, i più recenti prima, con filtri
-// per nickname, giorno e stelle e la media dei voti. Ogni feedback: stelle a sinistra, poi nickname, data e ora, testo.
-// 🗑️ cancella un feedback volgare (con conferma; finisce nel registro).
+// per nickname, giorno e stelle e la media dei voti. Ogni feedback: nickname con le stelle a destra, data e ora, testo
+// con 🗑️ a destra per cancellare un feedback volgare (con conferma; finisce nel registro).
 
 import { escapeHtml } from '../lib/dom.js';
 import { avatarSvg } from '../components/player-card.js';
@@ -11,17 +11,17 @@ const starsText = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
 const entryMarkup = (f) => `
   <li class="staff-feedback__item">
-    <span class="staff-feedback__stars" aria-label="${f.stars} stelle su 5">${starsText(f.stars)}</span>
-    <div class="staff-feedback__body">
-      <p class="staff-feedback__who">
-        <span class="staff-feedback__avatar" aria-hidden="true">${avatarSvg(f.avatar)}</span>
-        <strong>${f.nickname ? escapeHtml(f.nickname) : 'Anonimo'}</strong>
-      </p>
-      <p class="staff-feedback__date">${formatDate(f.created_at)}</p>
+    <p class="staff-feedback__who">
+      <span class="staff-feedback__avatar" aria-hidden="true">${avatarSvg(f.avatar)}</span>
+      <strong>${f.nickname ? escapeHtml(f.nickname) : 'Anonimo'}</strong>
+      <span class="staff-feedback__stars" aria-label="${f.stars} stelle su 5">${starsText(f.stars)}</span>
+    </p>
+    <p class="staff-feedback__date">${formatDate(f.created_at)}</p>
+    <div class="staff-feedback__row">
       ${f.text ? `<p class="staff-feedback__text">${escapeHtml(f.text)}</p>` : '<p class="staff-feedback__text staff-muted">(solo il voto)</p>'}
+      <button type="button" class="icon-button icon-button--danger" data-delete="${f.id}" data-who="${escapeHtml(f.nickname ?? 'Anonimo')}"
+        aria-label="Cancella il feedback" title="Cancella">🗑️</button>
     </div>
-    <button type="button" class="icon-button icon-button--danger" data-delete="${f.id}" data-who="${escapeHtml(f.nickname ?? 'Anonimo')}"
-      aria-label="Cancella il feedback" title="Cancella">🗑️</button>
   </li>`;
 
 export function renderFeedbackSection(root, ctx) {

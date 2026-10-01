@@ -3317,36 +3317,39 @@ tr.is-dragging .drag-handle {
 
 .staff-feedback__item {
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.15rem;
   padding: 0.75rem;
   border-radius: 14px;
   background: var(--color-surface);
   box-shadow: var(--shadow);
 }
 
+.staff-feedback__item p {
+  margin: 0;
+}
+
+/* nickname a sinistra, stelle a destra sulla stessa riga */
+.staff-feedback__who {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .staff-feedback__stars {
-  flex: none;
-  padding-top: 0.15rem;
+  margin-left: auto;
   color: #e09b00;
   font-size: 1rem;
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
-.staff-feedback__body {
-  flex: 1;
-  min-width: 0;
-}
-
-.staff-feedback__body p {
-  margin: 0;
-}
-
-.staff-feedback__who {
+/* testo del commento con 🗑️ a destra */
+.staff-feedback__row {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
 }
 
 .staff-feedback__avatar {
@@ -3369,7 +3372,8 @@ tr.is-dragging .drag-handle {
 }
 
 .staff-feedback__text {
-  margin-top: 0.35rem !important;
+  flex: 1;
+  min-width: 0;
   overflow-wrap: anywhere;
   white-space: pre-line;
 }
