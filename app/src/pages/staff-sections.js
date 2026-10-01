@@ -247,7 +247,10 @@ export function renderLogSection(root, ctx) {
               : e.action === 'role' && e.details
                 ? ` (${roleName(e.details.from)} → ${roleName(e.details.to)})`
                 : '';
-            return `<li>${formatDate(e.created_at)} · <strong>${escapeHtml(e.staff)}</strong> ${ACTIONS[e.action] ?? escapeHtml(e.action)} ${e.target ? `<strong>${escapeHtml(e.target)}</strong>` : ''}${extra}</li>`;
+            // piatto terminato / di nuovo disponibile (D119): registrato come 'menu' con sold_out
+            const soldOut = e.action === 'menu' && typeof e.details?.sold_out === 'boolean';
+            const action = soldOut ? (e.details.sold_out ? 'ha segnato come terminato' : 'ha rimesso disponibile') : (ACTIONS[e.action] ?? escapeHtml(e.action));
+            return `<li>${formatDate(e.created_at)} · <strong>${escapeHtml(e.staff)}</strong> ${action} ${e.target ? `<strong>${escapeHtml(e.target)}</strong>` : ''}${extra}</li>`;
           })
           .join('')}</ul>${pagerMarkup(res.page, res.total, res.page_size)}`
       : '<p class="leaderboard-note">Nessuna azione con questi filtri.</p>';

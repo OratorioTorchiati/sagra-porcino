@@ -1,7 +1,10 @@
 // Menù della sagra: quello caricato dall'Admin dal pannello (D96) o, se non c'è, quello incluso nell'app
 // (contenuti/menu.csv, vedi scripts/menu-plugin.js). Resta sul telefono, quindi si legge anche senza rete.
+// Piatti terminati (D119): un po' spenti, con "Terminato" in rosso; l'Admin li segna con il pulsantino sotto il piatto.
 
-import { currentMenu, onMenuChange, refreshMenu } from '../lib/menu-data.js';
+import { currentMenu, uploadedMenu, onMenuChange, refreshMenu, setMenu } from '../lib/menu-data.js';
+import { currentPlayer, isAdminRole } from '../lib/account.js';
+import { staffRpc } from '../lib/staff.js';
 import { html, escapeHtml } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import porcinoSvg from '../assets/porcino.svg?raw';
@@ -29,15 +32,25 @@ function nameWithSymbols(dish) {
   return `${head}<span class="nowrap">${escapeHtml(last)}${dish.symbols.map(symbolMarkup).join('')}</span>`;
 }
 
-function dishMarkup(dish) {
+// Il pulsantino si vede solo all'Admin e solo sul menù caricato dal pannello (quello incluso nell'app non è sul server)
+const canMarkSoldOut = () => isAdminRole(currentPlayer()?.role) && uploadedMenu() !== null;
+
+function dishMarkup(dish, category) {
+  const soldOut = dish.sold_out === true;
   return `
-    <li class="dish">
+    <li class="dish${soldOut ? ' dish--sold-out' : ''}">
       <div class="dish__head">
-        <span class="dish__name">${nameWithSymbols(dish)}</span>
+        <span class="dish__name"><span class="dish__label">${nameWithSymbols(dish)}</span>${soldOut ? ' <span class="dish__sold-out">Terminato</span>' : ''}</span>
         <span class="dish__price">${priceFormat.format(dish.price)}</span>
       </div>
       ${dish.description ? `<p class="dish__description">${escapeHtml(dish.description)}</p>` : ''}
       ${dish.allergens.length ? `<p class="dish__allergens">Allergeni: ${escapeHtml(dish.allergens.join(', '))}</p>` : ''}
+      ${
+        canMarkSoldOut()
+          ? `<button type="button" class="dish__toggle" data-sold-out="${soldOut ? 'false' : 'true'}"
+              data-category="${escapeHtml(category)}" data-dish="${escapeHtml(dish.name)}">${soldOut ? '↩️ Di nuovo disponibile' : '🚫 Segna terminato'}</button>`
+          : ''
+      }
     </li>
   `;
 }
@@ -70,7 +83,7 @@ function menuMarkup(allCategories) {
       (c, i) => `
       <section class="menu-section" id="cat-${i}">
         <h2 class="menu-section__title">${escapeHtml(c.name)}</h2>
-        <ul class="dishes">${c.dishes.map(dishMarkup).join('')}</ul>
+        <ul class="dishes">${c.dishes.map((d) => dishMarkup(d, c.name)).join('')}</ul>
       </section>`,
     )
     .join('');
@@ -98,9 +111,31 @@ export function renderMenu() {
   const stop = onMenuChange((menu) => (body.innerHTML = menuMarkup(menu.categories)));
   refreshMenu();
 
-  element.addEventListener('click', (event) => {
+  element.addEventListener('click', async (event) => {
     const button = event.target.closest('.menu-jump');
     if (button) element.querySelector(`#${button.dataset.target}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Admin: piatto terminato / di nuovo disponibile (il menù si ridisegna con la risposta del server)
+    const toggle = event.target.closest('.dish__toggle');
+    if (!toggle || toggle.disabled) return;
+    toggle.disabled = true;
+    const label = toggle.textContent;
+    toggle.textContent = 'Un attimo…';
+    try {
+      const res = await staffRpc('set_dish_sold_out', {
+        p_category: toggle.dataset.category,
+        p_dish: toggle.dataset.dish,
+        p_sold_out: toggle.dataset.soldOut === 'true',
+      });
+      if (res.ok) return setMenu(res.menu);
+      toggle.textContent = res.error === 'DISH_NOT_FOUND' ? 'Piatto non trovato: ricarica la pagina' : 'Non riuscito, riprova';
+    } catch {
+      toggle.textContent = 'Niente rete, riprova';
+    }
+    setTimeout(() => {
+      toggle.textContent = label;
+      toggle.disabled = false;
+    }, 2500);
   });
   return { title: 'Menù', element, destroy: stop };
 }

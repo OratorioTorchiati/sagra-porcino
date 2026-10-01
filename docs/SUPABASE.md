@@ -40,6 +40,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/023_menu_dal_pannello.sql` | 8 | menù caricato dal pannello (file CSV con anteprima), tentativi da 0 (illimitati) a 99 |
 | `supabase/migrations/034_cinque_recensioni.sql` | 18 | le recensioni migliori diventano 5 |
 | `supabase/migrations/035_versione_del_menu.sql` | 19 | la configurazione dell'app porta la versione del menù |
+| `supabase/migrations/036_piatti_terminati.sql` | 20 | piatti terminati (solo Admin, dalla pagina Menù), mantenuti ripubblicando il menù |
 | `supabase/migrations/033_feedback_rimossi.sql` | 17 | feedback rimossi: il testo resta, chi li ha rimossi e quando; elenco Attivi / Rimossi |
 | `supabase/migrations/032_feedback_cancellati.sql` | 16 | feedback cancellati dallo staff: restano segnati (senza testo), il giorno resta usato |
 | `supabase/migrations/031_un_feedback_al_giorno.sql` | 15 | un feedback al giorno; get_feedback_page (3 migliori + si può ancora scrivere oggi?) |

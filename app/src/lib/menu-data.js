@@ -8,11 +8,8 @@ import { menuVersion, onConfigChange } from './app-config.js';
 import { parseMenuCsv, SYMBOLS } from '../../scripts/menu-csv.js';
 
 const KEY = 'sagra-menu';
-// Il menù cambia di rado: per 1 ora dall'ultima richiesta si usa la copia sul telefono senza chiedere al server (D118).
-// La configurazione dell'app (chiesta a ogni cambio pagina) porta la data dell'ultimo menù pubblicato: se non è
-// quella della copia sul telefono, il menù si richiede subito, senza aspettare l'ora.
-const CHECKED_KEY = 'sagra-menu-controllato';
-const FRESH_MS = 60 * 60 * 1000;
+// Il menù si richiede solo quando cambia (D118): la configurazione dell'app (chiesta a ogni cambio pagina, pochi byte)
+// porta la data dell'ultimo menù pubblicato; se è quella della copia sul telefono non si chiede nulla.
 const listeners = new Set();
 let uploaded = readJson(KEY, null); // { categories, updated_at, by } oppure null
 
@@ -43,14 +40,13 @@ onConfigChange(() => {
 });
 
 /**
- * Aggiorna dal server (senza rete resta l'ultima copia). Se l'ultima richiesta è di meno di un'ora fa non chiede
- * nulla, a meno che la configurazione segnali un menù nuovo; `force` (pannello staff: prima di modificare e dopo
- * aver pubblicato) chiede sempre.
+ * Aggiorna dal server (senza rete resta l'ultima copia). Chiede solo se la configurazione segnala un menù diverso
+ * (o se la configurazione non è ancora arrivata); `force` (pannello staff: prima di modificare e dopo aver
+ * pubblicato) chiede sempre.
  */
 export async function refreshMenu({ force = false } = {}) {
   if (!serverConfigured) return currentMenu();
-  const checkedAt = readJson(CHECKED_KEY, 0);
-  if (!force && !outdated() && Date.now() - checkedAt < FRESH_MS && Date.now() >= checkedAt) return currentMenu();
+  if (!force && menuVersion() !== undefined && !outdated()) return currentMenu();
   try {
     const result = await rpc('get_menu');
     if (!result.ok) return currentMenu();
@@ -58,12 +54,18 @@ export async function refreshMenu({ force = false } = {}) {
     const changed = JSON.stringify(next) !== JSON.stringify(uploaded);
     uploaded = next;
     writeJson(KEY, next);
-    writeJson(CHECKED_KEY, Date.now());
     if (changed) listeners.forEach((fn) => fn(currentMenu()));
   } catch {
     // senza rete: va bene l'ultima copia
   }
   return currentMenu();
+}
+
+/** Il menù appena salvato dal server (es. dopo aver segnato un piatto terminato): si ridisegna subito */
+export function setMenu(next) {
+  uploaded = next?.categories ? next : null;
+  writeJson(KEY, uploaded);
+  listeners.forEach((fn) => fn(currentMenu()));
 }
 
 export const countDishes = (menu) => menu.categories.reduce((n, c) => n + c.dishes.length, 0);

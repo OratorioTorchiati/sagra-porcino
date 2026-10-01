@@ -500,7 +500,11 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   }
   const badMenu = await staff('set_menu', { p_menu: { categories: [{ name: 'Primi', dishes: [{ name: '', price: 'nove' }] }] } });
   check('menù: piatto senza nome e prezzo non numerico → rifiutato', badMenu?.error === 'MENU_INVALID', JSON.stringify(badMenu));
-  check('menù: un giocatore non può caricarlo', (await rpc('staff_set_menu', { p_token: t5Token, p_menu: { categories: [] } })).body?.error === 'NOT_STAFF');
+  // Piatti terminati (036, D119): solo l'Admin; un piatto che non c'è viene rifiutato (niente cambi al menù vero)
+  check('menù: un giocatore non può segnare un piatto terminato', (await rpc('staff_set_dish_sold_out', { p_token: t5Token, p_category: 'Primi', p_dish: 'Tagliatelle', p_sold_out: true })).body?.error === 'NOT_STAFF');
+  const noDish = await staff('set_dish_sold_out', { p_category: 'zz categoria', p_dish: 'zz piatto', p_sold_out: true });
+  check('menù: piatto che non c\'è → rifiutato', noDish?.error === 'DISH_NOT_FOUND', JSON.stringify(noDish));
+  check('menù: un giocatore non può caricarlo',(await rpc('staff_set_menu', { p_token: t5Token, p_menu: { categories: [] } })).body?.error === 'NOT_STAFF');
   // Impostazioni dei giochi (024): durata (si salva la stessa, per non cambiare i giochi veri), domande del quiz
   const memoryNow = settings.games.find((g) => g.id === 'memory');
   const sameDuration = await staff('set_game', { p_game_id: 'memory', p_seconds: memoryNow.duration_s });
