@@ -1,7 +1,7 @@
 // Pagina Feedback (#/feedback, D108): voto da 1 a 5 stelle e testo facoltativo. Con l'account, oppure anche senza se
 // l'Admin ha abilitato i feedback anonimi. Sotto il modulo (o sotto l'avviso di accedere) le recensioni migliori, come
-// nuvolette di una chat: sono 5, 3 subito e le altre arrivano una alla volta come in una chat di gruppo; restano sul
-// telefono per 5 minuti (D117). Uno al giorno: dopo l'invio la propria recensione scende tra le nuvolette; rientrando
+// nuvolette di una chat: sono 5 e arrivano una alla volta, la nuova in cima, come in una chat di gruppo
+// (D123); restano sul telefono per 5 minuti (D117). Uno al giorno: dopo l'invio la propria recensione scende tra le nuvolette; rientrando
 // si vedono solo le migliori e il grazie al posto del modulo (D111). Mod e Admin non ne lasciano: qui vedono un avviso
 // e le migliori; la moderazione è nel Pannello Admin → 💬 Feedback (D110, D113).
 
@@ -17,10 +17,10 @@ import { readJson, writeJson } from '../lib/storage.js';
 // Le recensioni migliori (5) e "si può scrivere oggi?" restano sul telefono per 5 minuti (D117): meno richieste
 const CACHE_KEY = 'sagra-feedback-pagina';
 const CACHE_MS = 5 * 60 * 1000;
-// Se ne vedono subito 3; le altre arrivano una alla volta, come in una chat di gruppo
-const FIRST_SHOWN = 3;
-const TYPING_MS = 1300; // "sta scrivendo…" prima di ogni nuova nuvoletta
-const NEXT_MS = 2200; // pausa tra una nuvoletta e la successiva
+// Arrivano tutte una alla volta, dalla prima, come in una chat di gruppo; la nuova compare IN CIMA (D123)
+const FIRST_MS = 500; // la prima "sta scrivendo…" parte quasi subito
+const TYPING_MS = 2300; // "sta scrivendo…" prima di ogni nuova nuvoletta
+const NEXT_MS = 4200; // pausa tra una nuvoletta e la successiva
 
 /** Lunghezza massima del commento (D109): 4–5 frasi bastano; il server accetta fino a 1000 */
 const MAX_TEXT = 500;
@@ -126,29 +126,29 @@ export function renderFeedback() {
     timers = [];
   };
 
-  /** Mostra subito le prime 3, poi le altre arrivano una alla volta (puntini, poi la nuvoletta che scende) */
+  /** Le recensioni arrivano una alla volta, in cima: prima i puntini, poi la nuvoletta che scende */
   function showReviews(reviews) {
     clearTimers();
     if (!reviews.length) {
       highlights.innerHTML = '';
       return;
     }
-    highlights.innerHTML = bubblesMarkup(reviews.slice(0, FIRST_SHOWN));
+    highlights.innerHTML = bubblesMarkup([]);
     const list = highlights.querySelector('.feedback-chat');
-    pending = reviews.slice(FIRST_SHOWN);
+    pending = reviews.slice();
     const next = () => {
       if (destroyed || !pending.length) return;
-      list.insertAdjacentHTML('beforeend', typingMarkup);
-      const typing = list.lastElementChild;
+      list.insertAdjacentHTML('afterbegin', typingMarkup);
+      const typing = list.firstElementChild;
       timers.push(
         setTimeout(() => {
           typing.remove();
-          list.insertAdjacentHTML('beforeend', bubbleMarkup(pending.shift(), false, true));
+          list.insertAdjacentHTML('afterbegin', bubbleMarkup(pending.shift(), false, true));
           timers.push(setTimeout(next, NEXT_MS));
         }, TYPING_MS),
       );
     };
-    timers.push(setTimeout(next, NEXT_MS));
+    timers.push(setTimeout(next, FIRST_MS));
   }
 
   /** Fa comparire subito quelle che dovevano ancora arrivare (es. prima della propria nuvoletta) */
@@ -156,7 +156,8 @@ export function renderFeedback() {
     clearTimers();
     const list = highlights.querySelector('.feedback-chat');
     list?.querySelector('.feedback-bubble--typing')?.remove();
-    if (list) list.insertAdjacentHTML('beforeend', pending.map((r) => bubbleMarkup(r)).join(''));
+    // in cima, come se fossero arrivate in ordine (l'ultima sopra tutte)
+    if (list) list.insertAdjacentHTML('afterbegin', pending.slice().reverse().map((r) => bubbleMarkup(r)).join(''));
     pending = [];
   }
 
@@ -215,8 +216,8 @@ export function renderFeedback() {
       highlights.innerHTML = bubblesMarkup([]);
       list = highlights.querySelector('.feedback-chat');
     }
-    list.insertAdjacentHTML('beforeend', bubbleMarkup(review, true));
-    const mine = list.lastElementChild;
+    list.insertAdjacentHTML('afterbegin', bubbleMarkup(review, true)); // la propria è l'ultima arrivata: in cima
+    const mine = list.firstElementChild;
     mine.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
