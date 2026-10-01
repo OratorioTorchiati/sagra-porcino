@@ -556,6 +556,9 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('feedback: le 3 migliori hanno almeno 15 caratteri di testo', fbHigh?.ok && fbHigh.reviews.length <= 3 && fbHigh.reviews.every((r) => r.text.trim().length >= 15), JSON.stringify(fbHigh?.reviews?.length));
   for (const f of fbList?.entries ?? []) await staff('feedback_delete', { p_id: f.id });
   check('feedback: lo staff li cancella', (await staff('feedback_list', { p_nickname: t5Nick }))?.total === 0);
+  const fbAfterDelete = (await rpc('submit_feedback', { p_token: t5Token, p_stars: 5, p_text: 'riprovo dopo la cancellazione' })).body;
+  const fbPageDeleted = (await rpc('get_feedback_page', { p_token: t5Token })).body;
+  check('feedback: cancellato dallo staff, quel giorno non se ne può scrivere un altro (D114)', fbAfterDelete?.error === 'TOO_MANY' && fbPageDeleted?.can_submit === false, JSON.stringify({ fbAfterDelete, can: fbPageDeleted?.can_submit }));
   check('aspetto: ordine delle sezioni non valido → rifiutato', (await staff('update_settings', { p_values: { sections_order: ['menu', 'menu'] } }))?.error === 'ORDER_INVALID');
   const sameOrder = await staff('update_settings', { p_values: { sections_order: settings.sections_order, sections: settings.sections, feedback_anonymous: settings.feedback_anonymous } });
   const configAfter = (await rpc('get_app_config')).body;
