@@ -1,11 +1,11 @@
 // Pagina Feedback (#/feedback, D108): voto da 1 a 5 stelle e testo facoltativo. Con l'account, oppure anche senza se
-// l'Admin ha abilitato i feedback anonimi. Sotto (o sotto l'avviso di accedere) le 3 recensioni migliori, come
+// l'Admin ha abilitato i feedback anonimi; Mod e Admin non possono lasciarne (D110). Sotto (o sotto l'avviso di accedere) le 3 recensioni migliori, come
 // nuvolette di una chat.
 
 import { html, escapeHtml } from '../lib/dom.js';
 import { rpc, NetworkError } from '../lib/api.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
-import { currentPlayer, sessionToken } from '../lib/account.js';
+import { currentPlayer, sessionToken, isStaffRole, roleLabel } from '../lib/account.js';
 import { feedbackAnonymous, refreshAppConfig } from '../lib/app-config.js';
 import { avatarSvg } from '../components/player-card.js';
 import { setAfterLogin } from './auth-messages.js';
@@ -19,6 +19,7 @@ const ERRORS = {
   TEXT_TOO_LONG: `Il testo è troppo lungo (al massimo ${MAX_TEXT} caratteri).`,
   TOO_MANY: 'Hai già lasciato 3 feedback oggi: grazie! Puoi scriverne altri domani.',
   SECTION_OFF: 'I feedback in questo momento non sono disponibili.',
+  STAFF_NOT_ALLOWED: 'Mod e Admin non possono lasciare recensioni.',
 };
 
 const starsText = (n) => '★'.repeat(n) + '☆'.repeat(5 - n);
@@ -97,7 +98,14 @@ export function renderFeedback() {
 
   function render() {
     const player = currentPlayer();
-    if (!player && !feedbackAnonymous()) {
+    if (isStaffRole(player?.role)) {
+      // Mod e Admin non lasciano recensioni (D110): solo l'avviso e, sotto, le nuvolette
+      body.innerHTML = `
+        <div class="notice">
+          <p class="notice__title">Sei dentro come ${roleLabel(player.role)}</p>
+          <p>Lo staff non può lasciare recensioni. I feedback dei giocatori sono nel Pannello Admin → 💬 Feedback.</p>
+        </div>`;
+    } else if (!player && !feedbackAnonymous()) {
       // Solo con l'account: avviso, e le nuvolette sotto
       body.innerHTML = `
         <div class="notice">

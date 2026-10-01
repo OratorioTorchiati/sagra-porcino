@@ -38,6 +38,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/020_personaggi_velenosi.sql` | 8 | 4 personaggi velenosi, cambio del personaggio dal profilo |
 | `supabase/migrations/022_ruoli_dal_pannello.sql` | 8 | l'Admin promuove e declassa (superadmin = account "staff") |
 | `supabase/migrations/023_menu_dal_pannello.sql` | 8 | menù caricato dal pannello (file CSV con anteprima), tentativi da 0 (illimitati) a 99 |
+| `supabase/migrations/030_feedback_niente_staff.sql` | 14 | Mod e Admin non lasciano recensioni |
 | `supabase/migrations/029_feedback_e_aspetto.sql` | 13 | sezione Feedback (stelle + testo, anonimi a scelta, 3 migliori, elenco e cancellazione per lo staff), ordine delle sezioni |
 | `supabase/migrations/028_memory_in_percentuale.sql` | 12 | Memory in percentuale sulle coppie; `games.steps` e `attempts.steps` (domande del quiz, coppie del Memory) |
 | `supabase/migrations/027_punteggio_memory.sql` | 11 | nuovo punteggio del Memory: 100 × coppie + precisione + tempo |

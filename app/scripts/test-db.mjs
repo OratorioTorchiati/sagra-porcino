@@ -534,6 +534,8 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   await staff('update_settings', { p_values: { sections: { feedback: true }, feedback_anonymous: false } });
   const fbAnon = (await rpc('submit_feedback', { p_token: null, p_stars: 5, p_text: 'prova' })).body;
   const fbBad = (await rpc('submit_feedback', { p_token: t5Token, p_stars: 6, p_text: null })).body;
+  const fbStaff = (await rpc('submit_feedback', { p_token: S, p_stars: 5, p_text: 'recensione dello staff' })).body;
+  check('feedback: Mod e Admin non possono lasciarne (D110)', fbStaff?.error === 'STAFF_NOT_ALLOWED', JSON.stringify(fbStaff));
   const fbText = `zz prova del database ${nick}: tutto molto buono`;
   const fbOk = (await rpc('submit_feedback', { p_token: t5Token, p_stars: 5, p_text: fbText })).body;
   await rpc('submit_feedback', { p_token: t5Token, p_stars: 4, p_text: null });
