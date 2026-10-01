@@ -16,3 +16,6 @@ contenuti/oggetti-segreti-posizioni.txt
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Prova di carico su un progetto Supabase separato (file generati, vedi prova-carico/LEGGIMI)
+prova-carico/
