@@ -12,12 +12,12 @@ export default {
   /** Una coppia trovata resta visibile per questo tempo, poi sparisce verso lo sfondo */
   matchShowS: 0.5,
 
-  // Punteggio (proposta per Q13): completare vale SEMPRE più che non completare
-  //   completato:     max(completedMin, base − perSecond × secondi − perExtraMove × (mosse − coppie))
-  //   non completato: perPairIncomplete × coppie trovate   (al massimo 7 × 30 = 210 < 300)
-  base: 1000,
-  perSecond: 3,
-  perExtraMove: 20,
-  completedMin: 300,
-  perPairIncomplete: 30,
+  // Punteggio (D106), da 0 a 1000:
+  //   pairPoints × coppie + pairPoints × precisione + pairPoints × tempo avanzato
+  //   precisione     = coppie / (coppie + errori × errorWeight)   (errori = mosse sbagliate; 0–1)
+  //   tempo avanzato = 1 − secondi / durata, solo se si trovano tutte le coppie (0–1)
+  // 1 coppia = 1xx, 4 coppie = 4xx, 8 coppie = 8xx + precisione + tempo (fino a 1000).
+  // errorWeight 0,5: all'inizio gli errori sono inevitabili (le carte non si sono ancora viste).
+  pairPoints: 100,
+  errorWeight: 0.5,
 };

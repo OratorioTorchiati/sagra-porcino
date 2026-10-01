@@ -180,19 +180,19 @@ function memoryActions(moves, lastMs) {
 }
 const mem1 = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'memory' })).body;
 const mem2 = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'memory' })).body;
-const tooSoon = (await rpc('submit_score', { p_attempt_id: mem2.attempt_id, p_raw_score: 942, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) })).body;
+const tooSoon = (await rpc('submit_score', { p_attempt_id: mem2.attempt_id, p_raw_score: 984, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) })).body;
 check('partita inviata prima del tempo reale necessario → esclusa', tooSoon?.status === 'rejected', JSON.stringify(tooSoon));
 await sleep(6500);
-const good = (await rpc('submit_score', { p_attempt_id: mem1.attempt_id, p_raw_score: 942, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) })).body;
-check('Memory coerente (10 mosse, 6 s) → valida con punteggio ricalcolato 942', good?.status === 'valid' && good.raw_score === 942, JSON.stringify(good));
+const good = (await rpc('submit_score', { p_attempt_id: mem1.attempt_id, p_raw_score: 984, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) })).body;
+check('Memory coerente (10 mosse, 6 s) → valida con punteggio ricalcolato 984', good?.status === 'valid' && good.raw_score === 984, JSON.stringify(good));
 const mem3 = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'memory' })).body;
 await sleep(6500);
-const perfect = (await rpc('submit_score', { p_attempt_id: mem3.attempt_id, p_raw_score: 982, p_stats: { durationMs: 6000 }, p_actions: memoryActions(8, 6000) })).body;
-check('Memory perfetto in 8 mosse → contato ma segnalato allo staff', perfect?.status === 'flagged' && perfect.raw_score === 982, JSON.stringify(perfect));
+const perfect = (await rpc('submit_score', { p_attempt_id: mem3.attempt_id, p_raw_score: 995, p_stats: { durationMs: 6000 }, p_actions: memoryActions(8, 6000) })).body;
+check('Memory perfetto in 8 mosse → contato ma segnalato allo staff', perfect?.status === 'flagged' && perfect.raw_score === 995, JSON.stringify(perfect));
 const wrongScore = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'cadono' })).body;
 const lie = (await rpc('submit_score', { p_attempt_id: wrongScore.attempt_id, p_raw_score: 999, p_stats: { durationMs: 1000 }, p_actions: [[500, 'catch', 'bomb', 100, 100], [700, 'catch', 'bomb', 100, 100], [900, 'catch', 'bomb', 100, 100]] })).body;
 check('Porcini che cadono: punteggio dichiarato diverso da quello delle azioni → escluso', lie?.status === 'rejected' && lie.raw_score === 0, JSON.stringify(lie));
-check('vale il migliore tra i tentativi validi', perfect?.best === 982);
+check('vale il migliore tra i tentativi validi', perfect?.best === 995);
 
 // Quiz: domande dal server SENZA risposta giusta; il punteggio lo calcola il server
 const quiz = (await rpc('start_attempt', { p_token: t5Token, p_game_id: 'quiz' })).body;
@@ -257,7 +257,7 @@ if (starts[1]?.attempt_id && perDay >= 2) {
   const best = card?.player?.best ?? {};
   const sum = Object.values(best).reduce((a, b) => a + b, 0);
   check('classifica: il mio totale è la somma dei migliori per gioco (senza normalizzare)', board?.ok && board.me?.total === sum && sum > 0, JSON.stringify(best));
-  check('classifica: Memory conta il migliore (982, anche se segnalato), non la somma dei tentativi', best.memory === 982);
+  check('classifica: Memory conta il migliore (995, anche se segnalato), non la somma dei tentativi', best.memory === 995);
   check('classifica: ho una posizione e i primi sono in ordine di punti', board?.me?.position >= 1 && board.top.every((e, i, all) => i === 0 || all[i - 1].total >= e.total));
   check('classifica: pari punti = stessa posizione', board.top.every((e, i, all) => i === 0 || (e.total === all[i - 1].total) === (e.position === all[i - 1].position)));
   check('classifica: al massimo i primi 20 (più eventuali pari merito del 20°)', board.top.every((e) => e.position <= 20));
@@ -332,7 +332,7 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const v = (await rpc('register', { p_nickname: vNick, p_avatar: 'riccio', p_pin: '31415', p_device_id: vDevice })).body;
   const vStart = (await rpc('start_attempt', { p_token: v.token, p_game_id: 'memory' })).body;
   await sleep(6500);
-  await rpc('submit_score', { p_attempt_id: vStart.attempt_id, p_raw_score: 942, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) });
+  await rpc('submit_score', { p_attempt_id: vStart.attempt_id, p_raw_score: 984, p_stats: { durationMs: 6000 }, p_actions: memoryActions(10, 6000) });
   const reset = await staff('reset_pin', { p_nickname: vNick, p_new_pin: '27182' });
   const oldSession = (await rpc('get_my_profile', { p_token: v.token })).body;
   const newLogin = (await rpc('login', { p_nickname: vNick, p_secret: '27182' })).body;
@@ -368,7 +368,7 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
     const approved = await staff('set_attempt_status', { p_attempt_id: mine.id, p_status: 'valid' });
     const after = await staff('review_list', {});
     const t5Card = (await rpc('get_player_card', { p_nickname: t5Nick })).body.player;
-    check('staff: partita approvata → esce dall\'elenco e resta valida (Memory 982)', approved?.ok && !after.attempts.some((a) => a.id === mine.id) && t5Card.best.memory === 982, JSON.stringify(t5Card.best));
+    check('staff: partita approvata → esce dall\'elenco e resta valida (Memory 995)', approved?.ok && !after.attempts.some((a) => a.id === mine.id) && t5Card.best.memory === 995, JSON.stringify(t5Card.best));
     check('staff: "scartare" una partita non si può (si conferma l\'esclusione o si banna)', (await staff('set_attempt_status', { p_attempt_id: mine.id, p_status: 'rejected' }))?.error === 'STATUS_INVALID');
   }
 
@@ -389,7 +389,7 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const x = (await rpc('register', { p_nickname: xNick, p_avatar: 'riccio', p_pin: '22122', p_device_id: xDevice })).body;
   const xStart = (await rpc('start_attempt', { p_token: x.token, p_game_id: 'memory' })).body;
   await sleep(6500);
-  const xRes = (await rpc('submit_score', { p_attempt_id: xStart.attempt_id, p_raw_score: 982, p_stats: { durationMs: 6000 }, p_actions: memoryActions(8, 6000) })).body;
+  const xRes = (await rpc('submit_score', { p_attempt_id: xStart.attempt_id, p_raw_score: 995, p_stats: { durationMs: 6000 }, p_actions: memoryActions(8, 6000) })).body;
   const excluded = await staff('ban_player', { p_attempt_id: xStart.attempt_id });
   const xLogin = (await rpc('login', { p_nickname: xNick, p_secret: '22122' })).body;
   const xAgain = (await rpc('register', { p_nickname: `zzy${suffix}`, p_avatar: 'riccio', p_pin: '22122', p_device_id: xDevice })).body;

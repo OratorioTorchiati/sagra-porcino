@@ -58,18 +58,23 @@ describe('createMemoryLogic', () => {
   });
 });
 
-describe('memoryScore (proposta Q13)', () => {
-  it('completato: 1000 − 3 × secondi − 20 × mosse in più', () => {
-    expect(memoryScore({ completed: true, seconds: 40, moves: 8, pairs: 8 }, config)).toBe(880);
-    expect(memoryScore({ completed: true, seconds: 60, moves: 14, pairs: 8 }, config)).toBe(1000 - 180 - 120);
+describe('memoryScore (D106): 100 × coppie + 100 × precisione + 100 × tempo avanzato', () => {
+  const cfg = { ...config, durationS: 120 };
+
+  it('ogni coppia vale una "centinaia": 1 coppia = 1xx, 4 coppie = 4xx', () => {
+    // 1 coppia al primo colpo: precisione piena → 200; dopo 99 errori → poco più di 100
+    expect(memoryScore({ completed: false, seconds: 120, moves: 1, pairs: 1 }, cfg)).toBe(200);
+    expect(memoryScore({ completed: false, seconds: 120, moves: 100, pairs: 1 }, cfg)).toBe(102);
+    // 4 coppie con 20 errori: 400 + 100 × 4 / (4 + 10)
+    expect(memoryScore({ completed: false, seconds: 120, moves: 24, pairs: 4 }, cfg)).toBe(429);
+    expect(memoryScore({ completed: false, seconds: 120, moves: 10, pairs: 0 }, cfg)).toBe(0);
   });
 
-  it('completato lento: mai sotto 300', () => {
-    expect(memoryScore({ completed: true, seconds: 179, moves: 40, pairs: 8 }, config)).toBe(300);
-  });
-
-  it('non completato: 30 per coppia', () => {
-    expect(memoryScore({ completed: false, seconds: 180, moves: 30, pairs: 5 }, config)).toBe(150);
+  it('completato: conta anche il tempo avanzato', () => {
+    // 8 coppie in 15 mosse (7 errori) e 70 secondi su 120: 800 + 70 + 42
+    expect(memoryScore({ completed: true, seconds: 70, moves: 15, pairs: 8 }, cfg)).toBe(911);
+    // perfetto e istantaneo = 1000
+    expect(memoryScore({ completed: true, seconds: 0, moves: 8, pairs: 8 }, cfg)).toBe(1000);
   });
 
   it('completare vale sempre più che non completare', () => {

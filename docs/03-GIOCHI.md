@@ -118,9 +118,11 @@ Punti dei porcini + bonus sopravvivenza. `stats`: porcini presi, porcini d'oro, 
 - Si gioca finché si trovano tutte le coppie, con un **tempo massimo di 3 minuti** (oltre, fine partita con le coppie trovate).
 - Finché le foto vere non ci sono, usare 8 illustrazioni segnaposto.
 
-### Punteggio grezzo
-- Completato: `max(200, 1000 − 3 × secondi − 20 × (mosse − 8))`, dove una "mossa" è una coppia di carte girate (minimo teorico 8).
-- Non completato nei 3 minuti: `50 × coppie trovate`.
+### Punteggio grezzo (D106)
+- `100 × coppie + 100 × precisione + 100 × tempo avanzato`, da 0 a 1000. Una "mossa" è una coppia di carte girate.
+- precisione = `coppie / (coppie + errori × 0,5)` (errori = mosse sbagliate): 1 coppia al primo colpo → 200, dopo 100 tentativi → ~102.
+- tempo avanzato = `1 − secondi / durata`, solo se si trovano tutte le coppie (altrimenti il tempo è finito: 0).
+- Quindi 1 coppia = 1xx, 4 coppie = 4xx, 8 coppie = 8xx + precisione (verso 900) + tempo (verso 1000).
 - `stats`: mosse, secondi, coppie trovate.
 
 ---
@@ -132,6 +134,6 @@ Punti dei porcini + bonus sopravvivenza. `stats`: porcini presi, porcini d'oro, 
 | Acchiappa il porcino | 1 | 60 s fissi | +5 × moltiplicatore (serie, a tempo) |
 | Quiz del paese | 1 | 5 × 20 s max | 150 + fino a 50 di velocità per risposta giusta (max 1000) |
 | Porcini che cadono | 2 | max 120 s, 3 vite | +10 porcino, +50 porcino d'oro, bonus vite |
-| Memory del paese | 2 | max 180 s | 1000 − tempo − mosse extra (min 200) |
+| Memory del paese | 2 | max 120 s (dal pannello) | 100 × coppie + 100 × precisione + 100 × tempo avanzato (max 1000) |
 
 Tutti poi **normalizzati a 0–1000 rispetto al record del gioco** (vedi `01-SPECIFICHE.md` §6.5).

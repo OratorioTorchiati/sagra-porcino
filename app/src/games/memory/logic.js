@@ -68,11 +68,10 @@ export function createMemoryLogic({ rng, cardIds }) {
   };
 }
 
-/** Punteggio grezzo del Memory (vedi config.js). */
+/** Punteggio grezzo del Memory, da 0 a 1000 (formula in config.js, D106; uguale nel server). */
 export function memoryScore({ completed, seconds, moves, pairs }, config) {
-  if (completed) {
-    const extraMoves = Math.max(0, moves - config.pairs);
-    return Math.max(config.completedMin, Math.round(config.base - config.perSecond * seconds - config.perExtraMove * extraMoves));
-  }
-  return config.perPairIncomplete * pairs;
+  const errors = Math.max(0, moves - pairs);
+  const precision = pairs > 0 ? pairs / (pairs + errors * config.errorWeight) : 0;
+  const timeLeft = completed ? Math.max(0, 1 - seconds / config.durationS) : 0;
+  return Math.round(config.pairPoints * (pairs + precision + timeLeft));
 }
