@@ -48,10 +48,10 @@ function formMarkup(anonymous) {
           .join('')}
       </fieldset>
       <label class="form-field">
-        <span class="form-field__label">Il tuo commento <span class="feedback-form__optional">(facoltativo)</span></span>
+        <span class="form-field__label">Commento <span class="feedback-form__optional">(facoltativo)</span>
+          <span class="feedback-form__count" id="feedback-count" aria-live="polite">0/${MAX_TEXT}</span></span>
         <textarea class="form-field__input feedback-form__text" name="text" rows="5" maxlength="${MAX_TEXT}"
           placeholder="Il piatto più buono, cosa ti ha stupito, cosa cambieresti…" aria-describedby="feedback-count"></textarea>
-        <span class="feedback-form__count" id="feedback-count" aria-live="polite">0/${MAX_TEXT}</span>
       </label>
       <div class="form-error" role="alert" hidden></div>
       <button type="submit" class="button">Invia</button>
