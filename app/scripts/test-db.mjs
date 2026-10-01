@@ -487,7 +487,17 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('registro: i cambi di ruolo ci sono', (await staff('log_list', { p_action: 'role' }))?.entries?.some((e) => e.target === t5Nick && e.details?.to === 'player'));
 
   // Menù dal pannello (023): lettura per tutti; un menù non valido viene rifiutato (niente menù vero: cambierebbe l'app)
-  check('menù: get_menu risponde anche senza account', (await rpc('get_menu')).body?.ok === true);
+  const menuNow = (await rpc('get_menu')).body;
+  check('menù: get_menu risponde anche senza account', menuNow?.ok === true);
+  // Versione del menù (035, D118): la configurazione dell'app porta la data dell'ultimo menù pubblicato
+  const menuVersionNow = (await rpc('get_app_config')).body?.menu_version;
+  check('menù: get_app_config porta la versione del menù', menuVersionNow === (menuNow?.menu?.updated_at ?? null), String(menuVersionNow));
+  if (menuNow?.menu?.categories) {
+    // Ripubblicato uguale (i giocatori non vedono differenze): la versione deve cambiare
+    const republished = await staff('set_menu', { p_menu: { categories: menuNow.menu.categories } });
+    const menuVersionAfter = (await rpc('get_app_config')).body?.menu_version;
+    check('menù: ripubblicarlo cambia la versione', republished?.ok && menuVersionAfter && menuVersionAfter !== menuVersionNow, String(menuVersionAfter));
+  }
   const badMenu = await staff('set_menu', { p_menu: { categories: [{ name: 'Primi', dishes: [{ name: '', price: 'nove' }] }] } });
   check('menù: piatto senza nome e prezzo non numerico → rifiutato', badMenu?.error === 'MENU_INVALID', JSON.stringify(badMenu));
   check('menù: un giocatore non può caricarlo', (await rpc('staff_set_menu', { p_token: t5Token, p_menu: { categories: [] } })).body?.error === 'NOT_STAFF');

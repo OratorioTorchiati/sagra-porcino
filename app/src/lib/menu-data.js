@@ -4,10 +4,13 @@
 import bundledMenu from 'virtual:menu';
 import { rpc, serverConfigured } from './api.js';
 import { readJson, writeJson } from './storage.js';
+import { menuVersion, onConfigChange } from './app-config.js';
 import { parseMenuCsv, SYMBOLS } from '../../scripts/menu-csv.js';
 
 const KEY = 'sagra-menu';
-// Il menù cambia di rado: per 1 ora dall'ultima richiesta si usa la copia sul telefono senza chiedere al server (D118)
+// Il menù cambia di rado: per 1 ora dall'ultima richiesta si usa la copia sul telefono senza chiedere al server (D118).
+// La configurazione dell'app (chiesta a ogni cambio pagina) porta la data dell'ultimo menù pubblicato: se non è
+// quella della copia sul telefono, il menù si richiede subito, senza aspettare l'ora.
 const CHECKED_KEY = 'sagra-menu-controllato';
 const FRESH_MS = 60 * 60 * 1000;
 const listeners = new Set();
@@ -28,14 +31,26 @@ export function onMenuChange(fn) {
   return () => listeners.delete(fn);
 }
 
+/** La configurazione dice che sul server c'è un menù diverso da quello sul telefono */
+function outdated() {
+  const version = menuVersion();
+  return version !== undefined && (version ?? null) !== (uploaded?.updated_at ?? null);
+}
+
+// Menù ripubblicato dal pannello: si scarica appena la configurazione lo segnala (la pagina Menù si ridisegna)
+onConfigChange(() => {
+  if (outdated()) refreshMenu();
+});
+
 /**
  * Aggiorna dal server (senza rete resta l'ultima copia). Se l'ultima richiesta è di meno di un'ora fa non chiede
- * nulla; `force` (pannello staff: prima di modificare e dopo aver pubblicato) chiede sempre.
+ * nulla, a meno che la configurazione segnali un menù nuovo; `force` (pannello staff: prima di modificare e dopo
+ * aver pubblicato) chiede sempre.
  */
 export async function refreshMenu({ force = false } = {}) {
   if (!serverConfigured) return currentMenu();
   const checkedAt = readJson(CHECKED_KEY, 0);
-  if (!force && Date.now() - checkedAt < FRESH_MS && Date.now() >= checkedAt) return currentMenu();
+  if (!force && !outdated() && Date.now() - checkedAt < FRESH_MS && Date.now() >= checkedAt) return currentMenu();
   try {
     const result = await rpc('get_menu');
     if (!result.ok) return currentMenu();

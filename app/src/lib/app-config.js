@@ -67,6 +67,11 @@ export function prizeText({ future = true, strong = true } = {}) {
   return `i ${b(`primi ${n}`)} ${future ? 'vinceranno' : 'vincono'} un premio!`;
 }
 
+/** Data dell'ultimo menù pubblicato dal pannello (null = mai; undefined = non ancora saputo) (D118) */
+export function menuVersion() {
+  return config?.menu_version;
+}
+
 /** Sezione a cui appartiene un percorso ("/giochi/quiz" → giochi), o null */
 export function sectionForPath(path) {
   return SECTIONS.find((s) => path === s.path || path.startsWith(`${s.path}/`)) ?? null;
@@ -90,6 +95,7 @@ export async function refreshAppConfig() {
       leaderboard_public: result.leaderboard_public,
       sections_order: result.sections_order,
       feedback_anonymous: result.feedback_anonymous,
+      menu_version: result.menu_version,
     };
     const changed = JSON.stringify(next) !== JSON.stringify(config);
     config = next;
