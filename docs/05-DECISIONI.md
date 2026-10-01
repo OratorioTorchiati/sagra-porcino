@@ -201,3 +201,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 10 (contenuti) | In corso | 2026-10-01 | Menù scaricato solo quando cambia (D118, migrazione 035 applicata: 149/149 controlli); piatti terminati (D119, migrazione 036 applicata: 151/151 controlli). |
 | 10 (contenuti) | In corso | 2026-10-01 | Menù solo dal database (D120): tolto quello incluso nell'app, `contenuti/menu.csv` pubblicato su dev con `npm run menu:upload`; 152/152 controlli. |
 | 10 (contenuti) | In corso | 2026-10-01 | Dopo accesso o registrazione alla home (D121). |
+| 10 (prova di carico) | In corso | 2026-10-01 | Prova di carico su dev (`npm run load-test`): 1000 giocatori in 5 minuti + 15 minuti di gioco. 101.900 richieste, 0 errori, tempi p50 264 ms / p95 307 ms / max 1,4 s; 11.030 partite tutte valide; risposte 52,8 MB (≈ 97 MB stimati con le intestazioni). Classifica 45% dei byte, configurazione 40% delle richieste. Script e prova del database si rifiutano di girare su prod. |

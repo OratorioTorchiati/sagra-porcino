@@ -18,6 +18,11 @@ const env = Object.fromEntries(
 );
 const BASE = env.VITE_SUPABASE_URL;
 const KEY = env.VITE_SUPABASE_ANON_KEY;
+// Crea giocatori di prova: mai sul progetto di produzione
+if (!BASE || BASE.includes('qasriofmaclcbppclmzz')) {
+  console.error('app/.env.local punta al progetto di PRODUZIONE (o a nessuno): la prova del database gira solo su sviluppo.');
+  process.exit(1);
+}
 const headers = { 'Content-Type': 'application/json', apikey: KEY, ...(KEY.startsWith('sb_') ? {} : { Authorization: `Bearer ${KEY}` }) };
 
 async function rpc(name, params) {
