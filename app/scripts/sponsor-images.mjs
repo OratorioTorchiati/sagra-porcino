@@ -9,7 +9,7 @@
 // Ogni immagine viene portata alla proporzione ESATTA del suo riquadro (1:1, 2:1 o 1:2) aggiungendo sfondo ai lati
 // che mancano, senza tagliare niente: così nella home tutte le caselle sono piene (D130). Lo sfondo aggiunto:
 // - se l'originale ha già uno sfondo pieno (angoli non trasparenti), lo stesso colore degli angoli;
-// - se è trasparente, bianco o quasi nero, in contrasto con il colore del logo, con un margine del 10% intorno;
+// - se è trasparente, bianco (quasi nero solo per i loghi tutti chiari, senza parti scure), con un margine del 10% intorno;
 // - oppure quello scelto a mano in BACKGROUNDS (es. il crema del sito dello sponsor).
 // Lato lungo al massimo 400 px (600 per i grandi). Scrive anche app/src/assets/sponsor/sponsors.json (nome, grande,
 // forma) che la home legge. Le copie di sponsor tolti da contenuti/sponsor/ vengono cancellate.
@@ -49,17 +49,21 @@ async function backgroundFor(buffer) {
     const avg = [0, 1, 2].map((k) => Math.round(corners.reduce((n, c) => n + c[k], 0) / 4));
     return { background: { r: avg[0], g: avg[1], b: avg[2], alpha: 1 }, transparent: false };
   }
-  // trasparente: colore medio del logo (pixel opachi) → sfondo chiaro se il logo è scuro, scuro se è chiaro
-  let sum = [0, 0, 0];
+  // trasparente: bianco, a meno che il logo sia quasi tutto chiaro (scritte bianche): allora quasi nero.
+  // Basta un po' di scuro (contorni, scritte: almeno il 3% del logo) perché il bianco sia lo sfondo giusto.
+  let dark = 0;
+  let light = 0;
   let n = 0;
   for (let i = 0; i < data.length; i += 4) {
     if (data[i + 3] > 200) {
-      sum = [sum[0] + data[i], sum[1] + data[i + 1], sum[2] + data[i + 2]];
+      const l = luminance([data[i], data[i + 1], data[i + 2]]);
+      if (l < 0.35) dark++;
+      else if (l > 0.8) light++;
       n++;
     }
   }
-  const logo = n ? sum.map((v) => v / n) : [0, 0, 0];
-  const background = luminance(logo) < 0.6 ? { r: 255, g: 255, b: 255, alpha: 1 } : { r: 34, g: 34, b: 34, alpha: 1 };
+  const lightLogo = n > 0 && dark / n < 0.03 && light / n > 0.5;
+  const background = lightLogo ? { r: 34, g: 34, b: 34, alpha: 1 } : { r: 255, g: 255, b: 255, alpha: 1 };
   return { background, transparent: true };
 }
 

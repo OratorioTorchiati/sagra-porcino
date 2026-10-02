@@ -20,33 +20,23 @@
     "shape": "square"
   },
   {
-    "name": "13-esempio",
+    "name": "2-banpub",
     "big": false,
     "shape": "square"
   },
   {
-    "name": "14-esempio",
+    "name": "3-marant",
     "big": false,
     "shape": "square"
   },
   {
-    "name": "2-esempio",
+    "name": "4-miu",
     "big": false,
     "shape": "square"
   },
   {
-    "name": "3-esempio",
-    "big": false,
-    "shape": "wide"
-  },
-  {
-    "name": "4-esempio",
-    "big": false,
-    "shape": "tall"
-  },
-  {
-    "name": "5-esempio",
-    "big": false,
+    "name": "5-ggcostruzioni-grande",
+    "big": true,
     "shape": "square"
   },
   {
@@ -55,14 +45,14 @@
     "shape": "wide"
   },
   {
-    "name": "7-esempio",
-    "big": false,
-    "shape": "square"
-  },
-  {
-    "name": "8-raffael-grande",
+    "name": "7-raffael-grande",
     "big": true,
     "shape": "wide"
+  },
+  {
+    "name": "8-deco",
+    "big": false,
+    "shape": "square"
   },
   {
     "name": "9-esempio",
