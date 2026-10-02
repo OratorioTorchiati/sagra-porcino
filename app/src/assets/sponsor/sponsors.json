@@ -1,0 +1,67 @@
+[
+  {
+    "name": "1-vit-grande",
+    "big": true,
+    "shape": "square"
+  },
+  {
+    "name": "10-esempio",
+    "big": false,
+    "shape": "square"
+  },
+  {
+    "name": "11-esempio",
+    "big": false,
+    "shape": "square"
+  },
+  {
+    "name": "12-esempio",
+    "big": false,
+    "shape": "square"
+  },
+  {
+    "name": "13-esempio",
+    "big": false,
+    "shape": "square"
+  },
+  {
+    "name": "2-esempio",
+    "big": false,
+    "shape": "square"
+  },
+  {
+    "name": "3-esempio",
+    "big": false,
+    "shape": "wide"
+  },
+  {
+    "name": "4-esempio",
+    "big": false,
+    "shape": "tall"
+  },
+  {
+    "name": "5-esempio",
+    "big": false,
+    "shape": "square"
+  },
+  {
+    "name": "6-esempio-grande",
+    "big": true,
+    "shape": "wide"
+  },
+  {
+    "name": "7-esempio",
+    "big": false,
+    "shape": "square"
+  },
+  {
+    "name": "8-esempio",
+    "big": false,
+    "shape": "square"
+  },
+  {
+    "name": "9-esempio",
+    "big": false,
+    "shape": "wide"
+  }
+]

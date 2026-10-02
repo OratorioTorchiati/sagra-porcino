@@ -39,7 +39,7 @@ Usare solo foto proprie o di cui si hanno i diritti.
 
 ## 3b. Sponsor → `sponsor/`
 
-Un'immagine per sponsor (PNG, JPG, WebP o SVG), meglio quadrata: nella home ognuna riempie un quadrato, quindi di un'immagine rettangolare si vede la parte centrale. L'**ordine** è quello alfabetico del nome del file, con i numeri contati come numeri: `1-macelleria.png`, `2-bar.jpg`, … `10-forno.png` (10 viene dopo 9). Poi `npm run sponsor-images` (dalla cartella `app`) le prepara per l'app. Adesso ci sono 12 immagini di esempio (`N-esempio.png`): vanno tolte quando arrivano quelle vere.
+Un'immagine per sponsor (PNG, JPG, WebP o SVG), meglio quadrata: nella home ognuna riempie un quadrato, quindi di un'immagine rettangolare si vede la parte centrale. L'**ordine** è quello alfabetico del nome del file, con i numeri contati come numeri: `1-macelleria.png`, `2-bar.jpg`, … `10-forno.png` (10 viene dopo 9). Gli sponsor **grandi** hanno il nome che finisce con `-grande` (`1-vit-grande.png`): occupano 2×2 riquadri se quadrati, 2 colonne se larghi, 2 righe se alti; meglio un originale di almeno 600 px. Poi `npm run sponsor-images` (dalla cartella `app`) le prepara per l'app. Adesso, oltre a Vit, ci sono 12 immagini di esempio (`N-esempio.png`, `6-esempio-grande.png`): vanno tolte quando arrivano quelle vere.
 
 ## 4. Oggetti segreti → `oggetti-segreti.txt`
 

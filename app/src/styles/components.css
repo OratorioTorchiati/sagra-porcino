@@ -305,6 +305,7 @@
 /* Sponsor (D126): tabella di quadrati, bordi sottili, fondo trasparente; l'immagine riempie il quadrato */
 .home-sponsors {
   margin-top: 1.25rem;
+  container-type: inline-size; /* la griglia misura le righe sulla larghezza di questo blocco (cqw) */
 }
 
 .home-sponsors__title {
@@ -315,6 +316,9 @@
 .home-sponsors__grid {
   display: grid;
   grid-template-columns: repeat(var(--sponsor-columns, 2), minmax(0, 1fr));
+  /* righe alte quanto una colonna: riquadri quadrati anche per i grandi che ne occupano più di uno (D129) */
+  grid-auto-rows: calc(100cqw / var(--sponsor-columns, 2));
+  grid-auto-flow: row dense;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -323,7 +327,6 @@
 }
 
 .home-sponsors__cell {
-  aspect-ratio: 1;
   overflow: hidden;
   background: transparent;
   border-right: 1px solid var(--color-border);
