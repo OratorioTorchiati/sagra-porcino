@@ -19,11 +19,22 @@ export function sponsorSpan({ big, shape }, columns) {
   return { cols: 2, rows: 2 };
 }
 
-/** [{ name, url, big, shape }] in ordine di nome del file */
+/**
+ * Come sta l'immagine nel suo riquadro (D129): lo riempie ("cover") se così se ne taglia al massimo il 15%;
+ * altrimenti si vede intera ("contain"), per non tagliare la scritta di un logo molto più largo o alto del riquadro.
+ */
+export function sponsorFit(ratio, { cols, rows }) {
+  if (!ratio) return 'cover';
+  const cell = cols / rows;
+  const kept = Math.min(ratio, cell) / Math.max(ratio, cell); // parte che resta visibile riempiendo
+  return kept >= 0.85 ? 'cover' : 'contain';
+}
+
+/** [{ name, url, big, shape, ratio }] in ordine di nome del file */
 export const SPONSORS = Object.keys(files)
   .sort(naturalCompare)
   .map((key) => {
     const name = key.split('/').pop().replace(/\.webp$/, '');
     const info = manifest.find((m) => m.name === name);
-    return { name, url: files[key], big: info?.big ?? false, shape: info?.shape ?? 'square' };
+    return { name, url: files[key], big: info?.big ?? false, shape: info?.shape ?? 'square', ratio: info?.ratio ?? null };
   });

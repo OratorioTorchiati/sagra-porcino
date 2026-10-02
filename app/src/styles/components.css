@@ -343,6 +343,12 @@
   -webkit-user-drag: none;
 }
 
+/* Logo molto più largo o alto del suo riquadro: intero, centrato, con un po' di margine (D129) */
+.home-sponsors__cell--contain img {
+  object-fit: contain;
+  padding: 6%;
+}
+
 .home__boxes {
   display: flex;
   flex-direction: column;

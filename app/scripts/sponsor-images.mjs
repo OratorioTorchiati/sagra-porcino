@@ -8,7 +8,7 @@
 //
 // Le proporzioni restano quelle dell'originale (niente ritagli qui): è la home a riempire ogni riquadro.
 // Lato lungo al massimo 400 px (600 per i grandi). Scrive anche app/src/assets/sponsor/sponsors.json (nome, grande,
-// forma) che la home legge. Le copie di sponsor tolti da contenuti/sponsor/ vengono cancellate.
+// forma, proporzioni) che la home legge. Le copie di sponsor tolti da contenuti/sponsor/ vengono cancellate.
 
 import sharp from 'sharp';
 import fs from 'node:fs';
@@ -48,7 +48,7 @@ for (const file of files) {
     .webp({ quality: QUALITY, alphaQuality: 90, effort: 6 })
     .toFile(target);
   const { width, height } = await sharp(target).metadata();
-  manifest.push({ name, big, shape });
+  manifest.push({ name, big, shape, ratio: Math.round(ratio * 1000) / 1000 });
   console.log(`${file} → assets/sponsor/${name}.webp  ${width}×${height}  ${Math.round(fs.statSync(target).size / 1024)} KB${big ? `  GRANDE (${shape})` : ''}`);
 }
 for (const old of fs.readdirSync(OUT)) {
