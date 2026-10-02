@@ -59,7 +59,7 @@ export function renderHome() {
       </header>
       <nav class="home__boxes" aria-label="Sezioni">${boxesMarkup()}</nav>
       <div class="home__sponsors">${sponsorsMarkup()}</div>
-      <p class="home__contact">Ti piace quest'app? <a href="mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(`App ${EVENT_NAME}`)}">Contattami</a></p>
+      <p class="home__contact">Ti piace quest'app?<br><a href="mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(`App ${EVENT_NAME}`)}">Contattami</a> per averne una tua</p>
     </main>
   `);
   const nav = element.querySelector('.home__boxes');

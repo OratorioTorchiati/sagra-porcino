@@ -343,7 +343,7 @@
   -webkit-user-drag: none;
 }
 
-/* "Ti piace quest'app? Contattami" (D131): piccolo, in fondo alla home */
+/* "Ti piace quest'app? Contattami per averne una tua" (D131): piccolo, in fondo alla home */
 .home__contact {
   margin: 1.75rem 0 0.5rem;
   text-align: center;
@@ -351,9 +351,13 @@
   color: var(--color-text-muted);
 }
 
+.home__contact {
+  line-height: 1.5;
+}
+
 .home__contact a {
   display: inline-block;
-  padding: 0.6rem 0.25rem; /* bersaglio di tocco comodo anche se il testo è piccolo */
+  padding: 0.5rem 0.1rem; /* bersaglio di tocco comodo anche se il testo è piccolo */
   color: var(--color-primary);
   font-weight: 700;
 }
