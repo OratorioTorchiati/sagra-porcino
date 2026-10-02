@@ -39,20 +39,28 @@ function howItWorksItems(state) {
 
 const listMarkup = (state) => `<ul class="how-it-works__list">${howItWorksItems(state).map((item) => `<li>${item}</li>`).join('')}</ul>`;
 
-/** Righe di stato sotto il nome del gioco: tentativi e (a capo) miglior punteggio */
+/** Righe di stato sotto il nome del gioco: avvisi (bloccato, illimitati) e record. I tentativi sono nel pallino (D128) */
 function cardStatus(game, state, player) {
   if (PRACTICE_MODE) return ['Gioca in prova'];
   if (!player) return ['Accedi per giocare'];
   if (!state) return ['Tocca per giocare'];
   const reason = blockedReason(state, game.id);
   const best = gameInfo(state, game.id)?.best;
-  const bestLine = best !== null && best !== undefined ? `Il tuo migliore: <strong>${best}</strong>` : null;
+  const bestLine = best !== null && best !== undefined ? `Il tuo record: <strong>${best}</strong>` : null;
   let first;
   if (reason?.code === 'closed') first = 'Gioco concluso';
   else if (reason) first = `🔒 ${reason.text}`;
   else if (state.unlimited) first = isStaffRole(currentPlayer()?.role) ? 'Staff: tentativi illimitati' : '♾️ Tentativi illimitati';
-  else first = `Tentativi oggi: <strong>${attemptsLeft(state, game.id)}/${state.attempts_per_day}</strong>`;
   return [first, bestLine].filter(Boolean);
+}
+
+/** Pallino in alto a destra con i tentativi rimasti oggi, es. "2/3" (D128); niente se illimitati o giochi chiusi */
+function attemptsBadge(game, state, player) {
+  if (PRACTICE_MODE || !player || !state || state.unlimited) return '';
+  const reason = blockedReason(state, game.id);
+  if (reason && reason.code !== 'no_attempts') return '';
+  const left = attemptsLeft(state, game.id);
+  return `<span class="game-card__badge${left === 0 ? ' game-card__badge--empty' : ''}" aria-label="Tentativi rimasti oggi: ${left} su ${state.attempts_per_day}">${left}/${state.attempts_per_day}</span>`;
 }
 
 function cardsMarkup(state, player) {
@@ -61,6 +69,7 @@ function cardsMarkup(state, player) {
       const reason = state && player ? blockedReason(state, game.id) : null;
       return `
         <a class="home-box game-card${reason ? ' game-card--locked' : ''}" href="#/giochi/${game.id}">
+          ${attemptsBadge(game, state, player)}
           <span class="home-box__icon" aria-hidden="true">${game.icon}</span>
           <span class="home-box__body">
             <span class="home-box__title home-box__title--game">${game.name}</span>

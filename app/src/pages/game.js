@@ -318,7 +318,7 @@ export function renderGame({ gameId }) {
         const bestEl = view.querySelector('.result-card__best');
         bestEl.innerHTML = server.status !== 'rejected' && server.raw_score >= server.best && server.raw_score > 0
           ? '🎉 Nuovo record personale!'
-          : `Il tuo migliore: <strong>${server.best}</strong>`;
+          : `Il tuo record: <strong>${server.best}</strong>`;
       }
     };
 
@@ -345,7 +345,7 @@ export function renderGame({ gameId }) {
         <div class="result-card">
           <p class="result-card__label">Punti</p>
           <p class="result-card__score">${result.rawScore}</p>
-          <p class="result-card__best">${isNewBest ? '🎉 Nuovo record personale!' : `Il tuo migliore: <strong>${best}</strong>`}</p>
+          <p class="result-card__best">${isNewBest ? '🎉 Nuovo record personale!' : `Il tuo record: <strong>${best}</strong>`}</p>
         </div>
         <dl class="result-stats">${statsMarkup(gameDef, result.stats)}</dl>
         ${notice('practice', '🧪 Partita di prova: il punteggio non viene salvato.')}
