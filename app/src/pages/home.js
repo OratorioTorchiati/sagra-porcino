@@ -1,5 +1,5 @@
 import { html } from '../lib/dom.js';
-import { EVENT_NAME } from '../config.js';
+import { EVENT_NAME, CONTACT_EMAIL } from '../config.js';
 import porcinoSvg from '../assets/porcino.svg?raw';
 import gamepadSvg from '../assets/gamepad.svg?raw';
 import { accountLinkMarkup } from '../components/account-link.js';
@@ -59,6 +59,7 @@ export function renderHome() {
       </header>
       <nav class="home__boxes" aria-label="Sezioni">${boxesMarkup()}</nav>
       <div class="home__sponsors">${sponsorsMarkup()}</div>
+      <p class="home__contact">Ti piace quest'app? <a href="mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(`App ${EVENT_NAME}`)}">Contattami</a></p>
     </main>
   `);
   const nav = element.querySelector('.home__boxes');
