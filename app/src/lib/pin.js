@@ -14,5 +14,8 @@ export function pinProblem(pin) {
 
 export const PIN_TOO_SIMPLE_MESSAGE = 'Troppo semplice! Sforzati di più';
 
-/** PIN scritto per entrare: 5 cifre (o 4 per gli account creati prima del PIN a 5 cifre) */
-export const LOGIN_PIN_RE = /^[0-9]{4,5}$/;
+/** PIN scritto per entrare: 5 cifre (D125: niente più PIN a 4 cifre, il database di produzione parte vuoto) */
+export const LOGIN_PIN_RE = /^[0-9]{5}$/;
+
+/** Lunghezza minima del nickname (come _nickname_problem sul server) */
+export const NICK_MIN = 3;

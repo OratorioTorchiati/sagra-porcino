@@ -7,7 +7,7 @@ import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { NetworkError, serverConfigured } from '../lib/api.js';
 import { currentPlayer, login } from '../lib/account.js';
 import { authErrorMessage, OFFLINE_MESSAGE, NOT_CONFIGURED_MESSAGE, takeAfterLogin } from './auth-messages.js';
-import { LOGIN_PIN_RE } from '../lib/pin.js';
+import { LOGIN_PIN_RE, NICK_MIN } from '../lib/pin.js';
 import { fillDeviceCode } from '../components/device-code.js';
 import { enhancePinInputs, refreshPinInput } from '../components/pin-input.js';
 
@@ -76,6 +76,13 @@ export function renderLogin() {
       errorBox.textContent = message;
       errorBox.hidden = false;
     };
+    // ENTRA si accende solo con nickname di almeno 3 caratteri e PIN di 5 cifre (D125)
+    let busy = false;
+    const updateSubmit = () => {
+      if (!busy) submit.disabled = form.elements.nickname.value.trim().length < NICK_MIN || !LOGIN_PIN_RE.test(form.elements.pin.value);
+    };
+    form.addEventListener('input', updateSubmit);
+    updateSubmit();
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -85,7 +92,9 @@ export function renderLogin() {
       if (!nickname || !LOGIN_PIN_RE.test(pin)) return showError('Scrivi il tuo nickname e il tuo PIN.');
       if (!serverConfigured) return showError(NOT_CONFIGURED_MESSAGE);
 
+      busy = true;
       submit.disabled = true;
+      submit.setAttribute('aria-busy', 'true');
       submit.textContent = 'Un attimo…';
       try {
         const result = await login({ nickname, pin });
@@ -99,8 +108,10 @@ export function renderLogin() {
       } catch (error) {
         showError(error instanceof NetworkError ? OFFLINE_MESSAGE : authErrorMessage({}));
       }
-      submit.disabled = false;
+      busy = false;
+      submit.removeAttribute('aria-busy');
       submit.textContent = 'ENTRA';
+      updateSubmit();
     });
 
     // PIN dimenticato: si scrive il nickname e compare il riquadro "Mostra questo allo staff"

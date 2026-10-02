@@ -381,6 +381,14 @@
   cursor: wait;
 }
 
+/* Accedi / Registrati con il modulo ancora incompleto (D125): spento, stessa scritta di sempre */
+.auth-form .button--play:disabled:not([aria-busy]) {
+  font-size: var(--text-xl);
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .button--secondary {
   width: 100%;
   background: var(--color-surface);

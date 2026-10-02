@@ -9,7 +9,7 @@ import { NetworkError, serverConfigured } from '../lib/api.js';
 import { currentPlayer, register, checkNickname } from '../lib/account.js';
 import { authErrorMessage, OFFLINE_MESSAGE, NOT_CONFIGURED_MESSAGE, takeAfterLogin } from './auth-messages.js';
 import { privacyContentMarkup } from './privacy.js';
-import { PIN_LENGTH, pinProblem, PIN_TOO_SIMPLE_MESSAGE } from '../lib/pin.js';
+import { PIN_LENGTH, pinProblem, PIN_TOO_SIMPLE_MESSAGE, NICK_MIN } from '../lib/pin.js';
 import { enhancePinInputs } from '../components/pin-input.js';
 
 const NICK_RE = /^[A-Za-z0-9_]{3,16}$/;
@@ -126,6 +126,21 @@ export function renderRegister() {
     }, 400);
   });
 
+  // INIZIA A GIOCARE si accende solo con nickname di almeno 3 caratteri, i due PIN di 5 cifre e le due caselle
+  // spuntate (D125); gli altri problemi (PIN diversi o troppo semplice, caratteri non ammessi) li dice il tasto
+  let busy = false;
+  const fiveDigits = (value) => /^[0-9]{5}$/.test(value);
+  const updateSubmit = () => {
+    if (busy) return;
+    const f = form.elements;
+    submit.disabled = !(
+      nickInput.value.trim().length >= NICK_MIN && fiveDigits(f.pin.value) && fiveDigits(f.pin2.value) && f.privacy.checked && f.age.checked
+    );
+  };
+  form.addEventListener('input', updateSubmit);
+  form.addEventListener('change', updateSubmit);
+  updateSubmit();
+
   // PIN troppo semplice: lo si dice appena scritte le 5 cifre (D82)
   const pinStatus = element.querySelector('[data-pin-status]');
   form.elements.pin.addEventListener('input', () => {
@@ -159,7 +174,9 @@ export function renderRegister() {
     if (problems.length) return showError(problems.join(' '));
     if (!serverConfigured) return showError(NOT_CONFIGURED_MESSAGE);
 
+    busy = true;
     submit.disabled = true;
+    submit.setAttribute('aria-busy', 'true');
     submit.textContent = 'Un attimo…';
     try {
       const result = await register({ nickname, avatar: charPicker.selectedId(), pin });
@@ -171,8 +188,10 @@ export function renderRegister() {
     } catch (error) {
       showError(error instanceof NetworkError ? OFFLINE_MESSAGE : authErrorMessage({}));
     }
-    submit.disabled = false;
+    busy = false;
+    submit.removeAttribute('aria-busy');
     submit.textContent = 'INIZIA A GIOCARE';
+    updateSubmit();
   });
 
   return {
