@@ -136,6 +136,7 @@ Questo file **ha la precedenza** sugli altri documenti. Aggiornarlo a ogni nuova
 | D130 | **Sponsor: tutte le caselle piene, niente tagli**. `npm run sponsor-images` porta ogni immagine alla proporzione esatta del suo riquadro (1:1; i grandi 2:1 o 1:2) aggiungendo sfondo ai lati che mancano: il colore degli angoli se l'originale ha uno sfondo pieno; se è trasparente bianco (quasi nero solo se il logo è tutto chiaro, senza contorni o scritte scure), con un margine del 10% intorno (il margine anche per ogni immagine con sfondo pieno da adattare alla casella, es. BeFunctional); oppure uno scelto a mano in `BACKGROUNDS` nello script (Raffael: crema #FEF9ED del suo sito). Tra le caselle 6 px di spazio, ognuna col suo bordo sottile. | Supera la regola "intera se taglierebbe troppo" provata per Raffael. |
 | D131 | **"Ti piace quest'app? Contattami per averne una tua"** in fondo alla home, piccolo: il link apre una nuova email a 1997giaquinto@gmail.com con oggetto "App Sagra del Porcino" (indirizzo in `app/src/config.js`, CONTACT_EMAIL). | Indirizzo visibile nel sito pubblico (scelta dell'utente). |
 | D132 | **Sponsor: ultima riga incompleta al centro**. La posizione di ogni sponsor la calcola l'app (stessa regola "riempi i buchi"); se l'ultima riga resta incompleta, i suoi sponsor si spostano al centro (uno solo su 3 colonne → colonna centrale; due → a metà colonna). La griglia usa mezze colonne per poterlo fare. | |
+| D133 | **Annullata D132**: l'ultima riga degli sponsor torna come prima (a sinistra, posizioni decise dalla griglia). Su richiesta, dopo averla vista. | |
 | D35 | Il repository e il sito appartengono all'**organizzazione GitHub `OratorioTorchiati`** (gratuita), così l'indirizzo non mostra l'account personale: **https://oratoriotorchiati.github.io/sagra-porcino/**. | La radice `oratoriotorchiati.github.io` resta libera per futuri progetti dell'oratorio. |
 
 ## Questioni aperte
@@ -224,4 +225,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 10 (contenuti) | In corso | 2026-10-02 | Primi loghi veri disposti: Vit, Ban Pub, Marant, Miù Café, Giaquinto Costruzioni (grande), Raffael (grande), Decò; gli altri 5 posti con gli esempi. |
 | 10 (contenuti) | In corso | 2026-10-02 | "Ti piace quest'app? Contattami per averne una tua" in fondo alla home (D131). |
 | 10 (contenuti) | In corso | 2026-10-02 | Sponsor: BeFunctional (dal PDF vettoriale), Franco, Giaquinto Gioielli; 11 sponsor + 1 esempio (6), griglia 3 colonne piena (18 caselle). |
-| 10 (contenuti) | In corso | 2026-10-02 | Sponsor: Artemisia (12); ultima riga incompleta al centro (D132). |
+| 10 (contenuti) | In corso | 2026-10-02 | Sponsor: Artemisia (12). Ultima riga al centro provata e annullata (D132, D133). |
