@@ -586,6 +586,12 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   const configAfter = (await rpc('get_app_config')).body;
   check('aspetto e feedback rimessi com\'erano; l\'app legge ordine e feedback anonimi', sameOrder?.ok && JSON.stringify(configAfter?.sections_order) === JSON.stringify(settings.sections_order) &&
     configAfter.sections?.feedback === settings.sections.feedback && configAfter.feedback_anonymous === settings.feedback_anonymous, JSON.stringify(configAfter));
+  // Sponsor (038, D126): sezione accendibile ma non ordinabile; colonne da 1 a 4
+  check('sponsor: non è tra le sezioni da ordinare', !settings.sections_order.includes('sponsor') && typeof settings.sections?.sponsor === 'boolean', JSON.stringify(settings.sections_order));
+  check('sponsor: messo nell\'ordine → rifiutato', (await staff('update_settings', { p_values: { sections_order: [...settings.sections_order, 'sponsor'] } }))?.error === 'ORDER_INVALID');
+  check('sponsor: 5 colonne → rifiutate', (await staff('update_settings', { p_values: { sponsor_columns: 5 } }))?.error === 'SPONSOR_COLUMNS_INVALID');
+  const sameCols = await staff('update_settings', { p_values: { sponsor_columns: settings.sponsor_columns, sections: { sponsor: settings.sections.sponsor } } });
+  check('sponsor: colonne salvate (stesse) e lette dall\'app', sameCols?.ok && (await rpc('get_app_config')).body?.sponsor_columns === settings.sponsor_columns, String(settings.sponsor_columns));
   if (mine) {
     const rep = await staff('attempt_replay', { p_attempt_id: mine.id });
     check('staff: "Rivedi partita" riceve seme, azioni e durata', rep?.ok && rep.attempt.seed !== null && Array.isArray(rep.attempt.actions) && rep.attempt.actions.length > 5 && rep.attempt.stats.durationMs > 0);

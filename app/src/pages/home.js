@@ -3,7 +3,8 @@ import { EVENT_NAME } from '../config.js';
 import porcinoSvg from '../assets/porcino.svg?raw';
 import gamepadSvg from '../assets/gamepad.svg?raw';
 import { accountLinkMarkup } from '../components/account-link.js';
-import { sectionOn, onConfigChange, refreshAppConfig, winnersCount, orderedSections } from '../lib/app-config.js';
+import { sectionOn, onConfigChange, refreshAppConfig, winnersCount, orderedSections, sponsorColumns } from '../lib/app-config.js';
+import { SPONSORS } from '../lib/sponsors.js';
 
 // Riquadri della home: si vedono solo quelli delle sezioni accese dall'Admin (D93)
 const BOXES = [
@@ -30,6 +31,17 @@ const boxesMarkup = () =>
     )
     .join('');
 
+// Sponsor (D126): sempre in fondo, solo da guardare (niente link); ogni immagine riempie il suo quadrato
+const sponsorsMarkup = () =>
+  sectionOn('sponsor') && SPONSORS.length
+    ? `<section class="home-sponsors" aria-labelledby="home-sponsors-title">
+        <h2 class="home-sponsors__title" id="home-sponsors-title">I nostri sponsor:</h2>
+        <ul class="home-sponsors__grid" style="--sponsor-columns: ${sponsorColumns()}">
+          ${SPONSORS.map((s) => `<li class="home-sponsors__cell"><img src="${s.url}" alt="" loading="lazy" decoding="async" draggable="false"></li>`).join('')}
+        </ul>
+      </section>`
+    : '';
+
 export function renderHome() {
   const element = html(`
     <main class="page home">
@@ -39,10 +51,15 @@ export function renderHome() {
         <h1 class="home__title">${EVENT_NAME}</h1>
       </header>
       <nav class="home__boxes" aria-label="Sezioni">${boxesMarkup()}</nav>
+      <div class="home__sponsors">${sponsorsMarkup()}</div>
     </main>
   `);
   const nav = element.querySelector('.home__boxes');
-  const stop = onConfigChange(() => (nav.innerHTML = boxesMarkup()));
+  const sponsors = element.querySelector('.home__sponsors');
+  const stop = onConfigChange(() => {
+    nav.innerHTML = boxesMarkup();
+    sponsors.innerHTML = sponsorsMarkup();
+  });
   refreshAppConfig();
   return { title: '', element, destroy: stop };
 }

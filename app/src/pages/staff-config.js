@@ -7,7 +7,8 @@ import { escapeHtml } from '../lib/dom.js';
 import { GAMES } from '../games/registry.js';
 import { isoToRomeLocal, romeLocalToIso, downloadText } from '../lib/staff.js';
 import { currentMenu, refreshMenu, countDishes, readMenuFile, menuTemplate } from '../lib/menu-data.js';
-import { SECTIONS, FUTURE_SECTIONS, refreshAppConfig } from '../lib/app-config.js';
+import { SECTIONS, SPONSOR_SECTION, FUTURE_SECTIONS, refreshAppConfig } from '../lib/app-config.js';
+import { SPONSORS } from '../lib/sponsors.js';
 
 /** Schede aperte (restano aperte anche quando la pagina si ridisegna, es. dopo Salva) */
 const openCards = new Set();
@@ -429,6 +430,20 @@ const feedbackBody = (res) => `
     </div>
   </div>`;
 
+// ---------- Sponsor (D126): solo il numero di colonne; le immagini sono nell'app ----------
+
+const sponsorBody = (res) => `
+  <div class="config-group">
+    <h4 class="config-group__title">Tabella nella home</h4>
+    <label class="config-row">
+      <span class="config-row__label">Colonne
+        <span class="config-row__hint">Da 1 a 4. Sempre in fondo alla home, dopo le altre sezioni</span></span>
+      <input class="form-field__input config-row__number" name="sponsor_columns" type="number" min="1" max="4" inputmode="numeric"
+        value="${res.sponsor_columns ?? 2}" aria-label="Colonne degli sponsor (da 1 a 4)">
+    </label>
+    <p class="config-row__hint">${SPONSORS.length ? `Immagini nell'app: <strong>${SPONSORS.length}</strong>.` : 'Nessuna immagine ancora: finché mancano, nella home non compare nulla.'}</p>
+  </div>`;
+
 // ---------- Aspetto (D108): ordine delle sezioni, colori (in arrivo) ----------
 
 /** Sezioni nell'ordine salvato (quelle mancanti in fondo) */
@@ -490,6 +505,11 @@ export async function renderConfigSection(root, ctx) {
           }),
         )
         .join('')}
+      ${cardMarkup({
+        ...SPONSOR_SECTION,
+        toggle: switchMarkup('section_sponsor', res.sections?.sponsor === true, 'Sponsor: visibili nella home'),
+        body: sponsorBody(res),
+      })}
       ${cardMarkup({ id: 'aspetto', icon: '🎨', label: 'Aspetto', body: aspectBody(res) })}
       <section class="config-card config-card--future">
         <h3 class="config-card__title">In arrivo</h3>
@@ -622,8 +642,16 @@ export async function renderConfigSection(root, ctx) {
       form.winners.focus();
       return;
     }
+    const sponsorCols = Number(form.sponsor_columns.value);
+    if (!(Number.isInteger(sponsorCols) && sponsorCols >= 1 && sponsorCols <= 4)) {
+      error.textContent = 'Sponsor: le colonne vanno da 1 a 4.';
+      error.hidden = false;
+      form.sponsor_columns.focus();
+      return;
+    }
     const values = {
-      sections: Object.fromEntries(SECTIONS.map((s) => [s.id, form[`section_${s.id}`].checked])),
+      sections: Object.fromEntries([...SECTIONS, SPONSOR_SECTION].map((s) => [s.id, form[`section_${s.id}`].checked])),
+      sponsor_columns: sponsorCols,
       winners,
       leaderboard_public: form.leaderboard_public.checked,
       attempts_per_day: perDay, // 0 = illimitati
@@ -634,7 +662,7 @@ export async function renderConfigSection(root, ctx) {
       feedback_anonymous: form.feedback_anonymous.checked,
       sections_order: [...orderBody.rows].map((tr) => tr.dataset.id),
     };
-    const off = SECTIONS.filter((s) => !values.sections[s.id]).map((s) => s.label);
+    const off = [...SECTIONS, SPONSOR_SECTION].filter((s) => !values.sections[s.id]).map((s) => s.label);
     const confirmed = await askDialog({
       title: 'Salvare le configurazioni?',
       body: `<p>Valgono subito per tutti.</p>${off.length ? `<p>Sezioni spente (spariscono dalla home): <strong>${off.join(', ')}</strong>.</p>` : ''}`,

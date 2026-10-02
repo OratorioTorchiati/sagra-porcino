@@ -37,6 +37,10 @@ fontana.jpg;La fontana vecchia
 
 Usare solo foto proprie o di cui si hanno i diritti.
 
+## 3b. Sponsor → `sponsor/`
+
+Un'immagine per sponsor (PNG, JPG, WebP o SVG), meglio quadrata: nella home ognuna riempie un quadrato, quindi di un'immagine rettangolare si vede la parte centrale. L'**ordine** è quello alfabetico del nome del file, con i numeri contati come numeri: `1-macelleria.png`, `2-bar.jpg`, … `10-forno.png` (10 viene dopo 9). Poi `npm run sponsor-images` (dalla cartella `app`) le prepara per l'app. Adesso ci sono 12 immagini di esempio (`N-esempio.png`): vanno tolte quando arrivano quelle vere.
+
 ## 4. Oggetti segreti → `oggetti-segreti.txt`
 
 5 oggetti, con nome e breve descrizione dell'illustrazione (le illustrazioni per app e adesivi le disegna l'app). I **posti** in cui verranno attaccati **non vanno scritti qui**.

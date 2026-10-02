@@ -16,11 +16,13 @@ export const SECTIONS = [
   { id: 'feedback', label: 'Feedback', icon: '💬', path: '/feedback', defaultOn: false },
 ];
 
+/** Sponsor (D126): si accende e si spegne, ma non si ordina: sempre in fondo alla home, senza pagina propria */
+export const SPONSOR_SECTION = { id: 'sponsor', label: 'Sponsor', icon: '🤝', defaultOn: false };
+
 /** Sezioni che arriveranno (nelle Configurazioni si vedono come "in arrivo") */
 export const FUTURE_SECTIONS = [
   { label: 'Mappa', icon: '🗺️' },
   { label: 'Calendario eventi', icon: '📅' },
-  { label: 'Sponsor', icon: '🤝' },
 ];
 
 const KEY = 'sagra-config';
@@ -30,7 +32,7 @@ let config = readJson(KEY, null); // { sections: { menu: true, ... }, winners, l
 /** La sezione è accesa? (senza informazioni: come da `defaultOn`) */
 export function sectionOn(id) {
   const value = config?.sections?.[id];
-  return typeof value === 'boolean' ? value : SECTIONS.find((s) => s.id === id)?.defaultOn !== false;
+  return typeof value === 'boolean' ? value : [...SECTIONS, SPONSOR_SECTION].find((s) => s.id === id)?.defaultOn !== false;
 }
 
 /** Sezioni nell'ordine deciso dall'Admin (Aspetto, D108); quelle non nell'elenco in fondo */
@@ -43,6 +45,12 @@ export function orderedSections() {
 /** Si possono lasciare feedback anche senza account? (D108, senza informazioni: no) */
 export function feedbackAnonymous() {
   return config?.feedback_anonymous === true;
+}
+
+/** Colonne della tabella degli sponsor nella home (D126): da 1 a 4, di base 2 */
+export function sponsorColumns() {
+  const n = config?.sponsor_columns;
+  return Number.isInteger(n) && n >= 1 && n <= 4 ? n : 2;
 }
 
 /** Quanti vincono un premio (D101): 0 = nessun premio. Senza informazioni: 10 */
@@ -103,6 +111,7 @@ export async function refreshAppConfig({ force = false } = {}) {
       sections_order: result.sections_order,
       feedback_anonymous: result.feedback_anonymous,
       menu_version: result.menu_version,
+      sponsor_columns: result.sponsor_columns,
     };
     const changed = JSON.stringify(next) !== JSON.stringify(config);
     config = next;
