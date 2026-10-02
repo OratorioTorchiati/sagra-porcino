@@ -4,7 +4,7 @@ import porcinoSvg from '../assets/porcino.svg?raw';
 import gamepadSvg from '../assets/gamepad.svg?raw';
 import { accountLinkMarkup } from '../components/account-link.js';
 import { sectionOn, onConfigChange, refreshAppConfig, winnersCount, orderedSections, sponsorColumns } from '../lib/app-config.js';
-import { SPONSORS, sponsorSpan } from '../lib/sponsors.js';
+import { SPONSORS, sponsorLayout } from '../lib/sponsors.js';
 
 // Riquadri della home: si vedono solo quelli delle sezioni accese dall'Admin (D93)
 const BOXES = [
@@ -32,19 +32,17 @@ const boxesMarkup = () =>
     .join('');
 
 // Sponsor (D126): sempre in fondo, solo da guardare (niente link); ogni immagine riempie il suo riquadro.
-// I grandi (D129) occupano più riquadri; gli altri riempiono i buchi (es. il 2 accanto al primo grande)
-const sponsorCell = (s, columns) => {
-  const { cols, rows } = sponsorSpan(s, columns);
-  const span = cols > 1 || rows > 1 ? ` style="grid-column: span ${cols}; grid-row: span ${rows}"` : '';
-  return `<li class="home-sponsors__cell"${span}><img src="${s.url}" alt="" loading="lazy" decoding="async" draggable="false"></li>`;
-};
+// I grandi (D129) occupano più riquadri; gli altri riempiono i buchi (es. il 2 accanto al primo grande); l'ultima riga
+// incompleta va al centro (D132). La griglia ha mezze colonne: ogni sponsor ne occupa 2 per colonna.
+const sponsorCell = ({ item, row, col, cols, rows }) =>
+  `<li class="home-sponsors__cell" style="grid-column: ${col} / span ${cols * 2}; grid-row: ${row} / span ${rows}"><img src="${item.url}" alt="" loading="lazy" decoding="async" draggable="false"></li>`;
 
 const sponsorsMarkup = () =>
   sectionOn('sponsor') && SPONSORS.length
     ? `<section class="home-sponsors" aria-labelledby="home-sponsors-title">
         <h2 class="home-sponsors__title" id="home-sponsors-title">I nostri sponsor:</h2>
         <ul class="home-sponsors__grid" style="--sponsor-columns: ${sponsorColumns()}">
-          ${SPONSORS.map((s) => sponsorCell(s, sponsorColumns())).join('')}
+          ${sponsorLayout(SPONSORS, sponsorColumns()).map(sponsorCell).join('')}
         </ul>
       </section>`
     : '';

@@ -315,12 +315,12 @@
 
 .home-sponsors__grid {
   display: grid;
-  grid-template-columns: repeat(var(--sponsor-columns, 2), minmax(0, 1fr));
+  /* mezze colonne (D132): ogni sponsor ne occupa 2 per colonna, così l'ultima riga si centra anche a metà */
+  grid-template-columns: repeat(calc(var(--sponsor-columns, 2) * 2), minmax(0, 1fr));
   /* righe alte quanto una colonna: riquadri quadrati anche per i grandi che ne occupano più di uno (D129) */
   --sponsor-gap: 6px;
   gap: var(--sponsor-gap);
   grid-auto-rows: calc((100cqw - (var(--sponsor-columns, 2) - 1) * var(--sponsor-gap)) / var(--sponsor-columns, 2));
-  grid-auto-flow: row dense;
   margin: 0;
   padding: 0;
   list-style: none;
