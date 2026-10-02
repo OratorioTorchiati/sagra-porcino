@@ -9,7 +9,7 @@
 // Ogni immagine viene portata alla proporzione ESATTA del suo riquadro (1:1, 2:1 o 1:2) aggiungendo sfondo ai lati
 // che mancano, senza tagliare niente: così nella home tutte le caselle sono piene (D130). Lo sfondo aggiunto:
 // - se l'originale ha già uno sfondo pieno (angoli non trasparenti), lo stesso colore degli angoli;
-// - se è trasparente, bianco (quasi nero solo per i loghi tutti chiari, senza parti scure), con un margine del 10% intorno;
+// - se è trasparente, bianco (quasi nero solo per i loghi tutti chiari, senza parti scure), con un margine del 10% intorno (margine anche per ogni immagine da adattare);
 // - oppure quello scelto a mano in BACKGROUNDS (es. il crema del sito dello sponsor).
 // Lato lungo al massimo 400 px (600 per i grandi). Scrive anche app/src/assets/sponsor/sponsors.json (nome, grande,
 // forma) che la home legge. Le copie di sponsor tolti da contenuti/sponsor/ vengono cancellate.
@@ -85,14 +85,16 @@ for (const file of files) {
   const found = await backgroundFor(original);
   const key = name.replace(/^[0-9]+-/, '').replace(/-grande$/, '');
   const background = BACKGROUNDS[key] ? hex(BACKGROUNDS[key]) : found.background;
-  // loghi trasparenti: un po' di margine tutto intorno prima di arrivare alla proporzione del riquadro
   const meta = await sharp(original).metadata();
-  const m = found.transparent ? Math.round(Math.max(meta.width, meta.height) * MARGIN) : 0;
-  const w = meta.width + 2 * m;
-  const h = meta.height + 2 * m;
   const ratio = meta.width / meta.height;
   const shape = ratio >= WIDE ? 'wide' : ratio <= 1 / WIDE ? 'tall' : 'square';
   const want = big ? TARGET[shape] : 1;
+  // un po' di margine tutto intorno (così il logo non tocca bordo e angoli arrotondati della casella): per i loghi
+  // trasparenti e per tutte le immagini che vanno adattate alla proporzione del riquadro
+  const adapted = Math.abs(ratio / want - 1) > 0.05;
+  const m = found.transparent || adapted ? Math.round(Math.max(meta.width, meta.height) * MARGIN) : 0;
+  const w = meta.width + 2 * m;
+  const h = meta.height + 2 * m;
   // sfondo aggiunto ai lati che mancano per arrivare alla proporzione del riquadro (niente tagli)
   const W = w / h >= want ? w : Math.round(h * want);
   const H = w / h >= want ? Math.round(w / want) : h;

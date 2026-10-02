@@ -15,6 +15,11 @@
     "shape": "square"
   },
   {
+    "name": "12-artemisia",
+    "big": false,
+    "shape": "square"
+  },
+  {
     "name": "2-banpub",
     "big": false,
     "shape": "square"
