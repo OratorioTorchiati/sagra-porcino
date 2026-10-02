@@ -2,85 +2,71 @@
   {
     "name": "1-vit-grande",
     "big": true,
-    "shape": "square",
-    "ratio": 1
+    "shape": "square"
   },
   {
     "name": "10-esempio",
     "big": false,
-    "shape": "wide",
-    "ratio": 1.429
+    "shape": "wide"
   },
   {
     "name": "11-esempio",
     "big": false,
-    "shape": "square",
-    "ratio": 0.75
+    "shape": "square"
   },
   {
     "name": "12-esempio",
     "big": false,
-    "shape": "square",
-    "ratio": 1
+    "shape": "square"
   },
   {
     "name": "13-esempio",
     "big": false,
-    "shape": "square",
-    "ratio": 1.333
+    "shape": "square"
   },
   {
     "name": "14-esempio",
     "big": false,
-    "shape": "square",
-    "ratio": 0.75
+    "shape": "square"
   },
   {
     "name": "2-esempio",
     "big": false,
-    "shape": "square",
-    "ratio": 1
+    "shape": "square"
   },
   {
     "name": "3-esempio",
     "big": false,
-    "shape": "wide",
-    "ratio": 1.6
+    "shape": "wide"
   },
   {
     "name": "4-esempio",
     "big": false,
-    "shape": "tall",
-    "ratio": 0.714
+    "shape": "tall"
   },
   {
     "name": "5-esempio",
     "big": false,
-    "shape": "square",
-    "ratio": 1
+    "shape": "square"
   },
   {
     "name": "6-esempio",
     "big": false,
-    "shape": "wide",
-    "ratio": 1.5
+    "shape": "wide"
   },
   {
     "name": "7-esempio",
     "big": false,
-    "shape": "square",
-    "ratio": 0.75
+    "shape": "square"
   },
   {
     "name": "8-raffael-grande",
     "big": true,
-    "shape": "wide",
-    "ratio": 2.503
+    "shape": "wide"
   },
   {
     "name": "9-esempio",
     "big": false,
-    "shape": "square",
-    "ratio": 1
+    "shape": "square"
   }
 ]

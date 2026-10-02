@@ -4,7 +4,7 @@ import porcinoSvg from '../assets/porcino.svg?raw';
 import gamepadSvg from '../assets/gamepad.svg?raw';
 import { accountLinkMarkup } from '../components/account-link.js';
 import { sectionOn, onConfigChange, refreshAppConfig, winnersCount, orderedSections, sponsorColumns } from '../lib/app-config.js';
-import { SPONSORS, sponsorSpan, sponsorFit } from '../lib/sponsors.js';
+import { SPONSORS, sponsorSpan } from '../lib/sponsors.js';
 
 // Riquadri della home: si vedono solo quelli delle sezioni accese dall'Admin (D93)
 const BOXES = [
@@ -36,8 +36,7 @@ const boxesMarkup = () =>
 const sponsorCell = (s, columns) => {
   const { cols, rows } = sponsorSpan(s, columns);
   const span = cols > 1 || rows > 1 ? ` style="grid-column: span ${cols}; grid-row: span ${rows}"` : '';
-  const fit = sponsorFit(s.ratio, { cols, rows }) === 'contain' ? ' home-sponsors__cell--contain' : '';
-  return `<li class="home-sponsors__cell${fit}"${span}><img src="${s.url}" alt="" loading="lazy" decoding="async" draggable="false"></li>`;
+  return `<li class="home-sponsors__cell"${span}><img src="${s.url}" alt="" loading="lazy" decoding="async" draggable="false"></li>`;
 };
 
 const sponsorsMarkup = () =>
