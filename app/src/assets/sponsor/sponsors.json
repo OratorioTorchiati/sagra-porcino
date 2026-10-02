@@ -30,13 +30,13 @@
     "shape": "square"
   },
   {
-    "name": "4-deco",
+    "name": "4-befunctional",
     "big": false,
-    "shape": "square"
+    "shape": "wide"
   },
   {
-    "name": "5-ggcostruzioni-grande",
-    "big": true,
+    "name": "5-deco",
+    "big": false,
     "shape": "square"
   },
   {
@@ -45,18 +45,18 @@
     "shape": "wide"
   },
   {
-    "name": "7-raffael-grande",
-    "big": true,
-    "shape": "wide"
-  },
-  {
-    "name": "8-miu",
+    "name": "7-miu",
     "big": false,
     "shape": "square"
   },
   {
-    "name": "9-befunctional",
-    "big": false,
+    "name": "8-ggcostruzioni-grande",
+    "big": true,
+    "shape": "square"
+  },
+  {
+    "name": "9-raffael-grande",
+    "big": true,
     "shape": "wide"
   }
 ]
