@@ -222,3 +222,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 10 (contenuti) | In corso | 2026-10-02 | Sponsor: caselle tutte piene con sfondo aggiunto, spazio tra le caselle, Raffael su crema (D130). |
 | 10 (contenuti) | In corso | 2026-10-02 | Primi loghi veri disposti: Vit, Ban Pub, Marant, Miù Café, Giaquinto Costruzioni (grande), Raffael (grande), Decò; gli altri 5 posti con gli esempi. |
 | 10 (contenuti) | In corso | 2026-10-02 | "Ti piace quest'app? Contattami per averne una tua" in fondo alla home (D131). |
+| 10 (contenuti) | In corso | 2026-10-02 | Sponsor: BeFunctional (dal PDF vettoriale), Franco, Giaquinto Gioielli; 11 sponsor + 1 esempio (6), griglia 3 colonne piena (18 caselle). |

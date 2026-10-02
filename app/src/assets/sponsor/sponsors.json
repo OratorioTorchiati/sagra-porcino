@@ -5,17 +5,12 @@
     "shape": "square"
   },
   {
-    "name": "10-esempio",
-    "big": false,
-    "shape": "wide"
-  },
-  {
-    "name": "11-esempio",
+    "name": "10-franco",
     "big": false,
     "shape": "square"
   },
   {
-    "name": "12-esempio",
+    "name": "11-giaquinto",
     "big": false,
     "shape": "square"
   },
@@ -55,8 +50,8 @@
     "shape": "square"
   },
   {
-    "name": "9-esempio",
+    "name": "9-befunctional",
     "big": false,
-    "shape": "square"
+    "shape": "wide"
   }
 ]
