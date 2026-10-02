@@ -40,23 +40,23 @@
     "shape": "square"
   },
   {
-    "name": "6-esempio",
-    "big": false,
-    "shape": "wide"
-  },
-  {
-    "name": "7-miu",
-    "big": false,
-    "shape": "square"
-  },
-  {
-    "name": "8-ggcostruzioni-grande",
+    "name": "6-ggcostruzioni-grande",
     "big": true,
     "shape": "square"
   },
   {
-    "name": "9-raffael-grande",
+    "name": "7-raffael-grande",
     "big": true,
     "shape": "wide"
+  },
+  {
+    "name": "8-esempio",
+    "big": false,
+    "shape": "wide"
+  },
+  {
+    "name": "9-miu",
+    "big": false,
+    "shape": "square"
   }
 ]
