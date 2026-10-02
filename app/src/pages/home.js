@@ -9,8 +9,8 @@ import { SPONSORS } from '../lib/sponsors.js';
 // Riquadri della home: si vedono solo quelli delle sezioni accese dall'Admin (D93)
 const BOXES = [
   { section: 'menu', href: '#/menu', icon: '🍽️', title: 'Menù', text: 'Guarda i piatti e i prezzi' },
-  { section: 'giochi', href: '#/giochi', icon: gamepadSvg, title: 'Minigiochi', text: () => (winnersCount() > 0 ? 'Gioca, fai punti e vinci un premio!' : 'Gioca e fai punti!') },
-  { section: 'feedback', href: '#/feedback', icon: '💬', title: 'Feedback', text: 'Dicci cosa ne pensi della sagra' },
+  { section: 'giochi', href: '#/giochi', icon: gamepadSvg, title: 'Minigiochi', text: () => (winnersCount() > 0 ? 'Gioca e vinci un premio!' : 'Gioca e fai punti!') },
+  { section: 'feedback', href: '#/feedback', icon: '💬', title: 'Feedback', text: 'Dicci cosa ne pensi' },
 ];
 
 const boxesMarkup = () =>
