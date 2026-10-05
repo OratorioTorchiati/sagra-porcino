@@ -768,6 +768,7 @@ function openMapMaker(ctx, error, onDone) {
   let preview = null;
   let place = null;
   let found = [];
+  let busy = false; // disegno e pubblicazione in corso
   const close = () => {
     preview?.remove();
     closeDialog(dialog);
@@ -806,11 +807,17 @@ function openMapMaker(ctx, error, onDone) {
     mapBox.hidden = false;
     dialog.querySelector('.map-maker__hint').hidden = false;
     useBtn.hidden = false;
+    useBtn.disabled = true;
     preview?.remove();
     preview = maker.createPreview(mapBox, place);
+    // "Usa quest'area" solo quando la mappa inquadrata è completa e ferma: spento mentre si sposta o si carica
+    preview.on('movestart', () => (useBtn.disabled = true));
+    preview.on('dataloading', () => (useBtn.disabled = true));
+    preview.on('idle', () => (useBtn.disabled = busy));
   });
 
   useBtn.addEventListener('click', async () => {
+    busy = true;
     useBtn.disabled = true;
     status.textContent = 'Disegno la mappa… (qualche secondo)';
     try {
@@ -827,6 +834,7 @@ function openMapMaker(ctx, error, onDone) {
       onDone();
     } catch {
       status.textContent = 'Non sono riuscito a pubblicare la mappa. Riprova.';
+      busy = false;
       useBtn.disabled = false;
     }
   });
