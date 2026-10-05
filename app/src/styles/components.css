@@ -3680,8 +3680,8 @@ tr.is-dragging .drag-handle {
 
 .map-view {
   position: relative;
-  height: min(62vh, 560px);
-  min-height: 320px;
+  height: min(52vh, 480px); /* un po' più bassa: sotto si vede l'inizio dell'elenco */
+  min-height: 280px;
   overflow: hidden;
   border: 2px solid var(--color-border);
   border-radius: var(--radius);
