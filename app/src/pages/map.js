@@ -2,7 +2,8 @@
 // spostamento, i punti con icona colorata e numero (da 1 dentro ogni tipologia), sotto l'elenco per tipologia.
 // Toccando un punto (sulla mappa o nell'elenco) l'icona si ingrandisce e compare il riquadro con le informazioni e, se la
 // mappa ha le coordinate (D139), "🚶 Google Maps / Mappe" a piedi. All'apertura inquadra i punti, con un margine.
-// Mod e Admin: "✏️ Modifica punti" → tocco sulla mappa = nuovo punto; tocco su un punto = modifica, sposta, elimina.
+// Mod e Admin (D143): sempre in modifica, senza pulsante: tocco su un posto libero = nuovo punto (se c'è un punto aperto,
+// il primo tocco lo chiude); tocco su un punto = accanto al nome 🚶 Apri con…, ✏️ modifica, ↔️ sposta, 🗑️ elimina.
 
 import { html, escapeHtml } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
@@ -48,7 +49,6 @@ export function renderMap() {
         <button type="button" class="button button--secondary" data-locate>📍 Mostra la mia posizione</button>
         <p class="map-me__status" role="status"></p>
       </div>
-      ${staff ? '<button type="button" class="button button--secondary map-edit-toggle" data-edit hidden>✏️ Modifica punti</button>' : ''}
       <p class="map-edit-hint" hidden></p>
       <div class="map-list"></div>
       <p class="leaderboard-note map-empty" hidden></p>
@@ -65,12 +65,11 @@ export function renderMap() {
   const list = element.querySelector('.map-list');
   const empty = element.querySelector('.map-empty');
   const error = element.querySelector('.form-error');
-  const editToggle = element.querySelector('[data-edit]');
   const hint = element.querySelector('.map-edit-hint');
 
   let filter = null; // tipologia scelta nella legenda (null = tutte)
   let selected = null; // id del punto evidenziato
-  let editing = false;
+  const editing = staff; // Mod e Admin modificano sempre (D143)
   let moving = null; // punto da spostare: il prossimo tocco sulla mappa è la nuova posizione
   let zoom = null;
   let destroyed = false;
@@ -90,7 +89,7 @@ export function renderMap() {
 
   function renderLegend() {
     const used = new Set(points().map((p) => p.type));
-    const types = MAP_TYPES.filter((t) => used.has(t.id) || editing);
+    const types = MAP_TYPES.filter((t) => used.has(t.id));
     legend.innerHTML = types.length
       ? `<button type="button" class="map-chip${filter ? '' : ' is-active'}" data-filter="">Tutti</button>${types
           .map((t) => `<button type="button" class="map-chip${filter === t.id ? ' is-active' : ''}" data-filter="${t.id}" style="--marker-color: ${t.color}">
@@ -130,8 +129,8 @@ export function renderMap() {
         </section>`,
       )
       .join('');
-    empty.hidden = all.length > 0 || editing;
-    empty.textContent = 'Non ci sono ancora punti sulla mappa.';
+    empty.hidden = all.length > 0;
+    empty.textContent = editing ? 'Non ci sono ancora punti: tocca un posto della mappa per aggiungerne uno.' : 'Non ci sono ancora punti sulla mappa.';
   }
 
   function renderInfo() {
@@ -148,6 +147,7 @@ export function renderMap() {
         ${
           editing
             ? `<div class="map-info__tools">
+                ${links ? '<button type="button" class="icon-button" data-open-with aria-expanded="false" aria-label="Apri con…" title="Apri con…">🚶</button>' : ''}
                 <button type="button" class="icon-button" data-action="edit" aria-label="Modifica il punto" title="Modifica">✏️</button>
                 <button type="button" class="icon-button" data-action="move" aria-label="Sposta il punto" title="Sposta">↔️</button>
                 <button type="button" class="icon-button icon-button--danger" data-action="delete" aria-label="Elimina il punto" title="Elimina">🗑️</button>
@@ -157,8 +157,8 @@ export function renderMap() {
       </div>
       ${p.description ? `<p class="map-info__text">${escapeHtml(p.description)}</p>` : ''}
       ${
-        !editing && links
-          ? `<div class="map-info__actions"><button type="button" class="button" data-open-with aria-expanded="false">🚶 Apri con…</button></div>
+        links
+          ? `${editing ? '' : '<div class="map-info__actions"><button type="button" class="button" data-open-with aria-expanded="false">🚶 Apri con…</button></div>'}
             <div class="map-openwith" hidden>
               <a class="map-openwith__item" href="${links.google}" target="_blank" rel="noopener">Google Maps</a>
               <a class="map-openwith__item" href="${links.apple}" target="_blank" rel="noopener">Mappe (iPhone)</a>
@@ -191,16 +191,6 @@ export function renderMap() {
   }
 
   // ---------- Modifica (Mod e Admin) ----------
-
-  function setEditing(on) {
-    editing = on;
-    moving = null;
-    editToggle.textContent = on ? '✅ Fine modifica' : '✏️ Modifica punti';
-    view.classList.toggle('is-editing', on);
-    hint.hidden = !on;
-    hint.textContent = 'Tocca un posto della mappa per aggiungere un punto, oppure un punto per modificarlo.';
-    renderAll();
-  }
 
   async function savePoint(values, existing, x, y) {
     const res = await rpc('staff_map_save_point', {
@@ -248,14 +238,14 @@ export function renderMap() {
     if (moving && x !== null && y !== null) {
       const p = moving;
       moving = null;
-      hint.textContent = 'Tocca un posto della mappa per aggiungere un punto, oppure un punto per modificarlo.';
+      hint.hidden = true;
       savePoint({ type: p.type, title: p.title, description: p.description ?? '' }, p, x, y);
       return;
     }
     if (marker) return select(Number(marker.dataset.point));
     if (target.closest?.('.map-info')) return;
-    if (editing && x !== null && y !== null) return editPoint(null, x, y);
-    if (selected) select(null);
+    if (selected) return select(null); // con un punto aperto il tocco lo chiude soltanto
+    if (editing && x !== null && y !== null) editPoint(null, x, y);
   }
 
   element.addEventListener('click', (event) => {
@@ -288,7 +278,6 @@ export function renderMap() {
       if (me && me.x >= 0 && me.x <= 1 && me.y >= 0 && me.y <= 1) zoom?.focus(me.x, me.y, 1.5);
       return;
     }
-    if (event.target.closest('[data-edit]')) return setEditing(!editing);
     const action = event.target.closest('[data-action]')?.dataset.action;
     const p = points().find((x) => x.id === selected);
     if (!action || !p) return;
@@ -296,6 +285,7 @@ export function renderMap() {
     if (action === 'delete') deletePoint(p);
     if (action === 'move') {
       moving = p;
+      hint.hidden = false;
       hint.textContent = `Tocca sulla mappa la nuova posizione di "${p.title}".`;
     }
   });
@@ -371,7 +361,7 @@ export function renderMap() {
     const osm = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors';
     credit.innerHTML = map.bounds?.source === 'openfreemap' ? `${osm} · OpenFreeMap © OpenMapTiles` : osm;
     credit.hidden = !(map.bounds?.source === 'openfreemap' || mapFromOsm());
-    if (editToggle) editToggle.hidden = false;
+    view.classList.toggle('is-editing', editing);
     meBox.hidden = !map.bounds; // la posizione si può mostrare solo se la mappa ha le coordinate
     zoom?.destroy();
     zoom = createZoomView(view, stage, { width: map.image.width, height: map.image.height, onTap });
