@@ -4006,3 +4006,75 @@ tr.is-dragging .drag-handle {
   width: 1.3rem;
   height: 1.3rem;
 }
+
+/* "Apri con…" (D142): menu sotto il pulsante */
+.map-openwith {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.map-openwith[hidden] {
+  display: none;
+}
+
+.map-openwith__item {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 0.4rem 0.9rem;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.map-openwith__item:last-child {
+  border-bottom: none;
+}
+
+/* "Mostra la mia posizione" (D142): omino rosso, sempre della stessa grandezza */
+.map-me {
+  margin-top: 0.75rem;
+}
+
+.map-me__status {
+  min-height: 1.2em;
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
+}
+
+.map-me-marker {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #d62828;
+  box-shadow: 0 0 0 6px rgb(214 40 40 / 25%), 0 2px 6px rgb(0 0 0 / 35%);
+  font-size: 20px;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(var(--zoom-inv, 1));
+}
+
+/* scritta della licenza in fondo alla pagina */
+.map-credit {
+  margin-top: 1.5rem;
+}
+
+.map-me .button {
+  font-size: 1.05rem; /* "Nascondi la mia posizione" su una riga */
+}

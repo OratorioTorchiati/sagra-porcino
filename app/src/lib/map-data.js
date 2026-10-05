@@ -30,11 +30,31 @@ const IMAGE_URL = '/__sagra-mappa-immagine';
 let data = readJson(KEY, null); // { version, points, image: { version, width, height } | null }
 let imageUrl = null; // { version, url } già pronta in questa sessione
 
-/** Indicazioni a piedi verso un punto con la posizione reale (D139) */
-export const directionsLinks = ({ lat, lng }) => ({
+/** "Apri con…" (D142): indicazioni a piedi verso un punto con la posizione reale (D139) */
+export const directionsLinks = ({ lat, lng, title }) => ({
   google: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`,
   apple: `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=w`,
+  waze: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`,
+  // Android: apre la scelta tra le app di mappe installate
+  geo: `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(title ?? '')})`,
+  coords: `${lat}, ${lng}`,
 });
+
+const mercator = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+
+/** Posizione GPS → posizione sul disegno (x, y da 0 a 1) con gli angoli della mappa (D142); fuori se <0 o >1 */
+export function latLngToXY(bounds, lat, lng) {
+  const x = (lng - bounds.west) / (bounds.east - bounds.west);
+  const y = (mercator(bounds.north) - mercator(lat)) / (mercator(bounds.north) - mercator(bounds.south));
+  return { x, y };
+}
+
+/** Distanza in metri tra due posizioni GPS */
+export function distanceM(a, b) {
+  const r = (d) => (d * Math.PI) / 180;
+  const h = Math.sin(r(b.lat - a.lat) / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lng - a.lng) / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
+}
 
 /** Punti con il numero dentro la tipologia (da 1, in ordine di inserimento) */
 export function numberedPoints(points = data?.points ?? []) {

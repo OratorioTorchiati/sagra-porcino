@@ -7,7 +7,7 @@
 import { html, escapeHtml } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { createZoomView } from '../components/zoom-view.js';
-import { MAP_TYPES, mapType, cachedMap, refreshMap, mapImage, numberedPoints, setPoints, directionsLinks } from '../lib/map-data.js';
+import { MAP_TYPES, mapType, cachedMap, refreshMap, mapImage, numberedPoints, setPoints, directionsLinks, latLngToXY, distanceM } from '../lib/map-data.js';
 import { currentPlayer, isStaffRole, sessionToken } from '../lib/account.js';
 import { rpc } from '../lib/api.js';
 import { askDialog } from './staff-ui.js';
@@ -44,11 +44,15 @@ export function renderMap() {
         <div class="map-stage"><img class="map-image" alt="Mappa della sagra" draggable="false"></div>
         <div class="map-info" hidden></div>
       </div>
-      <p class="map-credit" hidden></p>
+      <div class="map-me" hidden>
+        <button type="button" class="button button--secondary" data-locate>📍 Mostra la mia posizione</button>
+        <p class="map-me__status" role="status"></p>
+      </div>
       ${staff ? '<button type="button" class="button button--secondary map-edit-toggle" data-edit hidden>✏️ Modifica punti</button>' : ''}
       <p class="map-edit-hint" hidden></p>
       <div class="map-list"></div>
       <p class="leaderboard-note map-empty" hidden></p>
+      <p class="map-credit" hidden></p>
     </main>
   `);
   bindTopBar(element);
@@ -70,6 +74,12 @@ export function renderMap() {
   let moving = null; // punto da spostare: il prossimo tocco sulla mappa è la nuova posizione
   let zoom = null;
   let destroyed = false;
+  // "Mostra la mia posizione" (D142): resta solo sul telefono, mai inviata al server; si spegne chiudendo la pagina
+  let me = null; // { x, y, lat, lng, accuracy }
+  let watchId = null;
+  const meBox = element.querySelector('.map-me');
+  const meBtn = element.querySelector('[data-locate]');
+  const meStatus = element.querySelector('.map-me__status');
 
   const points = () => numberedPoints();
   const visible = () => points().filter((p) => !filter || p.type === filter);
@@ -85,8 +95,19 @@ export function renderMap() {
       ? `<button type="button" class="map-chip${filter ? '' : ' is-active'}" data-filter="">Tutti</button>${types
           .map((t) => `<button type="button" class="map-chip${filter === t.id ? ' is-active' : ''}" data-filter="${t.id}" style="--marker-color: ${t.color}">
               <span class="map-chip__dot" aria-hidden="true">${t.icon}</span>${t.label}</button>`)
-          .join('')}`
-      : '';
+          .join('')}${
+          me ? '<button type="button" class="map-chip map-chip--me" data-me style="--marker-color: #d62828"><span class="map-chip__dot" aria-hidden="true">🧍</span>Tu sei qui</button>' : ''
+        }`
+      : me
+        ? '<button type="button" class="map-chip map-chip--me" data-me style="--marker-color: #d62828"><span class="map-chip__dot" aria-hidden="true">🧍</span>Tu sei qui</button>'
+        : '';
+  }
+
+  /** Omino rosso sulla mappa (solo se la posizione cade dentro la mappa) */
+  function renderMe() {
+    stage.querySelector('.map-me-marker')?.remove();
+    if (!me || me.x < 0 || me.x > 1 || me.y < 0 || me.y > 1) return;
+    stage.insertAdjacentHTML('beforeend', `<div class="map-me-marker zoom-keep" style="left: ${me.x * 100}%; top: ${me.y * 100}%" aria-label="Tu sei qui" role="img">🧍</div>`);
   }
 
   function renderMarkers() {
@@ -118,7 +139,7 @@ export function renderMap() {
     info.hidden = !p;
     if (!p) return (info.innerHTML = '');
     const t = mapType(p.type);
-    const links = p.lat != null ? directionsLinks(p) : null;
+    const links = p.lat != null ? directionsLinks(p) : null; // senza coordinate della mappa: niente "Apri con…"
     info.innerHTML = `
       <button type="button" class="map-info__close" data-close aria-label="Chiudi">✕</button>
       <p class="map-info__type" style="--marker-color: ${t.color}"><span class="map-item__number">${p.number}</span> ${t.icon} ${t.label}</p>
@@ -137,9 +158,13 @@ export function renderMap() {
       ${p.description ? `<p class="map-info__text">${escapeHtml(p.description)}</p>` : ''}
       ${
         !editing && links
-          ? `<div class="map-info__actions">
-              <a class="button" href="${links.google}" target="_blank" rel="noopener">🚶 Google Maps</a>
-              <a class="button button--secondary" href="${links.apple}" target="_blank" rel="noopener">🚶 Mappe</a>
+          ? `<div class="map-info__actions"><button type="button" class="button" data-open-with aria-expanded="false">🚶 Apri con…</button></div>
+            <div class="map-openwith" hidden>
+              <a class="map-openwith__item" href="${links.google}" target="_blank" rel="noopener">Google Maps</a>
+              <a class="map-openwith__item" href="${links.apple}" target="_blank" rel="noopener">Mappe (iPhone)</a>
+              <a class="map-openwith__item" href="${links.waze}" target="_blank" rel="noopener">Waze</a>
+              ${/Android/i.test(navigator.userAgent) ? `<a class="map-openwith__item" href="${links.geo}">Altre app…</a>` : ''}
+              <button type="button" class="map-openwith__item" data-copy-coords="${links.coords}">📋 Copia coordinate GPS</button>
             </div>`
           : ''
       }`;
@@ -148,6 +173,7 @@ export function renderMap() {
   function renderAll() {
     renderLegend();
     renderMarkers();
+    renderMe();
     renderList();
     renderInfo();
   }
@@ -242,6 +268,26 @@ export function renderMap() {
     const item = event.target.closest('.map-item');
     if (item) return select(Number(item.dataset.point), { focus: true });
     if (event.target.closest('[data-close]')) return select(null);
+    const openWith = event.target.closest('[data-open-with]');
+    if (openWith) {
+      const menu = info.querySelector('.map-openwith');
+      menu.hidden = !menu.hidden;
+      openWith.setAttribute('aria-expanded', String(!menu.hidden));
+      return;
+    }
+    const copy = event.target.closest('[data-copy-coords]');
+    if (copy) {
+      navigator.clipboard?.writeText(copy.dataset.copyCoords).then(
+        () => (copy.textContent = `✅ Copiate: ${copy.dataset.copyCoords}`),
+        () => (copy.textContent = copy.dataset.copyCoords),
+      );
+      return;
+    }
+    if (event.target.closest('[data-locate]')) return toggleMe();
+    if (event.target.closest('[data-me]')) {
+      if (me && me.x >= 0 && me.x <= 1 && me.y >= 0 && me.y <= 1) zoom?.focus(me.x, me.y, 1.5);
+      return;
+    }
     if (event.target.closest('[data-edit]')) return setEditing(!editing);
     const action = event.target.closest('[data-action]')?.dataset.action;
     const p = points().find((x) => x.id === selected);
@@ -255,6 +301,53 @@ export function renderMap() {
   });
   // il riquadro delle informazioni sta sopra la mappa: i suoi tocchi non devono spostarla
   info.addEventListener('pointerdown', (event) => event.stopPropagation());
+
+  // ---------- La mia posizione (D142) ----------
+
+  function stopMe() {
+    if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+    me = null;
+    meBtn.textContent = '📍 Mostra la mia posizione';
+    meStatus.textContent = '';
+    renderAll();
+  }
+
+  function toggleMe() {
+    if (watchId !== null) return stopMe();
+    const bounds = cachedMap()?.bounds;
+    if (!navigator.geolocation || !bounds) return (meStatus.textContent = 'Questo telefono non può mostrare la posizione.');
+    meStatus.textContent = 'Cerco la tua posizione…';
+    meBtn.textContent = '🙈 Nascondi la mia posizione';
+    let first = true;
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (destroyed) return;
+        const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+        me = { ...latLngToXY(bounds, lat, lng), lat, lng, accuracy };
+        const inside = me.x >= 0 && me.x <= 1 && me.y >= 0 && me.y <= 1;
+        if (inside) {
+          meStatus.textContent = `Tu sei qui (precisione ±${Math.round(accuracy)} m).`;
+          if (first) zoom?.focus(me.x, me.y, 1.5);
+        } else {
+          const center = { lat: (bounds.north + bounds.south) / 2, lng: (bounds.west + bounds.east) / 2 };
+          const km = distanceM({ lat, lng }, center) / 1000;
+          meStatus.textContent = `Sei fuori dalla mappa, a circa ${km < 10 ? km.toFixed(1).replace('.', ',') : Math.round(km)} km.`;
+        }
+        first = false;
+        renderLegend();
+        renderMe();
+      },
+      (err) => {
+        const denied = err.code === 1;
+        stopMe();
+        meStatus.textContent = denied
+          ? 'Posizione non permessa: puoi attivarla nelle impostazioni del browser per questo sito.'
+          : 'Posizione non disponibile in questo momento. Riprova.';
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
+    );
+  }
 
   // ---------- Caricamento ----------
 
@@ -279,6 +372,7 @@ export function renderMap() {
     credit.innerHTML = map.bounds?.source === 'openfreemap' ? `${osm} · OpenFreeMap © OpenMapTiles` : osm;
     credit.hidden = !(map.bounds?.source === 'openfreemap' || mapFromOsm());
     if (editToggle) editToggle.hidden = false;
+    meBox.hidden = !map.bounds; // la posizione si può mostrare solo se la mappa ha le coordinate
     zoom?.destroy();
     zoom = createZoomView(view, stage, { width: map.image.width, height: map.image.height, onTap });
     // apertura sui punti (il rettangolo che li contiene tutti, con un margine); senza punti: la vista di apertura
@@ -296,6 +390,7 @@ export function renderMap() {
     element,
     destroy: () => {
       destroyed = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       zoom?.destroy();
     },
   };
