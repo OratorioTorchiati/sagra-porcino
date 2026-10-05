@@ -226,3 +226,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 10 (contenuti) | In corso | 2026-10-02 | "Ti piace quest'app? Contattami per averne una tua" in fondo alla home (D131). |
 | 10 (contenuti) | In corso | 2026-10-02 | Sponsor: BeFunctional (dal PDF vettoriale), Franco, Giaquinto Gioielli; 11 sponsor + 1 esempio (6), griglia 3 colonne piena (18 caselle). |
 | 10 (contenuti) | In corso | 2026-10-02 | Sponsor: Artemisia (12). Ultima riga al centro provata e annullata (D132, D133). |
+| 10 (contenuti) | In corso | 2026-10-05 | Sponsor completi: 12 loghi veri (ultimo Mitra, dal PDF), niente più esempi. |
