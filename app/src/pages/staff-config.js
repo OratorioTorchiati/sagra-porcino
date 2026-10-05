@@ -270,7 +270,7 @@ function makeSortable(tbody, { canDrop = () => true, onDrop }) {
   });
 }
 
-function openMenuEditor(root, ctx) {
+function openMenuEditor(root, ctx, close) {
   let nextKey = 0;
   let cats = menuCategories(currentMenu()).map((c) => ({ ...c, key: String(nextKey++) }));
   root.innerHTML = `
@@ -378,7 +378,7 @@ function openMenuEditor(root, ctx) {
       return;
     }
     const action = event.target.closest('[data-edit-action]')?.dataset.editAction;
-    if (action === 'back') return renderConfigSection(root, ctx);
+    if (action === 'back') return close();
     if (action === 'add-cat') {
       read();
       cats.push({ key: String(nextKey++), name: '', dishes: [] });
@@ -414,7 +414,7 @@ function openMenuEditor(root, ctx) {
         categoryOrder: cats.map((c) => c.name),
       });
       if (dishes !== null) {
-        renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), `✅ Menù pubblicato (${dishes} piatti).`));
+        close(`✅ Menù pubblicato (${dishes} piatti).`);
       }
     }
   });
@@ -544,6 +544,23 @@ export async function renderConfigSection(root, ctx) {
       </div>
     </form>`;
   const form = box.querySelector('form');
+
+  /** Apre una schermata sopra le Configurazioni (nascoste, non ricaricate); close(msg) torna qui com'era */
+  const subScreen = () => {
+    const kids = [...root.children];
+    kids.forEach((k) => (k.hidden = true));
+    const host = document.createElement('div');
+    root.append(host);
+    window.scrollTo(0, 0);
+    return {
+      host,
+      close: (message) => {
+        host.remove();
+        kids.forEach((k) => (k.hidden = false));
+        if (message) flashOk(root.querySelector('.staff-ok'), message);
+      },
+    };
+  };
   const schedulesBox = form.querySelector('.config-schedules');
   const renderSchedules = () => {
     schedulesBox.innerHTML = Object.keys(SCHEDULES).map((key) => scheduleMarkup(key, schedule[key])).join('');
@@ -656,9 +673,7 @@ export async function renderConfigSection(root, ctx) {
       return;
     }
     const dishes = await checkAndPublish(await file.text(), ctx, error, { errorsIntro: 'Correggili nel file e caricalo di nuovo:' });
-    if (dishes !== null) {
-      renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), `✅ Menù pubblicato (${dishes} piatti).`));
-    }
+    if (dishes !== null) flashOk(root.querySelector('.staff-ok'), `✅ Menù pubblicato (${dishes} piatti).`);
   });
 
   form.addEventListener('click', async (event) => {
@@ -671,17 +686,17 @@ export async function renderConfigSection(root, ctx) {
     const menuAction = event.target.closest('[data-menu]')?.dataset.menu;
     if (menuAction === 'template') return downloadText('menu-sagra-template.csv', menuTemplate());
     if (menuAction === 'upload') return menuFile.click();
-    if (menuAction === 'edit') return openMenuEditor(root, ctx);
+    if (menuAction === 'edit') {
+      const sub = subScreen();
+      return openMenuEditor(sub.host, ctx, sub.close);
+    }
     const edit = event.target.closest('[data-edit]')?.dataset.edit;
     if (edit) return askDate(edit);
     const game = event.target.closest('[data-game-settings]')?.dataset.gameSettings;
     if (game) {
       // ⚙️ Impostazioni del gioco (D99): schermata a parte, poi si torna qui (le modifiche non salvate qui restano da salvare)
-      openGameSettings(root, ctx, res.games.find((g) => g.id === game), (message) =>
-        renderConfigSection(root, ctx).then(() => {
-          if (message) flashOk(root.querySelector('.staff-ok'), message);
-        }),
-      );
+      const sub = subScreen();
+      openGameSettings(sub.host, ctx, res.games.find((g) => g.id === game), sub.close);
     }
   });
 
