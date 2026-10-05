@@ -443,7 +443,14 @@
   letter-spacing: 0.04em;
 }
 
+/* Pulsante spento (es. "Usa quest'area" finché la mappa non è completa): sbiadito e non toccabile */
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .button--play:disabled {
+  opacity: 1; /* GIOCA / Un attimo…: grigio pieno, non sbiadito */
   background: var(--color-text-muted);
   font-size: var(--text-lg);
   letter-spacing: 0;

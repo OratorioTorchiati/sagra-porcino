@@ -760,7 +760,7 @@ function openMapMaker(ctx, error, onDone) {
     <dialog class="dialog staff-dialog map-maker">
       <h2 class="dialog__title">Mappa del paese</h2>
       <form class="map-maker__search" novalidate>
-        <input class="form-field__input" name="q" placeholder="Es. Torchiati" autocomplete="off" aria-label="Paese">
+        <input class="form-field__input" name="q" placeholder="Es. Roma" autocomplete="off" aria-label="Paese">
         <button type="submit" class="button">Cerca</button>
       </form>
       <p class="map-maker__status" role="status"></p>
@@ -805,7 +805,7 @@ function openMapMaker(ctx, error, onDone) {
     } catch {
       return (status.textContent = 'Ricerca non riuscita: controlla la connessione e riprova.');
     }
-    status.textContent = found.length ? 'Scegli il paese:' : 'Nessun risultato: prova a scrivere anche la provincia (es. "Torchiati, Avellino").';
+    status.textContent = found.length ? 'Scegli il paese:' : 'Nessun risultato: prova a scrivere anche la provincia (es. "Roma, Lazio").';
     results.innerHTML = found
       .map((r, i) => `<li><button type="button" class="map-maker__result" data-i="${i}"><strong>${escapeHtml(r.label)}</strong><span>${escapeHtml(r.detail)}</span></button></li>`)
       .join('');
