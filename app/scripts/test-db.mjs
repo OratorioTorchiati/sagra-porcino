@@ -639,6 +639,14 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
     evAfterPoint?.events?.find((e) => e.id === ev1?.event?.id)?.point === null && evAfterPoint.version !== vBeforeDelete);
   check('calendario: lo staff elimina gli eventi', (await staff('event_delete', { p_id: ev1?.event?.id }))?.ok === true && (await staff('event_delete', { p_id: ev2?.event?.id }))?.ok === true);
   check('calendario: evento già eliminato → NOT_FOUND', (await staff('event_delete', { p_id: ev1?.event?.id }))?.error === 'NOT_FOUND');
+  // Numeri (043, D146): solo Admin; totali uguali alla somma dei giorni, oggi compreso
+  check('numeri: un giocatore non li vede', (await rpc('staff_stats', { p_token: t5Token })).body?.ok !== true);
+  const stats = await staff('stats');
+  const sumDays = (k) => (stats?.days ?? []).reduce((s, d) => s + d[k], 0);
+  const todayStats = stats?.days?.find((d) => d.day === stats.today);
+  check('numeri: totali = somma dei giorni (giocatori, partite, recensioni)',
+    stats?.ok && ['players', 'attempts', 'reviews'].every((k) => stats.totals[k] === sumDays(k)), JSON.stringify(stats?.totals));
+  check('numeri: oggi ci sono i giocatori e le partite di questo test', todayStats?.players >= 3 && todayStats?.attempts >= 1, JSON.stringify(todayStats));
   check('mappa: immagine non valida → rifiutata', (await staff('set_map_image', { p_mime: 'image/gif', p_data: 'AAAA', p_width: 10, p_height: 10 }))?.error === 'IMAGE_INVALID');
   if (mine) {
     const rep = await staff('attempt_replay', { p_attempt_id: mine.id });

@@ -4347,3 +4347,84 @@ tr.is-dragging .drag-handle {
 .cal-past[open] > summary::before {
   transform: rotate(90deg);
 }
+
+/* ---------- Pannello Admin → 📊 Numeri (D146) ---------- */
+
+.stats-totals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* i tre totali sempre affiancati */
+  gap: 0.45rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.stats-total {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.6rem 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.stats-total__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* "💬 Recensioni" su una riga */
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.stats-total__value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-total__today {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-forest);
+}
+
+.stats-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 0.5rem 0.4rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: right;
+}
+
+.stats-table th:first-child {
+  text-align: left;
+  font-weight: 600;
+}
+
+.stats-table thead th {
+  font-size: 1.2rem;
+}
+
+.stats-table tr.is-today th,
+.stats-table tr.is-today td {
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.stats-refresh {
+  margin-top: 1rem;
+}

@@ -47,6 +47,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/040_mappa_openstreetmap.sql` | 24 | mappa: interruttore "Immagine da OpenStreetMap" (scritta di attribuzione) |
 | `supabase/migrations/041_mappa_coordinate.sql` | 25 | mappa: angoli e paese, posizione reale dei punti calcolata dal server |
 | `supabase/migrations/042_calendario.sql` | 26 | calendario eventi: sezione, eventi collegati ai punti della mappa |
+| `supabase/migrations/043_numeri.sql` | 27 | pannello Admin: numeri di giocatori, partite e recensioni (totali e per giorno) |
 | `supabase/migrations/033_feedback_rimossi.sql` | 17 | feedback rimossi: il testo resta, chi li ha rimossi e quando; elenco Attivi / Rimossi |
 | `supabase/migrations/032_feedback_cancellati.sql` | 16 | feedback cancellati dallo staff: restano segnati (senza testo), il giorno resta usato |
 | `supabase/migrations/031_un_feedback_al_giorno.sql` | 15 | un feedback al giorno; get_feedback_page (3 migliori + si può ancora scrivere oggi?) |
