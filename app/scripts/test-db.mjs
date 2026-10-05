@@ -592,6 +592,19 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('sponsor: 5 colonne → rifiutate', (await staff('update_settings', { p_values: { sponsor_columns: 5 } }))?.error === 'SPONSOR_COLUMNS_INVALID');
   const sameCols = await staff('update_settings', { p_values: { sponsor_columns: settings.sponsor_columns, sections: { sponsor: settings.sections.sponsor } } });
   check('sponsor: colonne salvate (stesse) e lette dall\'app', sameCols?.ok && (await rpc('get_app_config')).body?.sponsor_columns === settings.sponsor_columns, String(settings.sponsor_columns));
+  // Mappa (039, D136): lettura per tutti; punti solo da Mod e Admin; un punto di prova aggiunto e tolto
+  const mapNow = (await rpc('get_map')).body;
+  check('mappa: get_map risponde anche senza account', mapNow?.ok === true && Array.isArray(mapNow.points));
+  check('mappa: get_app_config porta la versione dei punti', 'map_version' in ((await rpc('get_app_config')).body ?? {}));
+  check('mappa: un giocatore non può aggiungere punti', (await rpc('staff_map_save_point', { p_token: t5Token, p_id: null, p_type: 'wc', p_title: 'zz', p_description: null, p_x: 0.5, p_y: 0.5 })).body?.error === 'NOT_STAFF');
+  check('mappa: tipologia sconosciuta → rifiutata', (await staff('map_save_point', { p_id: null, p_type: 'casino', p_title: 'zz prova', p_description: null, p_x: 0.5, p_y: 0.5 }))?.error === 'POINT_INVALID');
+  check('mappa: posizione fuori dall\'immagine → rifiutata', (await staff('map_save_point', { p_id: null, p_type: 'wc', p_title: 'zz prova', p_description: null, p_x: 1.5, p_y: 0.5 }))?.error === 'POINT_INVALID');
+  const zzPoint = await staff('map_save_point', { p_id: null, p_type: 'wc', p_title: 'zz prova', p_description: 'prova', p_x: 0.25, p_y: 0.75 });
+  check('mappa: lo staff aggiunge un punto', zzPoint?.ok && zzPoint.point.x === 0.25 && zzPoint.point.description === 'prova', JSON.stringify(zzPoint));
+  const mapAfter = (await rpc('get_map')).body;
+  check('mappa: il punto compare e la versione cambia', mapAfter?.points?.some((p) => p.id === zzPoint?.point?.id) && mapAfter.version !== mapNow?.version);
+  check('mappa: lo staff toglie il punto', (await staff('map_delete_point', { p_id: zzPoint?.point?.id }))?.ok === true);
+  check('mappa: immagine non valida → rifiutata', (await staff('set_map_image', { p_mime: 'image/gif', p_data: 'AAAA', p_width: 10, p_height: 10 }))?.error === 'IMAGE_INVALID');
   if (mine) {
     const rep = await staff('attempt_replay', { p_attempt_id: mine.id });
     check('staff: "Rivedi partita" riceve seme, azioni e durata', rep?.ok && rep.attempt.seed !== null && Array.isArray(rep.attempt.actions) && rep.attempt.actions.length > 5 && rep.attempt.stats.durationMs > 0);

@@ -9,6 +9,8 @@ import { isoToRomeLocal, romeLocalToIso, downloadText } from '../lib/staff.js';
 import { currentMenu, refreshMenu, countDishes, readMenuFile, menuTemplate } from '../lib/menu-data.js';
 import { SECTIONS, SPONSOR_SECTION, FUTURE_SECTIONS, refreshAppConfig } from '../lib/app-config.js';
 import { SPONSORS } from '../lib/sponsors.js';
+import { cachedMap, refreshMap } from '../lib/map-data.js';
+import { prepareMapImage } from '../lib/map-upload.js';
 
 /** Schede aperte (restano aperte anche quando la pagina si ridisegna, es. dopo Salva) */
 const openCards = new Set();
@@ -430,6 +432,26 @@ const feedbackBody = (res) => `
     </div>
   </div>`;
 
+// ---------- Mappa (D136): immagine caricata dall'Admin; i punti si modificano nella pagina Mappa ----------
+
+const mapBody = () => {
+  const image = cachedMap()?.image;
+  return `
+  <div class="config-group">
+    <h4 class="config-group__title">Immagine della mappa</h4>
+    <p class="config-row__hint">${
+      image
+        ? `Caricata: ${image.width}×${image.height} px, ${formatDate(image.version)}.`
+        : 'Nessuna mappa: finché manca, la pagina Mappa dice "disponibile a breve".'
+    }</p>
+    <button type="button" class="button button--secondary" data-map="upload">📤 Carica una nuova mappa</button>
+    <input type="file" name="map_file" accept="image/png,image/jpeg,image/webp" hidden>
+    <p class="config-row__hint">PNG, JPG o WebP. Viene rimpicciolita e compressa su questo telefono prima dell'invio: i telefoni la
+      scaricano una volta sola. I punti restano dove sono (in proporzione): dopo una mappa nuova controllali.</p>
+    <p class="config-row__hint">I punti di interesse si aggiungono e si modificano nella pagina <strong>🗺️ Mappa</strong> → ✏️ Modifica punti.</p>
+  </div>`;
+};
+
 // ---------- Sponsor (D126): solo il numero di colonne; le immagini sono nell'app ----------
 
 const sponsorBody = (res) => `
@@ -470,7 +492,7 @@ const aspectBody = (res) => `
     </div>
   </div>`;
 
-const BODIES = { giochi: gamesBody, menu: menuBody, feedback: feedbackBody };
+const BODIES = { giochi: gamesBody, menu: menuBody, feedback: feedbackBody, mappa: mapBody };
 
 /** Scheda a tendina: titolo che apre e chiude, interruttore (se c'è), contenuto */
 const cardMarkup = ({ id, icon, label, toggle, body }) => `
@@ -491,6 +513,7 @@ export async function renderConfigSection(root, ctx) {
   const res = await staffCall(ctx, 'get_settings', {}, error);
   if (!res) return;
   await refreshMenu({ force: true }); // ✏️ Modifica parte dal menù più recente
+  await refreshMap({ force: true }); // dati dell'immagine della mappa
   const schedule = { games_open_from: res.games_open_from, games_open_until: res.games_open_until };
 
   const box = root.querySelector('.staff-config');
@@ -579,6 +602,34 @@ export async function renderConfigSection(root, ctx) {
         askDate(key); // CHIUSO: si sceglie quando (Annulla = resta com'era)
       }
     }
+  });
+
+  // Mappa: nuova immagine (D136), preparata su questo telefono e inviata in base64
+  const mapFile = form.map_file;
+  form.querySelector('[data-map="upload"]')?.addEventListener('click', () => mapFile.click());
+  mapFile?.addEventListener('change', async () => {
+    const file = mapFile.files[0];
+    mapFile.value = '';
+    if (!file) return;
+    let prepared;
+    try {
+      prepared = await prepareMapImage(file);
+    } catch {
+      error.textContent = 'Immagine non leggibile: usa un PNG, JPG o WebP.';
+      error.hidden = false;
+      return;
+    }
+    const ok = await askDialog({
+      title: 'Pubblicare questa mappa?',
+      body: `<img class="map-upload-preview" src="data:${prepared.mime};base64,${prepared.data}" alt="Anteprima della mappa">
+        <p>${prepared.width}×${prepared.height} px, circa ${Math.round((prepared.data.length * 3) / 4 / 1024)} KB. Prende il posto di quella di adesso.</p>`,
+      confirmLabel: 'Pubblica',
+    });
+    if (!ok) return;
+    const saved = await staffCall(ctx, 'set_map_image', { p_mime: prepared.mime, p_data: prepared.data, p_width: prepared.width, p_height: prepared.height }, error);
+    if (!saved) return;
+    refreshAppConfig({ force: true });
+    renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), '✅ Mappa pubblicata.'));
   });
 
   // Menù: modello e caricamento del file

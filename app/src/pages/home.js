@@ -11,6 +11,7 @@ const BOXES = [
   { section: 'menu', href: '#/menu', icon: '🍽️', title: 'Menù', text: 'Guarda i piatti e i prezzi' },
   { section: 'giochi', href: '#/giochi', icon: gamepadSvg, title: 'Minigiochi', text: () => (winnersCount() > 0 ? 'Gioca e vinci un premio!' : 'Gioca e fai punti!') },
   { section: 'feedback', href: '#/feedback', icon: '💬', title: 'Feedback', text: 'Dicci cosa ne pensi' },
+  { section: 'mappa', href: '#/mappa', icon: '🗺️', title: 'Mappa', text: 'Trova stand, servizi e casse' },
 ];
 
 const boxesMarkup = () =>

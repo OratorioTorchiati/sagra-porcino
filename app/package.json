@@ -16,6 +16,7 @@
     "menu:upload": "node scripts/upload-menu.mjs",
     "load-test": "node scripts/load-test.mjs",
     "sponsor-images": "node scripts/sponsor-images.mjs",
+    "map:upload": "node scripts/upload-map.mjs",
     "memory-images": "node scripts/memory-images.mjs"
   },
   "devDependencies": {

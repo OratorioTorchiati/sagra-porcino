@@ -17,6 +17,7 @@ import { renderRegister } from './pages/register.js';
 import { renderLogin } from './pages/login.js';
 import { renderPrivacy } from './pages/privacy.js';
 import { renderFeedback } from './pages/feedback.js';
+import { renderMap } from './pages/map.js';
 import { renderNotFound } from './pages/not-found.js';
 import { renderSectionOff } from './pages/section-off.js';
 import { sectionForPath, sectionOn, onConfigChange, refreshAppConfig } from './lib/app-config.js';
@@ -37,6 +38,7 @@ startRouter(document.getElementById('app'), {
     '/giochi/classifica': section(renderLeaderboard), // prima di :gameId
     '/giochi/:gameId': section(renderGame),
     '/feedback': section(renderFeedback),
+    '/mappa': section(renderMap),
     '/profilo': renderProfile,
     '/registrati': renderRegister,
     '/accedi': renderLogin,

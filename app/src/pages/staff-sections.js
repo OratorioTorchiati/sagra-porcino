@@ -207,6 +207,7 @@ const ACTION_FILTERS = [
   ['game', 'Durata dei giochi'],
   ['quiz', 'Domande del quiz'],
   ['feedback_delete', 'Feedback cancellati'],
+  ['map', 'Mappa'],
 ];
 
 export function renderLogSection(root, ctx) {
@@ -249,7 +250,10 @@ export function renderLogSection(root, ctx) {
                 : '';
             // piatto terminato / di nuovo disponibile (D119): registrato come 'menu' con sold_out
             const soldOut = e.action === 'menu' && typeof e.details?.sold_out === 'boolean';
-            const action = soldOut ? (e.details.sold_out ? 'ha segnato come terminato' : 'ha rimesso disponibile') : (ACTIONS[e.action] ?? escapeHtml(e.action));
+            // mappa (D136): immagine nuova, punto aggiunto, modificato o tolto
+            const mapAction = e.action === 'map' &&
+              (e.details?.image ? 'ha caricato una nuova mappa' : e.details?.deleted ? 'ha tolto dalla mappa' : e.details?.new ? 'ha aggiunto alla mappa' : 'ha modificato sulla mappa');
+            const action = mapAction || (soldOut ? (e.details.sold_out ? 'ha segnato come terminato' : 'ha rimesso disponibile') : (ACTIONS[e.action] ?? escapeHtml(e.action)));
             return `<li>${formatDate(e.created_at)} · <strong>${escapeHtml(e.staff)}</strong> ${action} ${e.target ? `<strong>${escapeHtml(e.target)}</strong>` : ''}${extra}</li>`;
           })
           .join('')}</ul>${pagerMarkup(res.page, res.total, res.page_size)}`

@@ -3627,3 +3627,259 @@ tr.is-dragging .drag-handle {
     animation: none;
   }
 }
+
+/* ---------- Mappa (D136) ---------- */
+
+/* Legenda su una riga che scorre di lato (con 12 tipologie andando a capo prenderebbe mezzo schermo) */
+.map-legend {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 -1rem 0.75rem;
+  padding: 0 1rem 0.35rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.map-chip {
+  flex: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 40px;
+  padding: 0.3rem 0.75rem 0.3rem 0.35rem;
+  border: 2px solid var(--marker-color, var(--color-border));
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.map-chip:first-child {
+  padding-left: 0.75rem;
+}
+
+.map-chip.is-active {
+  background: var(--marker-color, var(--color-primary));
+  color: #fff;
+}
+
+.map-chip__dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: var(--marker-color);
+  font-size: 0.95rem;
+}
+
+.map-view {
+  position: relative;
+  height: min(62vh, 560px);
+  min-height: 320px;
+  overflow: hidden;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+  background: #eef0e6;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.map-view.is-editing {
+  border-color: var(--color-primary);
+  cursor: crosshair;
+}
+
+.map-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.map-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* Punto: pallino colorato con l'icona e il numero; resta della stessa grandezza a qualunque zoom */
+.map-marker {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--marker-color);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 35%);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transform: translate(-50%, -50%) scale(var(--zoom-inv, 1));
+  transition: transform 0.15s ease;
+}
+
+.map-marker.is-selected {
+  z-index: 2;
+  transform: translate(-50%, -50%) scale(calc(var(--zoom-inv, 1) * 1.45));
+  box-shadow: 0 0 0 4px rgb(255 255 255 / 85%), 0 4px 12px rgb(0 0 0 / 45%);
+}
+
+.map-marker__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.map-marker__number,
+.map-item__number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--marker-color);
+  border: 2px solid var(--marker-color);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.map-marker__number {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+}
+
+/* Informazioni del punto scelto: in basso, sopra la mappa */
+.map-info {
+  position: absolute;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  z-index: 3;
+  max-height: 70%;
+  overflow: auto;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 25%);
+  touch-action: auto;
+}
+
+.map-info__close {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.map-info__type {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.map-info__title {
+  margin: 0.2rem 2rem 0.2rem 0;
+  font-size: var(--text-lg);
+}
+
+.map-info__text {
+  margin: 0 0 0.25rem;
+}
+
+.map-info__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.map-info__actions .button {
+  flex: 1 1 auto;
+  width: auto;
+  min-height: 48px;
+  font-size: 1rem;
+}
+
+.map-edit-toggle {
+  margin-top: 0.75rem;
+}
+
+.map-edit-hint {
+  margin: 0.5rem 0 0;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* Elenco sotto la mappa: per tipologia, ordinato per numero */
+.map-list {
+  margin-top: 1.25rem;
+}
+
+.map-group__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 1rem 0 0.4rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 3px solid var(--marker-color);
+  font-size: 1.1rem;
+}
+
+.map-group__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.4rem 0.25rem;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-item.is-selected {
+  background: color-mix(in srgb, var(--marker-color) 12%, transparent);
+  font-weight: 700;
+}
+
+.map-upload-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 40vh;
+  margin: 0 auto 0.5rem;
+  border-radius: 4px;
+}
