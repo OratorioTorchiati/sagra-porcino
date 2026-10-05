@@ -137,6 +137,7 @@ Questo file **ha la precedenza** sugli altri documenti. Aggiornarlo a ogni nuova
 | D131 | **"Ti piace quest'app? Contattami per averne una tua"** in fondo alla home, piccolo: il link apre una nuova email a 1997giaquinto@gmail.com con oggetto "App Sagra del Porcino" (indirizzo in `app/src/config.js`, CONTACT_EMAIL). | Indirizzo visibile nel sito pubblico (scelta dell'utente). |
 | D132 | **Sponsor: ultima riga incompleta al centro**. La posizione di ogni sponsor la calcola l'app (stessa regola "riempi i buchi"); se l'ultima riga resta incompleta, i suoi sponsor si spostano al centro (uno solo su 3 colonne → colonna centrale; due → a metà colonna). La griglia usa mezze colonne per poterlo fare. | |
 | D133 | **Annullata D132**: l'ultima riga degli sponsor torna come prima (a sinistra, posizioni decise dalla griglia). Su richiesta, dopo averla vista. | |
+| D134 | **Font: Poppins per tutta l'app** (testi 400, sottotitoli e titoli in grassetto 700/800, anche nei giochi su canvas), incluso nell'app (licenza SIL OFL, offline). Prende il posto di Atkinson Hyperlegible Next e di Fraunces. **Titolo della home in Unique Kingdom**: in attesa del file con una licenza adatta (la versione gratuita è solo per uso personale); intanto resta Fraunces. | Scelta dell'utente. |
 | D35 | Il repository e il sito appartengono all'**organizzazione GitHub `OratorioTorchiati`** (gratuita), così l'indirizzo non mostra l'account personale: **https://oratoriotorchiati.github.io/sagra-porcino/**. | La radice `oratoriotorchiati.github.io` resta libera per futuri progetti dell'oratorio. |
 
 ## Questioni aperte
@@ -227,3 +228,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 10 (contenuti) | In corso | 2026-10-02 | Sponsor: BeFunctional (dal PDF vettoriale), Franco, Giaquinto Gioielli; 11 sponsor + 1 esempio (6), griglia 3 colonne piena (18 caselle). |
 | 10 (contenuti) | In corso | 2026-10-02 | Sponsor: Artemisia (12). Ultima riga al centro provata e annullata (D132, D133). |
 | 10 (contenuti) | In corso | 2026-10-05 | Sponsor completi: 12 loghi veri (ultimo Mitra, dal PDF), niente più esempi. |
+| 10 (contenuti) | In corso | 2026-10-05 | Font Poppins in tutta l'app (D134); titolo della home in attesa di Unique Kingdom. |

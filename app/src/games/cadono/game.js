@@ -8,7 +8,7 @@ import { softBackground } from '../engine/background.js';
 
 const PORCINO_KINDS = Object.keys(PORCINI);
 const EFFECT_S = 0.8;
-const TEXT_FONT = '"Atkinson Hyperlegible Next", system-ui, sans-serif';
+const TEXT_FONT = 'Poppins, system-ui, sans-serif';
 const WARM = {
   top: '#f6eedc',
   bottom: '#e6d6b3',

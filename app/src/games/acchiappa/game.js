@@ -13,7 +13,7 @@ const OBJECT_KINDS = Object.keys(BAD_OBJECTS);
 const POP_IN_S = 0.22;
 const FADE_OUT_S = 0.3;
 const FLOAT_TEXT_S = 0.8;
-const TEXT_FONT = '"Atkinson Hyperlegible Next", system-ui, sans-serif';
+const TEXT_FONT = 'Poppins, system-ui, sans-serif';
 
 const lerp = (a, b, p) => a + (b - a) * p;
 const lerpRange = (start, end, p) => [lerp(start[0], end[0], p), lerp(start[1], end[1], p)];
