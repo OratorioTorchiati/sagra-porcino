@@ -1,12 +1,13 @@
 // Mappa della sagra (#/mappa, D136): in alto la legenda (che fa anche da filtro), la mappa grande con zoom e
 // spostamento, i punti con icona colorata e numero (da 1 dentro ogni tipologia), sotto l'elenco per tipologia.
-// Toccando un punto (sulla mappa o nell'elenco) l'icona si ingrandisce e compare il riquadro con le informazioni.
+// Toccando un punto (sulla mappa o nell'elenco) l'icona si ingrandisce e compare il riquadro con le informazioni e, se la
+// mappa ha le coordinate (D139), "🚶 Google Maps / Mappe" a piedi. All'apertura inquadra i punti, con un margine.
 // Mod e Admin: "✏️ Modifica punti" → tocco sulla mappa = nuovo punto; tocco su un punto = modifica, sposta, elimina.
 
 import { html, escapeHtml } from '../lib/dom.js';
 import { topBarMarkup, bindTopBar } from '../components/top-bar.js';
 import { createZoomView } from '../components/zoom-view.js';
-import { MAP_TYPES, mapType, cachedMap, refreshMap, mapImage, numberedPoints, setPoints } from '../lib/map-data.js';
+import { MAP_TYPES, mapType, cachedMap, refreshMap, mapImage, numberedPoints, setPoints, directionsLinks } from '../lib/map-data.js';
 import { currentPlayer, isStaffRole, sessionToken } from '../lib/account.js';
 import { rpc } from '../lib/api.js';
 import { askDialog } from './staff-ui.js';
@@ -43,7 +44,7 @@ export function renderMap() {
         <div class="map-stage"><img class="map-image" alt="Mappa della sagra" draggable="false"></div>
         <div class="map-info" hidden></div>
       </div>
-      <p class="map-credit" hidden>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</p>
+      <p class="map-credit" hidden></p>
       ${staff ? '<button type="button" class="button button--secondary map-edit-toggle" data-edit hidden>✏️ Modifica punti</button>' : ''}
       <p class="map-edit-hint" hidden></p>
       <div class="map-list"></div>
@@ -117,6 +118,7 @@ export function renderMap() {
     info.hidden = !p;
     if (!p) return (info.innerHTML = '');
     const t = mapType(p.type);
+    const links = p.lat != null ? directionsLinks(p) : null;
     info.innerHTML = `
       <button type="button" class="map-info__close" data-close aria-label="Chiudi">✕</button>
       <p class="map-info__type" style="--marker-color: ${t.color}"><span class="map-item__number">${p.number}</span> ${t.icon} ${t.label}</p>
@@ -129,7 +131,12 @@ export function renderMap() {
               <button type="button" class="button button--secondary" data-action="move">↔️ Sposta</button>
               <button type="button" class="button button--secondary" data-action="delete">🗑️ Elimina</button>
             </div>`
-          : ''
+          : links
+            ? `<div class="map-info__actions">
+                <a class="button" href="${links.google}" target="_blank" rel="noopener">🚶 Google Maps</a>
+                <a class="button button--secondary" href="${links.apple}" target="_blank" rel="noopener">🚶 Mappe</a>
+              </div>`
+            : ''
       }`;
   }
 
@@ -261,10 +268,19 @@ export function renderMap() {
     if (!url) return showError('Non riesco a scaricare la mappa. Riprova tra poco.');
     img.src = url;
     view.hidden = false;
-    element.querySelector('.map-credit').hidden = !mapFromOsm(); // licenza di OpenStreetMap (D138)
+    // licenze (D138, D139): OpenStreetMap; con la mappa disegnata dal paese anche OpenFreeMap e OpenMapTiles
+    const credit = element.querySelector('.map-credit');
+    const osm = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors';
+    credit.innerHTML = map.bounds?.source === 'openfreemap' ? `${osm} · OpenFreeMap © OpenMapTiles` : osm;
+    credit.hidden = !(map.bounds?.source === 'openfreemap' || mapFromOsm());
     if (editToggle) editToggle.hidden = false;
     zoom?.destroy();
     zoom = createZoomView(view, stage, { width: map.image.width, height: map.image.height, onTap });
+    // apertura sui punti (il rettangolo che li contiene tutti, con un margine); senza punti: la vista di apertura
+    const pts = points();
+    if (pts.length) {
+      zoom.fitArea(Math.min(...pts.map((p) => p.x)), Math.min(...pts.map((p) => p.y)), Math.max(...pts.map((p) => p.x)), Math.max(...pts.map((p) => p.y)));
+    }
     renderAll();
   }
 

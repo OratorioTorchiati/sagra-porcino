@@ -3,7 +3,7 @@
 // resta chiusa. In fondo Aspetto (ordine delle sezioni, colori in arrivo) e le sezioni che arriveranno.
 // Un solo bottone Salva per tutto.
 
-import { escapeHtml } from '../lib/dom.js';
+import { escapeHtml, html, openDialog, closeDialog } from '../lib/dom.js';
 import { GAMES } from '../games/registry.js';
 import { isoToRomeLocal, romeLocalToIso, downloadText } from '../lib/staff.js';
 import { currentMenu, refreshMenu, countDishes, readMenuFile, menuTemplate } from '../lib/menu-data.js';
@@ -432,27 +432,27 @@ const feedbackBody = (res) => `
     </div>
   </div>`;
 
-// ---------- Mappa (D136): immagine caricata dall'Admin; i punti si modificano nella pagina Mappa ----------
+// ---------- Mappa (D136, D139): creata dal paese (con coordinate) o da un'immagine; i punti si modificano nella pagina ----------
 
 const mapBody = () => {
-  const image = cachedMap()?.image;
+  const map = cachedMap();
+  const image = map?.image;
+  const place = map?.bounds?.place;
   return `
   <div class="config-group">
-    <h4 class="config-group__title">Immagine della mappa</h4>
+    <h4 class="config-group__title">Mappa del paese</h4>
     <p class="config-row__hint">${
       image
-        ? `Caricata: ${image.width}×${image.height} px, ${formatDate(image.version)}.`
+        ? `${place ? `<strong>${escapeHtml(place)}</strong> · ` : ''}${image.width}×${image.height} px, ${formatDate(image.version)}.${
+            map?.bounds ? '' : ' Senza coordinate: niente "Apri con Google Maps".'
+          }`
         : 'Nessuna mappa: finché manca, la pagina Mappa dice "disponibile a breve".'
     }</p>
-    <a class="button button--secondary" href="https://www.openstreetmap.org/" target="_blank" rel="noopener">🌍 Carica da OpenStreetMap</a>
-    <ol class="config-steps">
-      <li>Sposta e ingrandisci la mappa sulla zona della sagra.</li>
-      <li>Tocca <strong>Condividi</strong> (l'icona a destra) → <strong>Immagine</strong> → formato <strong>PNG</strong> → <strong>Scarica</strong>.</li>
-      <li>Torna qui e tocca <strong>Carica una nuova mappa</strong>.</li>
-    </ol>
-    <button type="button" class="button button--secondary" data-map="upload">📤 Carica una nuova mappa</button>
+    <button type="button" class="button" data-map="maker">🗺️ Modifica mappa</button>
+    <p class="config-row__hint">Cerca il paese, scegli l'area: la mappa viene disegnata e pubblicata con le sue coordinate.</p>
+    <button type="button" class="button button--secondary" data-map="upload">📤 Carica un'immagine</button>
     <input type="file" name="map_file" accept="image/png,image/jpeg,image/webp" hidden>
-    <p class="config-row__hint">PNG, JPG o WebP.</p>
+    <p class="config-row__hint">PNG, JPG o WebP (es. una piantina disegnata): senza coordinate.</p>
   </div>`;
 };
 
@@ -608,7 +608,13 @@ export async function renderConfigSection(root, ctx) {
     }
   });
 
-  // Mappa: nuova immagine (D136), preparata su questo telefono e inviata in base64
+  // Mappa dal paese (D139): popup con ricerca, scelta dell'area, disegno e pubblicazione con le coordinate
+  form.querySelector('[data-map="maker"]')?.addEventListener('click', () => openMapMaker(ctx, error, () => {
+    refreshAppConfig({ force: true });
+    renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), '✅ Mappa pubblicata.'));
+  }));
+
+  // Mappa da un'immagine (D136), preparata su questo telefono e inviata in base64 (senza coordinate)
   const mapFile = form.map_file;
   form.querySelector('[data-map="upload"]')?.addEventListener('click', () => mapFile.click());
   mapFile?.addEventListener('change', async () => {
@@ -729,4 +735,102 @@ export async function renderConfigSection(root, ctx) {
       renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), '✅ Configurazioni salvate.'));
     }
   });
+}
+
+/**
+ * Popup "Modifica mappa" (D139): cerca il paese su OpenStreetMap, mostra le alternative, apre la mappa vera dell'area
+ * scelta (si può spostare e ingrandire) e con "Usa quest'area" la disegna in alta risoluzione e la pubblica con le
+ * coordinate degli angoli. MapLibre si scarica solo qui.
+ */
+function openMapMaker(ctx, error, onDone) {
+  const dialog = html(`
+    <dialog class="dialog staff-dialog map-maker">
+      <h2 class="dialog__title">Mappa del paese</h2>
+      <form class="map-maker__search" novalidate>
+        <input class="form-field__input" name="q" placeholder="Es. Torchiati" autocomplete="off" aria-label="Paese">
+        <button type="submit" class="button">Cerca</button>
+      </form>
+      <p class="map-maker__status" role="status"></p>
+      <ul class="map-maker__results"></ul>
+      <div class="map-maker__map" hidden></div>
+      <p class="config-row__hint map-maker__hint" hidden>Sposta e ingrandisci per inquadrare la zona della sagra: sarà tutta la mappa che i giocatori possono esplorare.</p>
+      <div class="dialog__actions">
+        <button type="button" class="button" data-use hidden>Usa quest'area</button>
+        <button type="button" class="button button--secondary" data-close>Annulla</button>
+      </div>
+    </dialog>`);
+  document.body.append(dialog);
+  const status = dialog.querySelector('.map-maker__status');
+  const results = dialog.querySelector('.map-maker__results');
+  const mapBox = dialog.querySelector('.map-maker__map');
+  const useBtn = dialog.querySelector('[data-use]');
+  let maker = null; // modulo map-maker (MapLibre)
+  let preview = null;
+  let place = null;
+  let found = [];
+  const close = () => {
+    preview?.remove();
+    closeDialog(dialog);
+    dialog.remove();
+  };
+  dialog.querySelector('[data-close]').addEventListener('click', close);
+  dialog.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    close();
+  });
+
+  dialog.querySelector('.map-maker__search').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = e.target.q.value.trim();
+    if (q.length < 2) return (status.textContent = 'Scrivi il nome del paese.');
+    status.textContent = 'Cerco…';
+    results.innerHTML = '';
+    try {
+      maker ??= await import('../lib/map-maker.js');
+      found = await maker.searchPlaces(q);
+    } catch {
+      return (status.textContent = 'Ricerca non riuscita: controlla la connessione e riprova.');
+    }
+    status.textContent = found.length ? 'Scegli il paese:' : 'Nessun risultato: prova a scrivere anche la provincia (es. "Torchiati, Avellino").';
+    results.innerHTML = found
+      .map((r, i) => `<li><button type="button" class="map-maker__result" data-i="${i}"><strong>${escapeHtml(r.label)}</strong><span>${escapeHtml(r.detail)}</span></button></li>`)
+      .join('');
+  });
+
+  results.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-i]');
+    if (!btn) return;
+    place = found[Number(btn.dataset.i)];
+    results.innerHTML = '';
+    status.textContent = `${place.label}${place.detail ? `, ${place.detail}` : ''}`;
+    mapBox.hidden = false;
+    dialog.querySelector('.map-maker__hint').hidden = false;
+    useBtn.hidden = false;
+    preview?.remove();
+    preview = maker.createPreview(mapBox, place);
+  });
+
+  useBtn.addEventListener('click', async () => {
+    useBtn.disabled = true;
+    status.textContent = 'Disegno la mappa… (qualche secondo)';
+    try {
+      const out = await maker.renderArea(preview);
+      status.textContent = `Pubblico la mappa (${out.width}×${out.height} px, circa ${Math.round((out.data.length * 3) / 4 / 1024)} KB)…`;
+      const saved = await staffCall(ctx, 'set_map_image', { p_mime: out.mime, p_data: out.data, p_width: out.width, p_height: out.height }, error);
+      if (!saved) throw new Error('immagine');
+      const bounds = await staffCall(ctx, 'set_map_bounds', {
+        p_south: out.bounds.south, p_west: out.bounds.west, p_north: out.bounds.north, p_east: out.bounds.east,
+        p_place: place.label, p_source: 'openfreemap',
+      }, error);
+      if (!bounds) throw new Error('coordinate');
+      close();
+      onDone();
+    } catch {
+      status.textContent = 'Non sono riuscito a pubblicare la mappa. Riprova.';
+      useBtn.disabled = false;
+    }
+  });
+
+  openDialog(dialog);
+  dialog.querySelector('[name="q"]').focus();
 }

@@ -33,6 +33,8 @@ export default defineConfig(({ command, isPreview }) => ({
         // Tutto il sito in cache al primo accesso: poi si apre anche in modalità aereo
         // webp: le foto del Memory, per giocare anche offline
         globPatterns: ['**/*.{js,css,html,svg,woff2,webmanifest,webp}'],
+        // MapLibre (creazione della mappa, D139) serve solo all'Admin: si scarica quando apre il popup
+        globIgnores: ['**/map-maker-*.js', '**/map-maker-*.css', '**/maplibre-gl-*.js'],
         cleanupOutdatedCaches: true,
       },
     }),

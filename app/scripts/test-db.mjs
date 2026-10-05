@@ -604,7 +604,18 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   check('mappa: lo staff aggiunge un punto', zzPoint?.ok && zzPoint.point.x === 0.25 && zzPoint.point.description === 'prova', JSON.stringify(zzPoint));
   const mapAfter = (await rpc('get_map')).body;
   check('mappa: il punto compare e la versione cambia', mapAfter?.points?.some((p) => p.id === zzPoint?.point?.id) && mapAfter.version !== mapNow?.version);
-  check('mappa: lo staff toglie il punto', (await staff('map_delete_point', { p_id: zzPoint?.point?.id }))?.ok === true);
+  // Coordinate della mappa (041, D139): angoli non validi rifiutati; con gli angoli il server calcola la posizione reale
+  check('mappa: angoli non validi → rifiutati', (await staff('set_map_bounds', { p_south: 41, p_west: 14, p_north: 40, p_east: 15 }))?.error === 'BOUNDS_INVALID');
+  const boundsBefore = (await staff('get_settings'))?.map_bounds ?? null;
+  const setB = await staff('set_map_bounds', { p_south: 40.80, p_west: 14.70, p_north: 40.84, p_east: 14.80, p_place: 'zz prova', p_source: 'openfreemap' });
+  const located = (await rpc('get_map')).body?.points?.find((p) => p.id === zzPoint?.point?.id);
+  // x 0.25 → 14.725; y 0.75 → poco sotto il centro in latitudine (Mercatore), fra 40.80 e 40.82
+  check('mappa: con gli angoli il punto ha la posizione reale', setB?.ok && Math.abs(located?.lng - 14.725) < 1e-6 && located?.lat > 40.80 && located?.lat < 40.82, JSON.stringify(located));
+  const restoreB = boundsBefore
+    ? await staff('set_map_bounds', { p_south: boundsBefore.south, p_west: boundsBefore.west, p_north: boundsBefore.north, p_east: boundsBefore.east, p_place: boundsBefore.place, p_source: boundsBefore.source })
+    : await staff('set_map_bounds', { p_south: null, p_west: null, p_north: null, p_east: null });
+  check('mappa: angoli rimessi com\'erano', restoreB?.ok === true);
+  check('mappa: lo staff toglie il punto',(await staff('map_delete_point', { p_id: zzPoint?.point?.id }))?.ok === true);
   check('mappa: immagine non valida → rifiutata', (await staff('set_map_image', { p_mime: 'image/gif', p_data: 'AAAA', p_width: 10, p_height: 10 }))?.error === 'IMAGE_INVALID');
   if (mine) {
     const rep = await staff('attempt_replay', { p_attempt_id: mine.id });

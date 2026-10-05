@@ -45,6 +45,7 @@ Supabase → **SQL Editor** → **New query** → incollare il contenuto del fil
 | `supabase/migrations/038_sponsor.sql` | 22 | sezione Sponsor (accendibile, non ordinabile), colonne della tabella |
 | `supabase/migrations/039_mappa.sql` | 23 | mappa: sezione, immagine nel database, punti di interesse |
 | `supabase/migrations/040_mappa_openstreetmap.sql` | 24 | mappa: interruttore "Immagine da OpenStreetMap" (scritta di attribuzione) |
+| `supabase/migrations/041_mappa_coordinate.sql` | 25 | mappa: angoli e paese, posizione reale dei punti calcolata dal server |
 | `supabase/migrations/033_feedback_rimossi.sql` | 17 | feedback rimossi: il testo resta, chi li ha rimossi e quando; elenco Attivi / Rimossi |
 | `supabase/migrations/032_feedback_cancellati.sql` | 16 | feedback cancellati dallo staff: restano segnati (senza testo), il giorno resta usato |
 | `supabase/migrations/031_un_feedback_al_giorno.sql` | 15 | un feedback al giorno; get_feedback_page (3 migliori + si può ancora scrivere oggi?) |

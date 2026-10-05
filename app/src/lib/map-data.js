@@ -30,6 +30,12 @@ const IMAGE_URL = '/__sagra-mappa-immagine';
 let data = readJson(KEY, null); // { version, points, image: { version, width, height } | null }
 let imageUrl = null; // { version, url } già pronta in questa sessione
 
+/** Indicazioni a piedi verso un punto con la posizione reale (D139) */
+export const directionsLinks = ({ lat, lng }) => ({
+  google: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`,
+  apple: `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=w`,
+});
+
 /** Punti con il numero dentro la tipologia (da 1, in ordine di inserimento) */
 export function numberedPoints(points = data?.points ?? []) {
   const counters = {};
@@ -48,7 +54,7 @@ export async function refreshMap({ force = false } = {}) {
   try {
     const res = await rpc('get_map');
     if (res.ok) {
-      data = { version: res.version ?? null, points: res.points ?? [], image: res.image ?? null };
+      data = { version: res.version ?? null, points: res.points ?? [], image: res.image ?? null, bounds: res.bounds ?? null };
       writeJson(KEY, data);
     }
   } catch {

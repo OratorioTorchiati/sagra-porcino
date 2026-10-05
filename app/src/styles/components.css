@@ -3902,3 +3902,61 @@ tr.is-dragging .drag-handle {
   margin: 0 auto 0.5rem;
   border-radius: 4px;
 }
+
+/* Popup "Modifica mappa" (D139) */
+.map-maker {
+  width: min(94vw, 560px);
+}
+
+.map-maker__search {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.map-maker__search .form-field__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.map-maker__search .button {
+  width: auto;
+}
+
+.map-maker__status {
+  margin: 0.5rem 0;
+  font-weight: 600;
+}
+
+.map-maker__results {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-maker__result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.5rem 0.25rem;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-maker__result span {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.map-maker__map {
+  height: 52vh;
+  max-height: 420px;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
