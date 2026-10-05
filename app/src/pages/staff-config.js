@@ -444,7 +444,7 @@ const mapBody = (res) => {
         ? `Caricata: ${image.width}×${image.height} px, ${formatDate(image.version)}.`
         : 'Nessuna mappa: finché manca, la pagina Mappa dice "disponibile a breve".'
     }</p>
-    <a class="button button--secondary" href="https://www.openstreetmap.org/" target="_blank" rel="noopener">🌍 Prendi una mappa da OpenStreetMap</a>
+    <a class="button button--secondary" href="https://www.openstreetmap.org/" target="_blank" rel="noopener">🌍 Carica da OpenStreetMap</a>
     <ol class="config-steps">
       <li>Sposta e ingrandisci la mappa sulla zona della sagra.</li>
       <li>Tocca <strong>Condividi</strong> (l'icona a destra) → <strong>Immagine</strong> → formato <strong>PNG</strong> → <strong>Scarica</strong>.</li>
