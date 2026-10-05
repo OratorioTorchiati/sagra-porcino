@@ -441,13 +441,13 @@ const mapBody = () => {
   return `
   <div class="config-group">
     <h4 class="config-group__title">Mappa del paese</h4>
-    <p class="config-row__hint">${
-      image
-        ? `${place ? `<strong>${escapeHtml(place)}</strong> · ` : ''}${image.width}×${image.height} px, ${formatDate(image.version)}.${
-            map?.bounds ? '' : ' Senza coordinate: niente "Apri con Google Maps".'
-          }`
-        : 'Nessuna mappa: finché manca, la pagina Mappa dice "disponibile a breve".'
-    }</p>
+    ${
+      !image
+        ? '<p class="config-row__hint">Nessuna mappa: finché manca, la pagina Mappa dice "disponibile a breve".</p>'
+        : place
+          ? `<p class="config-row__hint">Paese: <strong>${escapeHtml(place)}</strong></p>`
+          : ''
+    }
     <button type="button" class="button" data-map="maker">🗺️ Modifica mappa</button>
     <p class="config-row__hint">Cerca il paese, scegli l'area: la mappa viene disegnata e pubblicata con le sue coordinate.</p>
     <button type="button" class="button button--secondary" data-map="upload">📤 Carica un'immagine</button>
