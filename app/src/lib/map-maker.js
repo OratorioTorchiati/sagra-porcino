@@ -36,8 +36,18 @@ export async function searchPlaces(text) {
     });
 }
 
-/** Mappa nel popup per scegliere l'area (nord sempre in alto: niente rotazione) */
-export function createPreview(container, place) {
+// Luoghi della mappa base (bar, negozi, parcheggi, fermate, aeroporti): livelli "poi" e "aerodrome_label" (D141)
+const POI_SOURCE_LAYERS = ['poi', 'aerodrome_label'];
+
+/** Mostra o nasconde i luoghi della mappa base (strade, vie e paesi restano) */
+export function setPoisVisible(map, visible) {
+  for (const layer of map.getStyle()?.layers ?? []) {
+    if (POI_SOURCE_LAYERS.includes(layer['source-layer'])) map.setLayoutProperty(layer.id, 'visibility', visible ? 'visible' : 'none');
+  }
+}
+
+/** Mappa nel popup per scegliere l'area (nord sempre in alto: niente rotazione); luoghi nascosti di base */
+export function createPreview(container, place, { pois = false } = {}) {
   const map = new maplibregl.Map({
     container,
     style: STYLE,
@@ -53,6 +63,8 @@ export function createPreview(container, place) {
   });
   map.touchZoomRotate.disableRotation();
   map.keyboard.disableRotation();
+  map.showPois = pois;
+  map.once('load', () => setPoisVisible(map, map.showPois));
   return map;
 }
 
@@ -77,7 +89,11 @@ export async function renderArea(preview) {
   });
   try {
     await new Promise((resolve, reject) => {
-      map.once('idle', resolve);
+      // stessi luoghi visibili o nascosti della mappa del popup, poi si aspetta che sia tutto disegnato
+      map.once('load', () => {
+        setPoisVisible(map, preview.showPois === true);
+        map.once('idle', resolve);
+      });
       map.once('error', (e) => reject(e.error ?? new Error('mappa')));
     });
     const b = map.getBounds();

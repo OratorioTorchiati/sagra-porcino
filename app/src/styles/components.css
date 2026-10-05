@@ -3967,3 +3967,20 @@ tr.is-dragging .drag-handle {
   border-radius: var(--radius);
   overflow: hidden;
 }
+
+.map-maker__pois {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  font-size: 0.95rem;
+}
+
+.map-maker__pois[hidden] {
+  display: none;
+}
+
+.map-maker__pois input {
+  width: 1.3rem;
+  height: 1.3rem;
+}

@@ -767,6 +767,7 @@ function openMapMaker(ctx, error, onDone) {
       <ul class="map-maker__results"></ul>
       <div class="map-maker__map" hidden></div>
       <p class="config-row__hint map-maker__hint" hidden>Sposta e ingrandisci per inquadrare la zona della sagra: sarà tutta la mappa che i giocatori possono esplorare.</p>
+      <label class="map-maker__pois" hidden><input type="checkbox" name="pois"> Mostra bar, negozi, parcheggi…</label>
       <div class="dialog__actions">
         <button type="button" class="button" data-use hidden>Usa quest'area</button>
         <button type="button" class="button button--secondary" data-close>Annulla</button>
@@ -777,6 +778,13 @@ function openMapMaker(ctx, error, onDone) {
   const results = dialog.querySelector('.map-maker__results');
   const mapBox = dialog.querySelector('.map-maker__map');
   const useBtn = dialog.querySelector('[data-use]');
+  // luoghi della mappa base (D141): nascosti di base, la mappa pubblicata segue la scelta
+  const poisBox = dialog.querySelector('.map-maker__pois');
+  poisBox.querySelector('input').addEventListener('change', (e) => {
+    if (!preview) return;
+    preview.showPois = e.target.checked;
+    maker.setPoisVisible(preview, e.target.checked);
+  });
   let maker = null; // modulo map-maker (MapLibre)
   let preview = null;
   let place = null;
@@ -822,7 +830,8 @@ function openMapMaker(ctx, error, onDone) {
     useBtn.hidden = false;
     useBtn.disabled = true;
     preview?.remove();
-    preview = maker.createPreview(mapBox, place);
+    preview = maker.createPreview(mapBox, place, { pois: poisBox.querySelector('input').checked });
+    poisBox.hidden = false;
     // "Usa quest'area" solo quando la mappa inquadrata è completa e ferma: spento mentre si sposta o si carica
     preview.on('movestart', () => (useBtn.disabled = true));
     preview.on('dataloading', () => (useBtn.disabled = true));
