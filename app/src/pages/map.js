@@ -76,6 +76,7 @@ export function renderMap() {
   // "Mostra la mia posizione" (D142): resta solo sul telefono, mai inviata al server; si spegne chiudendo la pagina
   let me = null; // { x, y, lat, lng, accuracy }
   let watchId = null;
+  let meTimer = null; // nessuna risposta dal telefono (né permesso né errore): dopo un po' si spiega cosa fare
   const meBox = element.querySelector('.map-me');
   const meBtn = element.querySelector('[data-locate]');
   const meStatus = element.querySelector('.map-me__status');
@@ -295,6 +296,7 @@ export function renderMap() {
   // ---------- La mia posizione (D142) ----------
 
   function stopMe() {
+    clearTimeout(meTimer);
     if (watchId !== null) navigator.geolocation.clearWatch(watchId);
     watchId = null;
     me = null;
@@ -303,16 +305,62 @@ export function renderMap() {
     renderAll();
   }
 
+  // Posizione non ottenuta: una pagina web non può aprire le impostazioni del telefono, quindi si spiega dove andare
+  function locationProblem(kind) {
+    const ua = navigator.userAgent;
+    const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|Telegram/.test(ua);
+    let cause;
+    let steps;
+    if (kind === 'unsupported' || inApp) {
+      cause = inApp
+        ? 'Sembra che hai aperto l\'app dentro un\'altra app (WhatsApp, Instagram, Facebook…), che non dà la posizione.'
+        : 'Sembra che hai un browser che non dà la posizione.';
+      const browser = ios ? 'Safari' : 'Chrome';
+      steps = [`Tocca i tre puntini (⋮ o …) e scegli "Apri in ${browser}" o "Apri nel browser".`];
+    } else if (kind === 'denied') {
+      cause = 'Sembra che hai bloccato la posizione per questo sito nelle impostazioni.';
+      steps = ios
+        ? ['Impostazioni → Privacy e sicurezza → Localizzazione: deve essere attiva.',
+           'Sempre lì: Siti web di Safari → "Mentre usi l\'app".',
+           'In Safari tocca "aA" accanto all\'indirizzo → Impostazioni sito web → Posizione → Chiedi.']
+        : ['Tocca il lucchetto (o ⓘ) a sinistra dell\'indirizzo → Autorizzazioni → Posizione → Consenti.',
+           'Se non basta: Impostazioni del telefono → App → Chrome → Autorizzazioni → Posizione → Consenti.'];
+    } else {
+      cause = 'Sembra che hai la posizione del telefono spenta nelle impostazioni, oppure il segnale è troppo debole.';
+      steps = ios
+        ? ['Impostazioni → Privacy e sicurezza → Localizzazione: attivala.']
+        : ['Scorri dall\'alto dello schermo e attiva "Posizione" (o "Localizzazione").'];
+    }
+    steps.push('Poi torna qui e tocca di nuovo "Mostra la mia posizione".');
+    meStatus.textContent = 'Non riesco ad ottenere le tue coordinate.';
+    askDialog({
+      title: '📍 Posizione non disponibile',
+      body: `<p>Non riesco ad ottenere le tue coordinate. ${cause}</p>
+        <ol class="map-me__steps">${steps.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}</ol>`,
+      confirmLabel: 'Ho capito',
+      infoOnly: true,
+    });
+  }
+
   function toggleMe() {
     if (watchId !== null) return stopMe();
     const bounds = cachedMap()?.bounds;
-    if (!navigator.geolocation || !bounds) return (meStatus.textContent = 'Questo telefono non può mostrare la posizione.');
+    if (!bounds) return;
+    if (!navigator.geolocation) return locationProblem('unsupported');
     meStatus.textContent = 'Cerco la tua posizione…';
     meBtn.textContent = '🙈 Nascondi la mia posizione';
     let first = true;
+    // il "timeout" del browser non conta l'attesa del permesso: se il telefono non mostra la richiesta si resterebbe fermi
+    meTimer = setTimeout(() => {
+      if (destroyed || !first || watchId === null) return;
+      stopMe();
+      locationProblem('unavailable');
+    }, 25000);
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         if (destroyed) return;
+        clearTimeout(meTimer);
         const { latitude: lat, longitude: lng, accuracy } = pos.coords;
         me = { ...latLngToXY(bounds, lat, lng), lat, lng, accuracy };
         const inside = me.x >= 0 && me.x <= 1 && me.y >= 0 && me.y <= 1;
@@ -329,11 +377,9 @@ export function renderMap() {
         renderMe();
       },
       (err) => {
-        const denied = err.code === 1;
+        if (destroyed) return;
         stopMe();
-        meStatus.textContent = denied
-          ? 'Posizione non permessa: puoi attivarla nelle impostazioni del browser per questo sito.'
-          : 'Posizione non disponibile in questo momento. Riprova.';
+        locationProblem(err.code === 1 ? 'denied' : 'unavailable');
       },
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
     );
@@ -380,6 +426,7 @@ export function renderMap() {
     element,
     destroy: () => {
       destroyed = true;
+      clearTimeout(meTimer);
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       zoom?.destroy();
     },

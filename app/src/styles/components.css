@@ -4078,3 +4078,14 @@ tr.is-dragging .drag-handle {
 .map-me .button {
   font-size: 1.05rem; /* "Nascondi la mia posizione" su una riga */
 }
+
+/* passi per sbloccare la posizione, nella finestra "Posizione non disponibile" */
+.map-me__steps {
+  margin: 0.5rem 0 0;
+  padding-left: 1.3rem;
+  line-height: 1.45;
+}
+
+.map-me__steps li + li {
+  margin-top: 0.4rem;
+}
