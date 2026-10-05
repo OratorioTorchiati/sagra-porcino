@@ -434,7 +434,7 @@ const feedbackBody = (res) => `
 
 // ---------- Mappa (D136): immagine caricata dall'Admin; i punti si modificano nella pagina Mappa ----------
 
-const mapBody = (res) => {
+const mapBody = () => {
   const image = cachedMap()?.image;
   return `
   <div class="config-group">
@@ -453,12 +453,6 @@ const mapBody = (res) => {
     <button type="button" class="button button--secondary" data-map="upload">📤 Carica una nuova mappa</button>
     <input type="file" name="map_file" accept="image/png,image/jpeg,image/webp" hidden>
     <p class="config-row__hint">PNG, JPG o WebP.</p>
-    <div class="config-row">
-      <span class="config-row__label">Immagine da OpenStreetMap
-        <span class="config-row__hint">Sotto la mappa compare "© OpenStreetMap contributors"</span></span>
-      ${switchMarkup('map_osm', res.map_osm !== false, 'Immagine da OpenStreetMap')}
-    </div>
-    <p class="config-row__hint">I punti di interesse si aggiungono e si modificano nella pagina <strong>🗺️ Mappa</strong> → ✏️ Modifica punti.</p>
   </div>`;
 };
 
@@ -713,7 +707,6 @@ export async function renderConfigSection(root, ctx) {
     const values = {
       sections: Object.fromEntries([...SECTIONS, SPONSOR_SECTION].map((s) => [s.id, form[`section_${s.id}`].checked])),
       sponsor_columns: sponsorCols,
-      map_osm: form.map_osm.checked,
       winners,
       leaderboard_public: form.leaderboard_public.checked,
       attempts_per_day: perDay, // 0 = illimitati
