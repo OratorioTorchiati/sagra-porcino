@@ -138,6 +138,7 @@ Questo file **ha la precedenza** sugli altri documenti. Aggiornarlo a ogni nuova
 | D132 | **Sponsor: ultima riga incompleta al centro**. La posizione di ogni sponsor la calcola l'app (stessa regola "riempi i buchi"); se l'ultima riga resta incompleta, i suoi sponsor si spostano al centro (uno solo su 3 colonne → colonna centrale; due → a metà colonna). La griglia usa mezze colonne per poterlo fare. | |
 | D133 | **Annullata D132**: l'ultima riga degli sponsor torna come prima (a sinistra, posizioni decise dalla griglia). Su richiesta, dopo averla vista. | |
 | D134 | **Font: Poppins per tutta l'app** (testi 400, sottotitoli e titoli in grassetto 700/800, anche nei giochi su canvas), incluso nell'app (licenza SIL OFL, offline). Prende il posto di Atkinson Hyperlegible Next e di Fraunces. **Titolo della home in Unique Kingdom**: in attesa del file con una licenza adatta (la versione gratuita è solo per uso personale); intanto resta Fraunces. | Scelta dell'utente. |
+| D135 | **Titolo della home in Abril Fatface** (aggiorna D134; licenza SIL OFL, inclusa nell'app) al posto di Unique Kingdom, la cui versione gratuita è solo per uso personale. Tolto Fraunces. Titoli dei riquadri della home un po' più piccoli (grassetto 700) e "I nostri sponsor:" più piccolo; nei Minigiochi i riquadri restano come prima. | Scelto tra 6 font liberi. |
 | D35 | Il repository e il sito appartengono all'**organizzazione GitHub `OratorioTorchiati`** (gratuita), così l'indirizzo non mostra l'account personale: **https://oratoriotorchiati.github.io/sagra-porcino/**. | La radice `oratoriotorchiati.github.io` resta libera per futuri progetti dell'oratorio. |
 
 ## Questioni aperte
@@ -229,3 +230,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 10 (contenuti) | In corso | 2026-10-02 | Sponsor: Artemisia (12). Ultima riga al centro provata e annullata (D132, D133). |
 | 10 (contenuti) | In corso | 2026-10-05 | Sponsor completi: 12 loghi veri (ultimo Mitra, dal PDF), niente più esempi. |
 | 10 (contenuti) | In corso | 2026-10-05 | Font Poppins in tutta l'app (D134); titolo della home in attesa di Unique Kingdom. |
+| 10 (contenuti) | In corso | 2026-10-05 | Titolo della home in Abril Fatface, titoli della home più piccoli (D135). |

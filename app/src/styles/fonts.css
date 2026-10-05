@@ -1,7 +1,7 @@
 /* Font inclusi nell'app (solo caratteri latini): funzionano offline, nessuna richiesta esterna.
    Licenza SIL Open Font License 1.1, vedi src/assets/fonts/LICENSE-*.txt
    - Poppins (D134): tutto il testo; pesi 400 normale, 500, 600, 700 grassetto (sottotitoli), 800 titoli.
-   - Fraunces: per ora solo il titolo della home, finché non c'è il file di Unique Kingdom (vedi --font-brand). */
+   - Abril Fatface (D135): solo il titolo della home (--font-brand), al posto di Unique Kingdom (licenza solo personale). */
 
 @font-face {
   font-family: 'Poppins';
@@ -44,9 +44,9 @@
 }
 
 @font-face {
-  font-family: 'Fraunces';
+  font-family: 'Abril Fatface';
   font-style: normal;
   font-display: swap;
-  font-weight: 100 900;
-  src: url('../assets/fonts/fraunces-latin-wght-normal.woff2') format('woff2');
+  font-weight: 400;
+  src: url('../assets/fonts/abril-fatface-latin-400-normal.woff2') format('woff2');
 }

@@ -16,8 +16,7 @@
   /* Tipografia */
   --font-body: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-title: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; /* titoli e sottotitoli in grassetto */
-  /* titolo della home (D134): Unique Kingdom quando ci sarà il file con la licenza giusta; intanto Fraunces */
-  --font-brand: 'Unique Kingdom', 'Fraunces', Georgia, serif;
+  --font-brand: 'Abril Fatface', Georgia, 'Times New Roman', serif; /* solo il titolo della home (D135) */
   --text-base: 1.125rem;        /* 18px: minimo per i testi */
   --text-lg: 1.375rem;
   --text-xl: 1.75rem;
