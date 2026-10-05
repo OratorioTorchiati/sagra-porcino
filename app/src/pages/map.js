@@ -122,21 +122,26 @@ export function renderMap() {
     info.innerHTML = `
       <button type="button" class="map-info__close" data-close aria-label="Chiudi">✕</button>
       <p class="map-info__type" style="--marker-color: ${t.color}"><span class="map-item__number">${p.number}</span> ${t.icon} ${t.label}</p>
-      <h2 class="map-info__title">${escapeHtml(p.title)}</h2>
-      ${p.description ? `<p class="map-info__text">${escapeHtml(p.description)}</p>` : ''}
-      ${
-        editing
-          ? `<div class="map-info__actions">
-              <button type="button" class="button button--secondary" data-action="edit">✏️ Modifica</button>
-              <button type="button" class="button button--secondary" data-action="move">↔️ Sposta</button>
-              <button type="button" class="button button--secondary" data-action="delete">🗑️ Elimina</button>
-            </div>`
-          : links
-            ? `<div class="map-info__actions">
-                <a class="button" href="${links.google}" target="_blank" rel="noopener">🚶 Google Maps</a>
-                <a class="button button--secondary" href="${links.apple}" target="_blank" rel="noopener">🚶 Mappe</a>
+      <div class="map-info__head">
+        <h2 class="map-info__title">${escapeHtml(p.title)}</h2>
+        ${
+          editing
+            ? `<div class="map-info__tools">
+                <button type="button" class="icon-button" data-action="edit" aria-label="Modifica il punto" title="Modifica">✏️</button>
+                <button type="button" class="icon-button" data-action="move" aria-label="Sposta il punto" title="Sposta">↔️</button>
+                <button type="button" class="icon-button icon-button--danger" data-action="delete" aria-label="Elimina il punto" title="Elimina">🗑️</button>
               </div>`
             : ''
+        }
+      </div>
+      ${p.description ? `<p class="map-info__text">${escapeHtml(p.description)}</p>` : ''}
+      ${
+        !editing && links
+          ? `<div class="map-info__actions">
+              <a class="button" href="${links.google}" target="_blank" rel="noopener">🚶 Google Maps</a>
+              <a class="button button--secondary" href="${links.apple}" target="_blank" rel="noopener">🚶 Mappe</a>
+            </div>`
+          : ''
       }`;
   }
 
