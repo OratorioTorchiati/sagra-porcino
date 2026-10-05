@@ -81,6 +81,8 @@ export function menuVersion() {
 /** Versione dei punti della mappa e della sua immagine (D136); undefined = non ancora saputo */
 export const mapVersion = () => config?.map_version;
 export const mapImageVersion = () => config?.map_image_version;
+/** L'immagine della mappa viene da OpenStreetMap? (D138; senza informazioni: sì) */
+export const mapFromOsm = () => config?.map_osm !== false;
 
 /** Sezione a cui appartiene un percorso ("/giochi/quiz" → giochi), o null */
 export function sectionForPath(path) {
@@ -116,6 +118,7 @@ export async function refreshAppConfig({ force = false } = {}) {
       sponsor_columns: result.sponsor_columns,
       map_version: result.map_version ?? null,
       map_image_version: result.map_image_version ?? null,
+      map_osm: result.map_osm,
     };
     const changed = JSON.stringify(next) !== JSON.stringify(config);
     config = next;

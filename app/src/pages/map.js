@@ -10,6 +10,7 @@ import { MAP_TYPES, mapType, cachedMap, refreshMap, mapImage, numberedPoints, se
 import { currentPlayer, isStaffRole, sessionToken } from '../lib/account.js';
 import { rpc } from '../lib/api.js';
 import { askDialog } from './staff-ui.js';
+import { mapFromOsm } from '../lib/app-config.js';
 
 const markerMarkup = (p, selected) => {
   const t = mapType(p.type);
@@ -42,6 +43,7 @@ export function renderMap() {
         <div class="map-stage"><img class="map-image" alt="Mappa della sagra" draggable="false"></div>
         <div class="map-info" hidden></div>
       </div>
+      <p class="map-credit" hidden>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</p>
       ${staff ? '<button type="button" class="button button--secondary map-edit-toggle" data-edit hidden>✏️ Modifica punti</button>' : ''}
       <p class="map-edit-hint" hidden></p>
       <div class="map-list"></div>
@@ -259,6 +261,7 @@ export function renderMap() {
     if (!url) return showError('Non riesco a scaricare la mappa. Riprova tra poco.');
     img.src = url;
     view.hidden = false;
+    element.querySelector('.map-credit').hidden = !mapFromOsm(); // licenza di OpenStreetMap (D138)
     if (editToggle) editToggle.hidden = false;
     zoom?.destroy();
     zoom = createZoomView(view, stage, { width: map.image.width, height: map.image.height, onTap });

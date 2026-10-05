@@ -595,6 +595,7 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
   // Mappa (039, D136): lettura per tutti; punti solo da Mod e Admin; un punto di prova aggiunto e tolto
   const mapNow = (await rpc('get_map')).body;
   check('mappa: get_map risponde anche senza account', mapNow?.ok === true && Array.isArray(mapNow.points));
+  check('mappa: get_app_config dice se l\'immagine viene da OpenStreetMap', typeof (await rpc('get_app_config')).body?.map_osm === 'boolean');
   check('mappa: get_app_config porta la versione dei punti', 'map_version' in ((await rpc('get_app_config')).body ?? {}));
   check('mappa: un giocatore non può aggiungere punti', (await rpc('staff_map_save_point', { p_token: t5Token, p_id: null, p_type: 'wc', p_title: 'zz', p_description: null, p_x: 0.5, p_y: 0.5 })).body?.error === 'NOT_STAFF');
   check('mappa: tipologia sconosciuta → rifiutata', (await staff('map_save_point', { p_id: null, p_type: 'casino', p_title: 'zz prova', p_description: null, p_x: 0.5, p_y: 0.5 }))?.error === 'POINT_INVALID');

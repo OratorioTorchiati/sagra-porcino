@@ -434,7 +434,7 @@ const feedbackBody = (res) => `
 
 // ---------- Mappa (D136): immagine caricata dall'Admin; i punti si modificano nella pagina Mappa ----------
 
-const mapBody = () => {
+const mapBody = (res) => {
   const image = cachedMap()?.image;
   return `
   <div class="config-group">
@@ -444,9 +444,20 @@ const mapBody = () => {
         ? `Caricata: ${image.width}×${image.height} px, ${formatDate(image.version)}.`
         : 'Nessuna mappa: finché manca, la pagina Mappa dice "disponibile a breve".'
     }</p>
+    <a class="button button--secondary" href="https://www.openstreetmap.org/" target="_blank" rel="noopener">🌍 Prendi una mappa da OpenStreetMap</a>
+    <ol class="config-steps">
+      <li>Sposta e ingrandisci la mappa sulla zona della sagra.</li>
+      <li>Tocca <strong>Condividi</strong> (l'icona a destra) → <strong>Immagine</strong> → formato <strong>PNG</strong> → <strong>Scarica</strong>.</li>
+      <li>Torna qui e tocca <strong>Carica una nuova mappa</strong>.</li>
+    </ol>
     <button type="button" class="button button--secondary" data-map="upload">📤 Carica una nuova mappa</button>
     <input type="file" name="map_file" accept="image/png,image/jpeg,image/webp" hidden>
     <p class="config-row__hint">PNG, JPG o WebP.</p>
+    <div class="config-row">
+      <span class="config-row__label">Immagine da OpenStreetMap
+        <span class="config-row__hint">Sotto la mappa compare "© OpenStreetMap contributors"</span></span>
+      ${switchMarkup('map_osm', res.map_osm !== false, 'Immagine da OpenStreetMap')}
+    </div>
     <p class="config-row__hint">I punti di interesse si aggiungono e si modificano nella pagina <strong>🗺️ Mappa</strong> → ✏️ Modifica punti.</p>
   </div>`;
 };
@@ -702,6 +713,7 @@ export async function renderConfigSection(root, ctx) {
     const values = {
       sections: Object.fromEntries([...SECTIONS, SPONSOR_SECTION].map((s) => [s.id, form[`section_${s.id}`].checked])),
       sponsor_columns: sponsorCols,
+      map_osm: form.map_osm.checked,
       winners,
       leaderboard_public: form.leaderboard_public.checked,
       attempts_per_day: perDay, // 0 = illimitati
