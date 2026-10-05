@@ -446,8 +446,7 @@ const mapBody = () => {
     }</p>
     <button type="button" class="button button--secondary" data-map="upload">📤 Carica una nuova mappa</button>
     <input type="file" name="map_file" accept="image/png,image/jpeg,image/webp" hidden>
-    <p class="config-row__hint">PNG, JPG o WebP. Viene rimpicciolita e compressa su questo telefono prima dell'invio: i telefoni la
-      scaricano una volta sola. I punti restano dove sono (in proporzione): dopo una mappa nuova controllali.</p>
+    <p class="config-row__hint">PNG, JPG o WebP.</p>
     <p class="config-row__hint">I punti di interesse si aggiungono e si modificano nella pagina <strong>🗺️ Mappa</strong> → ✏️ Modifica punti.</p>
   </div>`;
 };
