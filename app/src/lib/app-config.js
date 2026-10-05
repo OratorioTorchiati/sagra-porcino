@@ -15,13 +15,14 @@ export const SECTIONS = [
   { id: 'giochi', label: 'Minigiochi', icon: '🎮', path: '/giochi', defaultOn: true },
   { id: 'feedback', label: 'Feedback', icon: '💬', path: '/feedback', defaultOn: false },
   { id: 'mappa', label: 'Mappa', icon: '🗺️', path: '/mappa', defaultOn: false },
+  { id: 'calendario', label: 'Calendario eventi', icon: '📅', path: '/calendario', defaultOn: false },
 ];
 
 /** Sponsor (D126): si accende e si spegne, ma non si ordina: sempre in fondo alla home, senza pagina propria */
 export const SPONSOR_SECTION = { id: 'sponsor', label: 'Sponsor', icon: '🤝', defaultOn: false };
 
 /** Sezioni che arriveranno (nelle Configurazioni si vedono come "in arrivo") */
-export const FUTURE_SECTIONS = [{ label: 'Calendario eventi', icon: '📅' }];
+export const FUTURE_SECTIONS = [];
 
 const KEY = 'sagra-config';
 const listeners = new Set();
@@ -83,6 +84,8 @@ export const mapVersion = () => config?.map_version;
 export const mapImageVersion = () => config?.map_image_version;
 /** L'immagine della mappa viene da OpenStreetMap? (D138; senza informazioni: sì) */
 export const mapFromOsm = () => config?.map_osm !== false;
+/** Versione degli eventi del calendario (D145); undefined = non ancora saputo */
+export const eventsVersion = () => config?.events_version;
 
 /** Sezione a cui appartiene un percorso ("/giochi/quiz" → giochi), o null */
 export function sectionForPath(path) {
@@ -119,6 +122,7 @@ export async function refreshAppConfig({ force = false } = {}) {
       map_version: result.map_version ?? null,
       map_image_version: result.map_image_version ?? null,
       map_osm: result.map_osm,
+      events_version: result.events_version ?? null,
     };
     const changed = JSON.stringify(next) !== JSON.stringify(config);
     config = next;

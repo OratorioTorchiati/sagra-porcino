@@ -492,7 +492,15 @@ const aspectBody = (res) => `
     </div>
   </div>`;
 
-const BODIES = { giochi: gamesBody, menu: menuBody, feedback: feedbackBody, mappa: mapBody };
+// ---------- Calendario (D145): nessuna impostazione, gli eventi si gestiscono nella pagina ----------
+
+const calendarBody = () => `
+  <div class="config-group">
+    <p class="config-row__hint">Mod e Admin aggiungono, modificano ed eliminano gli eventi direttamente nella pagina
+      <a href="#/calendario">📅 Calendario</a> (anche quando la sezione è spenta).</p>
+  </div>`;
+
+const BODIES = { giochi: gamesBody, menu: menuBody, feedback: feedbackBody, mappa: mapBody, calendario: calendarBody };
 
 /** Scheda a tendina: titolo che apre e chiude, interruttore (se c'è), contenuto */
 const cardMarkup = ({ id, icon, label, toggle, body }) => `
@@ -534,10 +542,14 @@ export async function renderConfigSection(root, ctx) {
         body: sponsorBody(res),
       })}
       ${cardMarkup({ id: 'aspetto', icon: '🎨', label: 'Aspetto', body: aspectBody(res) })}
-      <section class="config-card config-card--future">
+      ${
+        FUTURE_SECTIONS.length
+          ? `<section class="config-card config-card--future">
         <h3 class="config-card__title">In arrivo</h3>
         <ul class="config-future">${FUTURE_SECTIONS.map((s) => `<li>${s.icon} ${s.label}</li>`).join('')}</ul>
-      </section>
+      </section>`
+          : ''
+      }
       <div class="config-save">
         <button type="submit" class="button">Salva</button>
         <p class="staff-ok" role="status" hidden></p>

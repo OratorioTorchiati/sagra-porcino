@@ -12,7 +12,9 @@ import { MAP_TYPES, mapType, cachedMap, refreshMap, mapImage, numberedPoints, se
 import { currentPlayer, isStaffRole, sessionToken } from '../lib/account.js';
 import { rpc } from '../lib/api.js';
 import { askDialog } from './staff-ui.js';
-import { mapFromOsm } from '../lib/app-config.js';
+import { mapFromOsm, sectionOn } from '../lib/app-config.js';
+import { openWithMarkup, handleOpenWithClick, pointEventsMarkup } from '../components/point-info.js';
+import { refreshEvents, eventsAt, setEvents, cachedEvents } from '../lib/events-data.js';
 
 const markerMarkup = (p, selected) => {
   const t = mapType(p.type);
@@ -82,6 +84,8 @@ export function renderMap() {
   const meStatus = element.querySelector('.map-me__status');
 
   const points = () => numberedPoints();
+  // eventi del calendario nel riquadro di un punto (D145): se il Calendario è acceso (lo staff li vede sempre)
+  const showEvents = () => staff || sectionOn('calendario');
   const visible = () => points().filter((p) => !filter || p.type === filter);
   const showError = (text) => {
     error.textContent = text;
@@ -160,15 +164,10 @@ export function renderMap() {
       ${
         links
           ? `${editing ? '' : '<div class="map-info__actions"><button type="button" class="button" data-open-with aria-expanded="false">🚶 Apri con…</button></div>'}
-            <div class="map-openwith" hidden>
-              <a class="map-openwith__item" href="${links.google}" target="_blank" rel="noopener">Google Maps</a>
-              <a class="map-openwith__item" href="${links.apple}" target="_blank" rel="noopener">Mappe (iPhone)</a>
-              <a class="map-openwith__item" href="${links.waze}" target="_blank" rel="noopener">Waze</a>
-              ${/Android/i.test(navigator.userAgent) ? `<a class="map-openwith__item" href="${links.geo}">Altre app…</a>` : ''}
-              <button type="button" class="map-openwith__item" data-copy-coords="${links.coords}">📋 Copia coordinate GPS</button>
-            </div>`
+            ${openWithMarkup(links)}`
           : ''
-      }`;
+      }
+      ${showEvents() ? pointEventsMarkup(p.id) : ''}`;
   }
 
   function renderAll() {
@@ -223,10 +222,14 @@ export function renderMap() {
   }
 
   async function deletePoint(p) {
-    const ok = await askDialog({ title: 'Eliminare il punto?', body: `<p><strong>${escapeHtml(p.title)}</strong> sparisce dalla mappa.</p>`, confirmLabel: 'Elimina', danger: true });
+    // eventi in quel posto (D145): restano nel calendario, senza location
+    const n = eventsAt(p.id).length;
+    const warning = n ? `<p>⚠️ Il punto ha <strong>${n === 1 ? '1 evento' : `${n} eventi`}</strong> nel calendario: ${n === 1 ? 'resterà' : 'resteranno'} senza location.</p>` : '';
+    const ok = await askDialog({ title: 'Eliminare il punto?', body: `<p><strong>${escapeHtml(p.title)}</strong> sparisce dalla mappa.</p>${warning}`, confirmLabel: 'Elimina', danger: true });
     if (!ok) return;
     const res = await rpc('staff_map_delete_point', { p_token: sessionToken(), p_id: p.id });
     if (!res.ok) return showError(`Non eliminato (${res.error}).`);
+    if (n) setEvents(cachedEvents().map((e) => (e.point === p.id ? { ...e, point: null } : e)));
     setPoints((cachedMap()?.points ?? []).filter((x) => x.id !== p.id));
     selected = null;
     renderAll();
@@ -259,21 +262,7 @@ export function renderMap() {
     const item = event.target.closest('.map-item');
     if (item) return select(Number(item.dataset.point), { focus: true });
     if (event.target.closest('[data-close]')) return select(null);
-    const openWith = event.target.closest('[data-open-with]');
-    if (openWith) {
-      const menu = info.querySelector('.map-openwith');
-      menu.hidden = !menu.hidden;
-      openWith.setAttribute('aria-expanded', String(!menu.hidden));
-      return;
-    }
-    const copy = event.target.closest('[data-copy-coords]');
-    if (copy) {
-      navigator.clipboard?.writeText(copy.dataset.copyCoords).then(
-        () => (copy.textContent = `✅ Copiate: ${copy.dataset.copyCoords}`),
-        () => (copy.textContent = copy.dataset.copyCoords),
-      );
-      return;
-    }
+    if (handleOpenWithClick(event, info)) return;
     if (event.target.closest('[data-locate]')) return toggleMe();
     if (event.target.closest('[data-me]')) {
       if (me && me.x >= 0 && me.x <= 1 && me.y >= 0 && me.y <= 1) zoom?.focus(me.x, me.y, 1.5);
@@ -367,7 +356,7 @@ export function renderMap() {
   // ---------- Caricamento ----------
 
   async function load() {
-    const map = await refreshMap();
+    const [map] = await Promise.all([refreshMap(), showEvents() ? refreshEvents() : null]);
     if (destroyed) return;
     if (!map?.image) {
       view.hidden = true;

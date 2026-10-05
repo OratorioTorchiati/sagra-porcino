@@ -615,7 +615,24 @@ if (env.TEST_STAFF_NICKNAME && env.TEST_STAFF_PASSWORD) {
     ? await staff('set_map_bounds', { p_south: boundsBefore.south, p_west: boundsBefore.west, p_north: boundsBefore.north, p_east: boundsBefore.east, p_place: boundsBefore.place, p_source: boundsBefore.source })
     : await staff('set_map_bounds', { p_south: null, p_west: null, p_north: null, p_east: null });
   check('mappa: angoli rimessi com\'erano', restoreB?.ok === true);
-  check('mappa: lo staff toglie il punto',(await staff('map_delete_point', { p_id: zzPoint?.point?.id }))?.ok === true);
+  // Calendario (042, D145): lettura per tutti; eventi solo da Mod e Admin; collegati a un punto della mappa
+  const evNow = (await rpc('get_events')).body;
+  check('calendario: get_events risponde anche senza account', evNow?.ok === true && Array.isArray(evNow.events));
+  check('calendario: get_app_config porta la versione degli eventi', 'events_version' in ((await rpc('get_app_config')).body ?? {}));
+  const zzEvent = { p_id: null, p_day: '2026-08-15', p_start: '22:00', p_end: '01:00', p_title: 'zz evento', p_description: 'prova', p_point_id: zzPoint?.point?.id ?? null };
+  check('calendario: un giocatore non può aggiungere eventi', (await rpc('staff_event_save', { p_token: t5Token, ...zzEvent })).body?.error === 'NOT_STAFF');
+  check('calendario: fine uguale all'inizio → rifiutato', (await staff('event_save', { ...zzEvent, p_end: '22:00' }))?.error === 'EVENT_INVALID');
+  check('calendario: titolo vuoto → rifiutato', (await staff('event_save', { ...zzEvent, p_title: '  ' }))?.error === 'EVENT_INVALID');
+  check('calendario: punto inesistente → rifiutato', (await staff('event_save', { ...zzEvent, p_point_id: -1 }))?.error === 'POINT_NOT_FOUND');
+  const ev1 = await staff('event_save', zzEvent);
+  check('calendario: lo staff aggiunge un evento (anche oltre mezzanotte)', ev1?.ok && ev1.event.start === '22:00' && ev1.event.end === '01:00' && ev1.event.point === zzPoint?.point?.id, JSON.stringify(ev1));
+  const ev2 = await staff('event_save', { ...zzEvent, p_start: '18:30', p_end: null, p_point_id: null });
+  const evList = (await rpc('get_events')).body;
+  const mine = evList?.events?.filter((e) => e.title === 'zz evento').map((e) => e.id) ?? [];
+  check('calendario: in ordine cronologico e la versione cambia', mine.join() === [ev2?.event?.id, ev1?.event?.id].join() && evList.version !== evNow?.version, mine.join());
+  const evEdit = await staff('event_save', { ...zzEvent, p_id: ev2?.event?.id, p_title: 'zz evento 2', p_point_id: null });
+  check('calendario: lo staff modifica un evento', evEdit?.ok && evEdit.event.title === 'zz evento 2');
+  const vBeforeDelete = (await rpc('get_events')).body?.version;
   check('mappa: immagine non valida → rifiutata', (await staff('set_map_image', { p_mime: 'image/gif', p_data: 'AAAA', p_width: 10, p_height: 10 }))?.error === 'IMAGE_INVALID');
   if (mine) {
     const rep = await staff('attempt_replay', { p_attempt_id: mine.id });

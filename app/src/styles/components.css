@@ -3811,13 +3811,14 @@ tr.is-dragging .drag-handle {
 /* titolo e, in modifica, le icone ✏️ ↔️ 🗑️ sulla stessa riga */
 .map-info__head {
   display: flex;
+  flex-wrap: wrap; /* nome lungo: le icone vanno sotto invece di spezzare il nome */
   align-items: center;
   gap: 0.5rem;
   margin-right: 2.25rem; /* spazio per la ✕ */
 }
 
 .map-info__title {
-  flex: 1;
+  flex: 1 1 8rem;
   min-width: 0;
   margin: 0.2rem 0;
   font-size: var(--text-lg);
@@ -4077,4 +4078,272 @@ tr.is-dragging .drag-handle {
 
 .map-me .button {
   font-size: 1.05rem; /* "Nascondi la mia posizione" su una riga */
+}
+
+/* ---------- Calendario eventi (D145) ---------- */
+
+.calendar-new {
+  margin-bottom: 1rem;
+}
+
+.cal-day {
+  margin-bottom: 1.25rem;
+}
+
+/* giorno: intestazione con una riga sotto */
+.cal-day__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 2px solid var(--color-border);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.cal-day.is-today .cal-day__title {
+  border-bottom-color: var(--color-primary);
+}
+
+.cal-day__today {
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.cal-day__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* evento: scheda con una barra a sinistra, titolo e orario sulla stessa riga */
+.cal-event {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.cal-event.is-live {
+  border-color: #c9e3cf;
+  border-left-color: var(--color-forest);
+  box-shadow: 0 2px 10px rgb(47 93 58 / 18%);
+}
+
+.cal-event.is-past {
+  border-left-color: var(--color-border);
+  background: transparent;
+  opacity: 0.6;
+}
+
+.cal-event__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.cal-event__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+.cal-event__time {
+  flex: none;
+  font-weight: 800;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.cal-event__text {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.cal-event__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+/* location: bollino del punto con il numero e il nome; tocca = informazioni del posto */
+.cal-event__place {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.2rem 0.7rem 0.2rem 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.cal-event__place-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cal-event__tools {
+  display: flex;
+  flex: none;
+  gap: 0.3rem;
+}
+
+.cal-event__tools .icon-button {
+  width: 44px;
+  height: 44px;
+  font-size: 1.1rem;
+}
+
+/* "In corso" */
+.event-live {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--color-forest);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: 0.15em;
+}
+
+.cal-past {
+  margin-top: 1.5rem;
+}
+
+.cal-past > summary {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* bollino del punto della mappa (icona colorata con il numero) */
+.point-badge {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--marker-color);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.point-badge__number {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.2rem;
+  border: 2px solid var(--marker-color);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--marker-color);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+/* eventi di un punto (riquadro della mappa e finestra del posto) */
+.point-events {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.point-events__title {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.point-events__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.point-events__item {
+  display: flex;
+  flex-direction: column;
+  padding-left: 0.6rem;
+  border-left: 3px solid var(--color-accent);
+}
+
+.point-events__item.is-live {
+  border-left-color: var(--color-forest);
+}
+
+.point-events__item.is-past {
+  opacity: 0.55;
+}
+
+.point-events__when {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.point-events__name {
+  font-size: 0.95rem;
+}
+
+.point-dialog .map-info__type {
+  margin-bottom: 0.25rem;
+}
+
+.event-form__times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: end; /* "Fine (facoltativa)" va a capo: i due orari restano allineati */
+  gap: 0.75rem;
+}
+
+.cal-past > summary::before {
+  content: "▸";
+  transition: transform 0.15s ease;
+}
+
+.cal-past[open] > summary::before {
+  transform: rotate(90deg);
 }
