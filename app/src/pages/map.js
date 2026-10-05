@@ -307,9 +307,9 @@ export function renderMap() {
 
   // Posizione non ottenuta (D144): si dice solo il motivo probabile, senza i passi per le impostazioni
   function locationProblem(kind) {
-    const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line/|Telegram/.test(navigator.userAgent);
+    const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|Telegram/.test(navigator.userAgent);
     let cause;
-    if (inApp) cause = 'Sembra che hai aperto l'app dentro un'altra app (WhatsApp, Instagram, Facebook…), che non dà la posizione.';
+    if (inApp) cause = "Sembra che hai aperto l'app dentro un'altra app (WhatsApp, Instagram, Facebook…), che non dà la posizione.";
     else if (kind === 'unsupported') cause = 'Sembra che hai un browser che non dà la posizione.';
     else if (kind === 'denied') cause = 'Sembra che hai bloccato la posizione per questo sito nelle impostazioni.';
     else cause = 'Sembra che hai la posizione del telefono spenta nelle impostazioni, oppure il segnale è troppo debole.';
