@@ -434,27 +434,23 @@ const feedbackBody = (res) => `
 
 // ---------- Mappa (D136, D139): creata dal paese (con coordinate) o da un'immagine; i punti si modificano nella pagina ----------
 
-const mapBody = () => {
+/** Riga di stato della scheda Mappa (si aggiorna da sola dopo una pubblicazione, senza ricaricare il modulo) */
+const mapStatus = () => {
   const map = cachedMap();
-  const image = map?.image;
-  const place = map?.bounds?.place;
-  return `
+  if (!map?.image) return 'Nessuna mappa: finché manca, la pagina Mappa dice "disponibile a breve".';
+  return map.bounds?.place ? `Paese: <strong>${escapeHtml(map.bounds.place)}</strong>` : '';
+};
+
+const mapBody = () => `
   <div class="config-group">
     <h4 class="config-group__title">Mappa del paese</h4>
-    ${
-      !image
-        ? '<p class="config-row__hint">Nessuna mappa: finché manca, la pagina Mappa dice "disponibile a breve".</p>'
-        : place
-          ? `<p class="config-row__hint">Paese: <strong>${escapeHtml(place)}</strong></p>`
-          : ''
-    }
+    <p class="config-row__hint" data-map-status>${mapStatus()}</p>
     <button type="button" class="button" data-map="maker">🗺️ Modifica mappa</button>
     <p class="config-row__hint">Cerca il paese, scegli l'area: la mappa viene disegnata e pubblicata con le sue coordinate.</p>
     <button type="button" class="button button--secondary" data-map="upload">📤 Carica un'immagine</button>
     <input type="file" name="map_file" accept="image/png,image/jpeg,image/webp" hidden>
     <p class="config-row__hint">PNG, JPG o WebP (es. una piantina disegnata): senza coordinate.</p>
   </div>`;
-};
 
 // ---------- Sponsor (D126): solo il numero di colonne; le immagini sono nell'app ----------
 
@@ -609,10 +605,13 @@ export async function renderConfigSection(root, ctx) {
   });
 
   // Mappa dal paese (D139): popup con ricerca, scelta dell'area, disegno e pubblicazione con le coordinate
-  form.querySelector('[data-map="maker"]')?.addEventListener('click', () => openMapMaker(ctx, error, () => {
-    refreshAppConfig({ force: true });
-    renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), '✅ Mappa pubblicata.'));
-  }));
+  const mapPublished = async () => {
+    await refreshMap({ force: true });
+    const statusEl = form.querySelector('[data-map-status]');
+    if (statusEl) statusEl.innerHTML = mapStatus();
+    flashOk(root.querySelector('.staff-ok'), '✅ Mappa pubblicata.');
+  };
+  form.querySelector('[data-map="maker"]')?.addEventListener('click', () => openMapMaker(ctx, error, mapPublished));
 
   // Mappa da un'immagine (D136), preparata su questo telefono e inviata in base64 (senza coordinate)
   const mapFile = form.map_file;
@@ -638,8 +637,7 @@ export async function renderConfigSection(root, ctx) {
     if (!ok) return;
     const saved = await staffCall(ctx, 'set_map_image', { p_mime: prepared.mime, p_data: prepared.data, p_width: prepared.width, p_height: prepared.height }, error);
     if (!saved) return;
-    refreshAppConfig({ force: true });
-    renderConfigSection(root, ctx).then(() => flashOk(root.querySelector('.staff-ok'), '✅ Mappa pubblicata.'));
+    mapPublished();
   });
 
   // Menù: modello e caricamento del file
