@@ -109,5 +109,5 @@ app/
 
 Inclusi nell'app, solo caratteri latini (~70 KB in tutto), licenza SIL OFL 1.1:
 
-- **Atkinson Hyperlegible Next** (testi): https://github.com/googlefonts/atkinson-hyperlegible-next
-- **Fraunces** (titoli): https://github.com/undercasetype/Fraunces
+- **Poppins** (tutto il testo, D134): https://github.com/itfoundry/Poppins (file da `@fontsource/poppins`, pesi 400–800)
+- **Fraunces** (per ora solo il titolo della home, in attesa di Unique Kingdom): https://github.com/undercasetype/Fraunces
