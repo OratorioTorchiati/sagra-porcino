@@ -3,14 +3,15 @@
 // adattata alla vista; i figli con la classe "zoom-keep" restano della stessa grandezza a qualunque zoom.
 // onTap({ x, y, target }) con x, y da 0 a 1 sull'immagine (null se il tocco è fuori dall'immagine).
 
-const MAX_ZOOM = 5;
+const MAX_ZOOM = 4; // rispetto alla vista di apertura
 const TAP_MOVE = 8; // px: oltre, non è un tocco ma uno spostamento
 
 export function createZoomView(viewport, stage, { width, height, onTap }) {
   let scale = 1;
   let tx = 0;
   let ty = 0;
-  let fit = 1; // scala che fa stare tutta l'immagine nella vista
+  // scala minima: l'immagine copre sempre tutta la vista, quindi niente bordi vuoti nemmeno rimpicciolendo (D137)
+  let fit = 1;
   const pointers = new Map();
   let start = null; // inizio del gesto: { scale, tx, ty, cx, cy, dist }
   let moved = false;
@@ -20,7 +21,7 @@ export function createZoomView(viewport, stage, { width, height, onTap }) {
   function layout() {
     const vw = viewport.clientWidth;
     const vh = viewport.clientHeight;
-    fit = Math.min(vw / width, vh / height);
+    fit = Math.max(vw / width, vh / height);
     stage.style.width = `${width}px`;
     stage.style.height = `${height}px`;
     if (scale < fit) scale = fit;
@@ -111,7 +112,7 @@ export function createZoomView(viewport, stage, { width, height, onTap }) {
     const now = Date.now();
     if (now - lastTap < 300) {
       lastTap = 0;
-      zoomAt(scale * 2 > fit * MAX_ZOOM ? fit : scale * 2, px, py); // doppio tocco: ingrandisce (al massimo, torna intera)
+      zoomAt(scale * 2 > fit * MAX_ZOOM ? fit : scale * 2, px, py); // doppio tocco: ingrandisce (al massimo, torna alla vista di apertura)
       return;
     }
     lastTap = now;
@@ -136,14 +137,13 @@ export function createZoomView(viewport, stage, { width, height, onTap }) {
   resize.observe(viewport);
   layout();
   // all'apertura la mappa riempie la vista (una mappa larga su un telefono in verticale: tutta l'altezza, poi ci si sposta)
-  const cover = () => Math.max(viewport.clientWidth / width, viewport.clientHeight / height);
-  scale = Math.min(cover(), fit * MAX_ZOOM);
+  scale = fit;
   clamp();
   apply();
 
   return {
-    /** Porta il punto (x, y da 0 a 1) al centro, ingrandendo almeno a `minZoom` volte la vista intera */
-    focus(x, y, minZoom = 2.5) {
+    /** Porta il punto (x, y da 0 a 1) al centro, ingrandendo almeno a `minZoom` volte la vista di apertura */
+    focus(x, y, minZoom = 1.8) {
       scale = Math.max(scale, fit * minZoom);
       tx = viewport.clientWidth / 2 - x * width * scale;
       ty = viewport.clientHeight / 2 - y * height * scale;
@@ -154,7 +154,7 @@ export function createZoomView(viewport, stage, { width, height, onTap }) {
     },
     /** Torna alla vista di apertura */
     reset() {
-      scale = Math.min(cover(), fit * MAX_ZOOM);
+      scale = fit;
       clamp();
       apply();
     },
