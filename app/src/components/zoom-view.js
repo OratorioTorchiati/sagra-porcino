@@ -153,9 +153,9 @@ export function createZoomView(viewport, stage, { width, height, onTap }) {
       setTimeout(() => (stage.style.transition = ''), 400);
     },
     /** Inquadra il rettangolo (x0, y0)–(x1, y1) (da 0 a 1) con un margine, senza andare sotto lo zoom minimo */
-    fitArea(x0, y0, x1, y1, margin = 0.12) {
-      const w = Math.max(x1 - x0, 0.02) * (1 + margin * 2) * width;
-      const h = Math.max(y1 - y0, 0.02) * (1 + margin * 2) * height;
+    fitArea(x0, y0, x1, y1, margin = 0.3) {
+      const w = Math.max(x1 - x0, 0.08) * (1 + margin * 2) * width; // almeno l'8% della mappa: con 1–2 punti vicini non zooma troppo
+      const h = Math.max(y1 - y0, 0.08) * (1 + margin * 2) * height;
       scale = Math.min(fit * MAX_ZOOM, Math.max(fit, Math.min(viewport.clientWidth / w, viewport.clientHeight / h)));
       tx = viewport.clientWidth / 2 - ((x0 + x1) / 2) * width * scale;
       ty = viewport.clientHeight / 2 - ((y0 + y1) / 2) * height * scale;
