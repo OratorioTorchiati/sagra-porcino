@@ -305,39 +305,18 @@ export function renderMap() {
     renderAll();
   }
 
-  // Posizione non ottenuta: una pagina web non può aprire le impostazioni del telefono, quindi si spiega dove andare
+  // Posizione non ottenuta (D144): si dice solo il motivo probabile, senza i passi per le impostazioni
   function locationProblem(kind) {
-    const ua = navigator.userAgent;
-    const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-    const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|Telegram/.test(ua);
+    const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line/|Telegram/.test(navigator.userAgent);
     let cause;
-    let steps;
-    if (kind === 'unsupported' || inApp) {
-      cause = inApp
-        ? 'Sembra che hai aperto l\'app dentro un\'altra app (WhatsApp, Instagram, Facebook…), che non dà la posizione.'
-        : 'Sembra che hai un browser che non dà la posizione.';
-      const browser = ios ? 'Safari' : 'Chrome';
-      steps = [`Tocca i tre puntini (⋮ o …) e scegli "Apri in ${browser}" o "Apri nel browser".`];
-    } else if (kind === 'denied') {
-      cause = 'Sembra che hai bloccato la posizione per questo sito nelle impostazioni.';
-      steps = ios
-        ? ['Impostazioni → Privacy e sicurezza → Localizzazione: deve essere attiva.',
-           'Sempre lì: Siti web di Safari → "Mentre usi l\'app".',
-           'In Safari tocca "aA" accanto all\'indirizzo → Impostazioni sito web → Posizione → Chiedi.']
-        : ['Tocca il lucchetto (o ⓘ) a sinistra dell\'indirizzo → Autorizzazioni → Posizione → Consenti.',
-           'Se non basta: Impostazioni del telefono → App → Chrome → Autorizzazioni → Posizione → Consenti.'];
-    } else {
-      cause = 'Sembra che hai la posizione del telefono spenta nelle impostazioni, oppure il segnale è troppo debole.';
-      steps = ios
-        ? ['Impostazioni → Privacy e sicurezza → Localizzazione: attivala.']
-        : ['Scorri dall\'alto dello schermo e attiva "Posizione" (o "Localizzazione").'];
-    }
-    steps.push('Poi torna qui e tocca di nuovo "Mostra la mia posizione".');
+    if (inApp) cause = 'Sembra che hai aperto l'app dentro un'altra app (WhatsApp, Instagram, Facebook…), che non dà la posizione.';
+    else if (kind === 'unsupported') cause = 'Sembra che hai un browser che non dà la posizione.';
+    else if (kind === 'denied') cause = 'Sembra che hai bloccato la posizione per questo sito nelle impostazioni.';
+    else cause = 'Sembra che hai la posizione del telefono spenta nelle impostazioni, oppure il segnale è troppo debole.';
     meStatus.textContent = 'Non riesco ad ottenere le tue coordinate.';
     askDialog({
       title: '📍 Posizione non disponibile',
-      body: `<p>Non riesco ad ottenere le tue coordinate. ${cause}</p>
-        <ol class="map-me__steps">${steps.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}</ol>`,
+      body: `<p>Non riesco ad ottenere le tue coordinate. ${cause}</p>`,
       confirmLabel: 'Ho capito',
       infoOnly: true,
     });
