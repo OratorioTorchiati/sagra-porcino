@@ -18,7 +18,8 @@
     "sponsor-images": "node scripts/sponsor-images.mjs",
     "map:upload": "node scripts/upload-map.mjs",
     "memory-images": "node scripts/memory-images.mjs",
-    "db:setup": "node scripts/setup/build-setup.mjs"
+    "db:setup": "node scripts/setup/build-setup.mjs",
+    "prod:copy": "node scripts/copy-to-prod.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",

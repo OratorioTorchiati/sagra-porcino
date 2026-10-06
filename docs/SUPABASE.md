@@ -21,6 +21,11 @@ Il file si rigenera e si verifica con `npm run db:setup` (cartella `app`): esegu
 Postgres locale (PGlite, che imita i permessi di base di Supabase) e controlla che tabelle, funzioni, permessi e dati
 iniziali siano identici, anche rieseguendo il file. Va rifatto quando si aggiunge una migrazione nuova.
 
+Dopo il setup, i contenuti si copiano da dev con `npm run prod:copy` (cartella `app`): domande del quiz, menù,
+impostazioni e giochi, mappa (immagine, angoli, punti). Non copia giocatori, partite, recensioni, eventi e account.
+Servono in `app/.env.local` le righe di prod commentate e `PROD_STAFF_NICKNAME` / `PROD_STAFF_PASSWORD` (Admin di prod).
+Rilanciandolo, domande e punti già presenti su prod non vengono duplicati.
+
 ## 2. Applicare le migrazioni (a ogni tappa che ne aggiunge)
 
 Supabase → **SQL Editor** → **New query** → incollare il contenuto del file → **Run**. In ordine:

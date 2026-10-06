@@ -253,3 +253,4 @@ Aggiungere una riga a fine di ogni tappa.
 | 10 (contenuti) | In corso | 2026-10-05 | Calendario eventi collegato ai punti della mappa (D145, migrazione 042). |
 | 10 (contenuti) | In corso | 2026-10-05 | Pannello Admin: 📊 Numeri (D146, migrazione 043). |
 | 10 (contenuti) | In corso | 2026-10-06 | Quiz a 230 domande (D148); `supabase/setup.sql` per il progetto di produzione (D147). |
+| 10 (prod) | In corso | 2026-10-06 | Progetto prod creato con setup.sql, superadmin GiackV creato dall'utente; contenuti copiati da dev con `npm run prod:copy` (230 domande, menù, impostazioni, mappa con 3 punti) e verificati uguali a dev. Il sito usa ancora dev (segreti di GitHub non cambiati, per continuare le prove). |
