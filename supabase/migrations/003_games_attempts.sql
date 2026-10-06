@@ -428,25 +428,5 @@ grant execute on function public.get_games_state(text) to anon, authenticated;
 grant execute on function public.start_attempt(text, text) to anon, authenticated;
 grant execute on function public.submit_score(uuid, int, jsonb, jsonb) to anon, authenticated;
 
--- ---------- Domande di ESEMPIO (solo se la tabella è vuota) ----------
--- Da cancellare prima della sagra e sostituire con quelle vere (docs/SUPABASE.md).
-
-insert into public.quiz_questions (text, options, correct_index)
-select * from (values
-  ('Qual è il nome scientifico del porcino?', array['Boletus edulis', 'Amanita muscaria', 'Agaricus bisporus', 'Cantharellus cibarius'], 0),
-  ('In quale stagione si raccolgono più funghi?', array['Inverno', 'Primavera', 'Autunno', 'Nessuna, sempre uguale'], 2),
-  ('Il fungo rosso a puntini bianchi è…', array['Un porcino giovane', 'Velenoso', 'Un tartufo', 'Un chiodino'], 1),
-  ('Cosa c''è sotto il cappello del porcino?', array['Lamelle', 'Aculei', 'Niente', 'Una "spugna" di tubuli'], 3),
-  ('Da quale albero cadono le castagne?', array['Quercia', 'Castagno', 'Faggio', 'Pino'], 1),
-  ('Quanti giorni ha il mese di ottobre?', array['28', '29', '30', '31'], 3),
-  ('La pigna è il frutto di quale albero?', array['Pino', 'Castagno', 'Olmo', 'Betulla'], 0),
-  ('Qual è il modo migliore per portare i funghi raccolti?', array['Sacchetto di plastica', 'Bottiglia', 'Cestino di vimini', 'Scatola chiusa'], 2),
-  ('Quale fungo pregiato cresce sotto terra?', array['Il porcino', 'Il tartufo', 'Il chiodino', 'Lo champignon'], 1),
-  ('In che mese si festeggia San Martino?', array['Settembre', 'Ottobre', 'Novembre', 'Dicembre'], 2),
-  ('Come si chiama il dolce fatto con farina di castagne?', array['Castagnaccio', 'Panforte', 'Cantucci', 'Ricciarelli'], 0),
-  ('Se non sei sicuro di un fungo raccolto, cosa devi fare?', array['Assaggiarlo crudo', 'Farlo controllare da un micologo', 'Cuocerlo più a lungo', 'Buttarlo nel fiume'], 1),
-  ('Quale animale aiuta l''uomo a cercare i tartufi?', array['Il gatto', 'Il cavallo', 'La gallina', 'Il cane'], 3),
-  ('Come si chiama l''involucro spinoso delle castagne?', array['Riccio', 'Guscio', 'Buccia', 'Pigna'], 0),
-  ('Quale di questi è un fungo che cresce a gruppi sui ceppi?', array['Il porcino', 'Il tartufo', 'Il chiodino', 'L''ovolo'], 2)
-) as sample (text, options, correct_index)
-where not exists (select 1 from public.quiz_questions);
+-- (Qui c'erano 15 domande di esempio con le risposte: tolte dal repository pubblico, D149.
+-- Le domande si caricano dal pannello Admin o con npm run prod:copy.)

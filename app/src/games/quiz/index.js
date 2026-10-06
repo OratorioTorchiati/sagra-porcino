@@ -1,5 +1,5 @@
 // Modulo del "Quiz del paese", caricato solo quando serve (import dinamico).
-// Per ora usa le domande di esempio (modalità prova); dalla Tappa 5 le domande arrivano dal server.
+// Le domande arrivano dal server; quelle di sample-questions.js servono solo alla modalità senza server.
 
 import config from './config.js';
 import { createQuiz } from './game.js';

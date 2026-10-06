@@ -819,6 +819,8 @@ begin
     'total', coalesce(array_length(v_attempt.quiz_question_ids, 1), 0));
 end;
 $$;
+-- (Qui c'erano 15 domande di esempio con le risposte: tolte dal repository pubblico, D149.
+-- Le domande si caricano dal pannello Admin o con npm run prod:copy.)
 
 -- #####################################################################################
 -- 004 · Tentativi che si rinnovano alle 9 di mattina (non a mezzanotte) e nomi dei giochi aggiornati
