@@ -10,6 +10,17 @@ Il "server" dell'app è un progetto **Supabase gratuito**. Non usiamo Supabase A
 4. **Project Settings → API Keys**: copiare **Project URL** e chiave **publishable** (o la vecchia **anon**). Sono pubbliche.
    ⚠️ La chiave **service_role / secret** e la password del database non vanno MAI nel codice, nel repository o in chat.
 
+## 1b. Progetto NUOVO (es. produzione): un solo file
+
+Su un progetto appena creato non serve eseguire le migrazioni una per una: basta **`supabase/setup.sql`**
+(SQL Editor → incolla tutto → Run). È il risultato di tutte le migrazioni fino alla 043, senza i passaggi
+intermedi (ogni funzione una volta sola, nella versione finale; i permessi delle funzioni tutti in fondo), e si
+può rieseguire senza danni (D147). Le domande del quiz non ci sono: si caricano dopo.
+
+Il file si rigenera e si verifica con `npm run db:setup` (cartella `app`): esegue le migrazioni e il file su un
+Postgres locale (PGlite, che imita i permessi di base di Supabase) e controlla che tabelle, funzioni, permessi e dati
+iniziali siano identici, anche rieseguendo il file. Va rifatto quando si aggiunge una migrazione nuova.
+
 ## 2. Applicare le migrazioni (a ogni tappa che ne aggiunge)
 
 Supabase → **SQL Editor** → **New query** → incollare il contenuto del file → **Run**. In ordine:

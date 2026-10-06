@@ -17,9 +17,11 @@
     "load-test": "node scripts/load-test.mjs",
     "sponsor-images": "node scripts/sponsor-images.mjs",
     "map:upload": "node scripts/upload-map.mjs",
-    "memory-images": "node scripts/memory-images.mjs"
+    "memory-images": "node scripts/memory-images.mjs",
+    "db:setup": "node scripts/setup/build-setup.mjs"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "qrcode": "^1.5.4",
     "sharp": "^0.35.5",
     "vite": "^8.3.1",
