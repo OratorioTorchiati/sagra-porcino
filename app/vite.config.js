@@ -1,12 +1,15 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// Nome del repository GitHub: il sito è pubblicato su https://<proprietario>.github.io/<REPO_NAME>/
+// Dove è pubblicato il sito (D150):
+// - Cloudflare Pages (https://<progetto>.pages.dev/): alla radice. Cloudflare imposta CF_PAGES=1 durante la build.
+// - GitHub Pages (https://<proprietario>.github.io/<REPO_NAME>/): sotto /<REPO_NAME>/.
 const REPO_NAME = 'sagra-porcino';
+const ROOT_BASE = process.env.CF_PAGES === '1';
 
 export default defineConfig(({ command, isPreview }) => ({
-  // In sviluppo il sito sta alla radice, in produzione (e in `npm run preview`) sotto /<REPO_NAME>/
-  base: command === 'build' || isPreview ? `/${REPO_NAME}/` : '/',
+  // In sviluppo e su Cloudflare il sito sta alla radice; su GitHub Pages (e in `npm run preview`) sotto /<REPO_NAME>/
+  base: !ROOT_BASE && (command === 'build' || isPreview) ? `/${REPO_NAME}/` : '/',
   server: {
     port: 5173,
   },
